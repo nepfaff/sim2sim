@@ -28,7 +28,10 @@ from sim2sim.logging import DynamicLogger
 MESH_MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(0.0, 0.0, np.pi / 2), [0.0, 0.0, 0.7])  # X_WMesh
 
 
-def create_plant(model_directives: str, time_step: float) -> Tuple[DiagramBuilder, MultibodyPlant, SceneGraph, Parser]:
+def create_plant(model_directives: str, time_step: float) -> Tuple[DiagramBuilder, MultibodyPlant, SceneGraph]:
+    """
+    Creates a plant from `model_directives` with a time step of `time_step` seconds.
+    """
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, time_step)
     parser = Parser(plant)
@@ -38,7 +41,7 @@ def create_plant(model_directives: str, time_step: float) -> Tuple[DiagramBuilde
     ProcessModelDirectives(directives, parser)
     plant.SetDefaultFreeBodyPose(plant.GetBodyByName("ycb_tomato_soup_can_base_link"), MESH_MANIPULANT_DEFAULT_POSE)
     plant.Finalize()
-    return builder, plant, scene_graph, parser
+    return builder, plant, scene_graph
 
 
 class TableAngleSource(LeafSystem):
@@ -67,51 +70,53 @@ class TableAngleSource(LeafSystem):
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
+    argument_parser = argparse.ArgumentParser()
+    argument_parser.add_argument(
         "--sim_duration",
         type=float,
         default=3.0,
         required=False,
         help="The simulation duration in seconds.",
     )
-    parser.add_argument(
+    argument_parser.add_argument(
         "--timestep",
         type=float,
         default=0.0001,
         required=False,
-        help="The timestep to use.",
+        help="The timestep to use in seconds.",
     )
-    parser.add_argument(
+    argument_parser.add_argument(
         "--final_table_angle",
         type=float,
         default=np.pi / 4,
         required=False,
-        help="The final table angle.",
+        help="The final table angle in radians.",
     )
-    parser.add_argument(
+    argument_parser.add_argument(
         "--no_command_time",
         type=float,
         default=2.0,
         required=False,
         help="The time before starting the table control.",
     )
-    parser.add_argument(
+    argument_parser.add_argument(
         "--realtime_rate",
         type=float,
         default=1.0,
         required=False,
         help="The simulation realtime rate.",
     )
-    parser.add_argument(
+    argument_parser.add_argument(
         "--html",
         type=str,
         required=False,
         help="Path to save the meshcat html to. The file should end with .html.",
     )
-    parser.add_argument("--kProximity", action="store_true", help="Whether to visualize kProximity or kIllustration.")
-    parser.add_argument("--contact_viz", action="store_true", help="Whether to visualize the contact forces.")
-    args = parser.parse_args()
+    argument_parser.add_argument(
+        "--kProximity", action="store_true", help="Whether to visualize kProximity or kIllustration."
+    )
+    argument_parser.add_argument("--contact_viz", action="store_true", help="Whether to visualize the contact forces.")
+    args = argument_parser.parse_args()
 
     # TODO: Split manipulant into separate directive file. This way we can build the outer and inner simulation in the
     # same way and then simply add different manipulands to them.
@@ -121,7 +126,7 @@ def main():
         file: package://sim2sim/models/table_pid_directive.yaml
     """
 
-    builder, plant, scene_graph, parser = create_plant(model_directives, time_step=args.timestep)
+    builder, plant, scene_graph = create_plant(model_directives, time_step=args.timestep)
 
     # Table controller
     pid_controller = builder.AddSystem(PidController(kp=np.array([10.0]), ki=np.array([1.0]), kd=np.array([1.0])))
@@ -140,7 +145,7 @@ def main():
 
     ## NOTE: Start temp
     ## NOTE: This represents the inner simulation environment
-    builder2, plant2, scene_graph2, parser2 = create_plant(model_directives, time_step=args.timestep)
+    builder2, plant2, scene_graph2 = create_plant(model_directives, time_step=args.timestep)
     pid_controller2 = builder2.AddSystem(PidController(kp=np.array([10.0]), ki=np.array([1.0]), kd=np.array([1.0])))
     pid_controller2.set_name("pid_controller")
     table_instance2 = plant2.GetModelInstanceByName("table")
