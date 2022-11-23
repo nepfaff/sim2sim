@@ -12,5 +12,7 @@ setup(
         "pytest",
         "pytest-parallel",
         "trimesh",
+        "pydrake",
+        "open3d",
     ],
 )
