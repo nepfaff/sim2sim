@@ -4,7 +4,6 @@
 import argparse
 import os
 from typing import Tuple
-import time
 
 import numpy as np
 from pydrake.all import (
@@ -64,10 +63,7 @@ class TableAngleSource(LeafSystem):
         self._control_output_port = self.DeclareVectorOutputPort("table_angle", BasicVector(2), self.CalcOutput)
 
     def CalcOutput(self, context, output):
-        if self._start_time is None:
-            self._start_time = time.time()
-            table_angle = 0.0
-        elif time.time() - self._start_time < self._no_command_time:
+        if context.get_time() < self._no_command_time:
             table_angle = 0.0
         else:
             table_angle = self._angle
