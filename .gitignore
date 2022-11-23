@@ -3,4 +3,3 @@
 build/
 *.pyc
 sim2simenv/
-.pre-commit-config.yaml
