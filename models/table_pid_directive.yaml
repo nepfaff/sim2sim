@@ -1,0 +1,26 @@
+directives:
+
+# Floor
+- add_model:
+    name: floor
+    file: package://sim2sim/models/floor.sdf
+- add_weld:
+    parent: world
+    child: floor::box
+    X_PC:
+        translation: [0, 0, -0.05]
+
+# Actuated Table
+- add_model:
+    name: table
+    file: package://sim2sim/models/actuated_table.sdf
+- add_weld:
+    parent: floor::box
+    child: table::table_base_link
+    X_PC:
+        translation: [0, 0, 0.05]
+
+# Manipuland
+- add_model:
+    name: ycb_tomato_soup_can
+    file: package://sim2sim/models/ycb_tomato_soup_can_simplified.sdf

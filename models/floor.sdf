@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="floor">
+    <link name="box">
+      <inertial>
+        <mass>100.0</mass>
+        <inertia>
+          <ixx>10</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>10</iyy>
+          <iyz>0</iyz>
+          <izz>10</izz>
+        </inertia>
+      </inertial>
+      <visual name="bottom">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>10 10 0.1</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.7 0.7 0.7 1.0</diffuse>
+        </material>
+      </visual>
+      <collision name="bottom">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>10 10 0.1</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic/>
+          <drake:hydroelastic_modulus>1e8</drake:hydroelastic_modulus>
+          <drake:mesh_resolution_hint>1.0</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.3</drake:mu_dynamic>
+          <drake:mu_static>0.3</drake:mu_static>
+          <drake:hunt_crossley_dissipation>3.0</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>

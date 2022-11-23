@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="actuated_table">
+    <link name="table_top_link">
+      <inertial>
+        <mass>10.0</mass>
+      </inertial>
+      <visual name="table_top_visual">
+        <pose>0 0 0.5 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.8 1.6 0.05</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.9 0.8 0.7 1.0</diffuse>
+        </material>
+      </visual>
+      <collision name="table_top_collision">
+        <pose>0 0 0.5 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.8 1.6 0.05</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic/>
+          <drake:hydroelastic_modulus>1e8</drake:hydroelastic_modulus>
+          <drake:mesh_resolution_hint>1.0</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.3</drake:mu_dynamic>
+          <drake:mu_static>0.3</drake:mu_static>
+          <drake:hunt_crossley_dissipation>3.0</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+
+    <link name="table_base_link">
+      <inertial>
+        <mass>5.0</mass>
+      </inertial>
+      <visual name="table_base_visual">
+        <pose>0 0 0.25 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.1 0.1 0.5</size>
+          </box>
+        </geometry>
+        <material>
+          <diffuse>0.0 0.0 0.0 0.0</diffuse>
+        </material>
+      </visual>
+      <!-- <collision name="table_base_collision">
+        <pose>0 0 0.25 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.1 0.1 0.5</size>
+          </box>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic/>
+          <drake:hydroelastic_modulus>1e8</drake:hydroelastic_modulus>
+          <drake:mesh_resolution_hint>1.0</drake:mesh_resolution_hint>
+          <drake:mu_dynamic>0.3</drake:mu_dynamic>
+          <drake:mu_static>0.3</drake:mu_static>
+          <drake:hunt_crossley_dissipation>3.0</drake:hunt_crossley_dissipation>
+        </drake:proximity_properties>
+      </collision> -->
+    </link>
+
+    <joint name="table_joint" type="revolute">
+      <parent>table_base_link</parent>
+      <child>table_top_link</child>
+      <pose>0 0 0 0 0 0</pose>
+      <axis>
+        <xyz>1 0 0</xyz>
+      </axis>
+    </joint>
+
+  </model>
+</sdf>
