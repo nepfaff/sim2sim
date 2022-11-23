@@ -14,21 +14,16 @@ from pydrake.all import (
     AddMultibodyPlantSceneGraph,
     LeafSystem,
     BasicVector,
-    MeshcatVisualizer,
-    StartMeshcat,
     RigidTransform,
-    Simulator,
-    ResetIntegratorFromFlags,
     DiagramBuilder,
     RollPitchYaw,
-    ContactVisualizerParams,
-    ContactVisualizer,
-    MeshcatVisualizerParams,
-    Role,
     SceneGraph,
     PidController,
 )
 from manipulation.scenarios import AddPackagePaths
+
+from sim2sim.simulation import TablePIDSimulator
+from sim2sim.logging import DynamicLogger
 
 MESH_MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(0.0, 0.0, np.pi / 2), [0.0, 0.0, 0.7])  # X_WMesh
 
@@ -76,7 +71,7 @@ def main():
     parser.add_argument(
         "--sim_duration",
         type=float,
-        default=10.0,
+        default=3.0,
         required=False,
         help="The simulation duration in seconds.",
     )
@@ -97,7 +92,7 @@ def main():
     parser.add_argument(
         "--no_command_time",
         type=float,
-        default=3,
+        default=2.0,
         required=False,
         help="The time before starting the table control.",
     )
@@ -118,9 +113,8 @@ def main():
     parser.add_argument("--contact_viz", action="store_true", help="Whether to visualize the contact forces.")
     args = parser.parse_args()
 
-    # Start the visualizer
-    meshcat = StartMeshcat()
-
+    # TODO: Split manipulant into separate directive file. This way we can build the outer and inner simulation in the
+    # same way and then simply add different manipulands to them.
     model_directives = """
     directives:
     - add_directives:
@@ -130,11 +124,11 @@ def main():
     builder, plant, scene_graph, parser = create_plant(model_directives, time_step=args.timestep)
 
     # Table controller
-    table_instance = plant.GetModelInstanceByName("table")
     pid_controller = builder.AddSystem(PidController(kp=np.array([10.0]), ki=np.array([1.0]), kd=np.array([1.0])))
     pid_controller.set_name("pid_controller")
 
     # Now "wire up" the controller to the plant
+    table_instance = plant.GetModelInstanceByName("table")
     builder.Connect(plant.get_state_output_port(table_instance), pid_controller.get_input_port_estimated_state())
     builder.Connect(pid_controller.get_output_port_control(), plant.get_actuation_input_port(table_instance))
 
@@ -144,32 +138,24 @@ def main():
     table_angle_source.set_name("table_angle_source")
     builder.Connect(table_angle_source.get_output_port(), pid_controller.get_input_port_desired_state())
 
-    # Add a meshcat visualizer
-    meshcat_params = MeshcatVisualizerParams()
-    meshcat_params.role = Role.kProximity if args.kProximity else Role.kIllustration
-    visualizer = MeshcatVisualizer.AddToBuilder(builder, scene_graph.get_query_output_port(), meshcat, meshcat_params)
-    meshcat.ResetRenderMode()
-    meshcat.DeleteAddedControls()
+    ## NOTE: Start temp
+    ## NOTE: This represents the inner simulation environment
+    builder2, plant2, scene_graph2, parser2 = create_plant(model_directives, time_step=args.timestep)
+    pid_controller2 = builder2.AddSystem(PidController(kp=np.array([10.0]), ki=np.array([1.0]), kd=np.array([1.0])))
+    pid_controller2.set_name("pid_controller")
+    table_instance2 = plant2.GetModelInstanceByName("table")
+    builder2.Connect(plant2.get_state_output_port(table_instance2), pid_controller2.get_input_port_estimated_state())
+    builder2.Connect(pid_controller2.get_output_port_control(), plant2.get_actuation_input_port(table_instance2))
+    table_angle_source2 = builder2.AddSystem(
+        TableAngleSource(args.final_table_angle, no_command_time=args.no_command_time)
+    )
+    table_angle_source2.set_name("table_angle_source")
+    builder2.Connect(table_angle_source2.get_output_port(), pid_controller2.get_input_port_desired_state())
+    ## NOTE: End temp
 
-    if args.contact_viz:
-        cparams = ContactVisualizerParams()
-        cparams.force_threshold = 1e-2
-        cparams.newtons_per_meter = 1e6
-        cparams.newton_meters_per_meter = 1e1
-        cparams.radius = 0.002
-        _ = ContactVisualizer.AddToBuilder(builder, plant, meshcat, cparams)
-
-    diagram = builder.Build()
-
-    simulator = Simulator(diagram)
-    ResetIntegratorFromFlags(simulator=simulator, scheme="semi_explicit_euler", max_step_size=0.01)
-    simulator.Initialize()
-    simulator.set_target_realtime_rate(args.realtime_rate)
-
-    visualizer.StartRecording()
-    simulator.AdvanceTo(args.sim_duration)
-    visualizer.StopRecording()
-    visualizer.PublishRecording()
+    logger = DynamicLogger(logging_frequency_hz=0.001, logging_path="test_logging_path")
+    simulator = TablePIDSimulator(builder, scene_graph, builder2, scene_graph2, logger)
+    simulator.simulate(args.sim_duration)
 
 
 if __name__ == "__main__":
