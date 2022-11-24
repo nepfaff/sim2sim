@@ -21,6 +21,7 @@ from pydrake.all import (
 from sim2sim.simulation import TablePIDSimulator
 from sim2sim.logging import DynamicLogger
 from sim2sim.util import get_parser
+from sim2sim.images import SphereImageGenerator
 
 SCENE_DIRECTIVE = "../models/table_pid_scene_directive.yaml"
 MANIPULAND_DIRECTIVE = "../models/table_pid_manipuland_directive.yaml"
@@ -128,6 +129,48 @@ def main():
     )
     table_angle_source.set_name("table_angle_source")
     builder.Connect(table_angle_source.get_output_port(), pid_controller.get_input_port_desired_state())
+
+    ## NOTE: Start image gen temp
+    # Create a new version of the scene for adding cameras (TODO: Factor out scene creation as do many times)
+    builder3 = DiagramBuilder()
+    plant3, scene_graph3 = AddMultibodyPlantSceneGraph(builder3, args.timestep)
+    parser = get_parser(plant3)
+    for directive_path in [scene_directive, manipuland_directive]:
+        directives = LoadModelDirectives(directive_path)
+        ProcessModelDirectives(directives, parser)
+    plant3.SetDefaultFreeBodyPose(plant3.GetBodyByName("ycb_tomato_soup_can_base_link"), MANIPULANT_DEFAULT_POSE)
+    plant3.Finalize()
+    pid_controller3 = builder3.AddSystem(PidController(kp=np.array([10.0]), ki=np.array([1.0]), kd=np.array([1.0])))
+    pid_controller3.set_name("pid_controller")
+    table_instance3 = plant3.GetModelInstanceByName("table")
+    builder3.Connect(plant3.get_state_output_port(table_instance3), pid_controller3.get_input_port_estimated_state())
+    builder3.Connect(pid_controller3.get_output_port_control(), plant3.get_actuation_input_port(table_instance3))
+    table_angle_source3 = builder3.AddSystem(
+        TableAngleSource(args.final_table_angle, no_command_time=args.no_command_time)
+    )
+    table_angle_source3.set_name("table_angle_source")
+    builder3.Connect(table_angle_source3.get_output_port(), pid_controller3.get_input_port_desired_state())
+    image_generator = SphereImageGenerator(
+        builder3,
+        plant3,
+        scene_graph3,
+        MANIPULANT_DEFAULT_POSE.translation(),
+        z_distances=[0.1, 0.3, 0.5],
+        radii=[0.5, 0.4, 0.2],
+        num_poses=[30, 25, 15],
+    )
+    images, intrinsics, extrinsics, depths, masks = image_generator.generate_images()
+
+    # TODO: Save and examine the images
+    for i, image in enumerate(images):
+        from PIL import Image
+
+        im = Image.fromarray(image)
+        im.save(f"temp_images/{i}.png")
+
+        # TODO: Need to place can on table as initial position (otherwise take images of floating can)
+
+    ## NOTE: End image gen temp
 
     ## NOTE: Start temp
     ## NOTE: This represents the inner simulation environment
