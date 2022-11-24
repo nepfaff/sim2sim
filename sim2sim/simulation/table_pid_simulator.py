@@ -50,6 +50,7 @@ class TablePIDSimulator(SimulatorBase):
         ):
             simulator = Simulator(diagram)
             simulator.Initialize()
+            # TODO: Move `StartRecording` and `StopRecording` into logger using `with` statement
             visualizer.StartRecording()
             simulator.AdvanceTo(duration)
             visualizer.StopRecording()
@@ -57,5 +58,5 @@ class TablePIDSimulator(SimulatorBase):
 
             # TODO: Move this to the logger
             html = meshcat.StaticHtml()
-            with open(f"test{i}", "w") as f:
+            with open(f"test{i}.thml", "w") as f:
                 f.write(html)

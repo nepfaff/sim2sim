@@ -1,21 +1,20 @@
 """sim2sim entrypoint with the table PID scene."""
 
 #!/bin/python3
+import os
 import argparse
-from typing import Tuple
+import pathlib
 
 import numpy as np
 from pydrake.all import (
-    LoadModelDirectivesFromString,
+    LoadModelDirectives,
     ProcessModelDirectives,
-    MultibodyPlant,
     AddMultibodyPlantSceneGraph,
     LeafSystem,
     BasicVector,
     RigidTransform,
     DiagramBuilder,
     RollPitchYaw,
-    SceneGraph,
     PidController,
 )
 
@@ -23,21 +22,9 @@ from sim2sim.simulation import TablePIDSimulator
 from sim2sim.logging import DynamicLogger
 from sim2sim.util import get_parser
 
-MESH_MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(0.0, 0.0, np.pi / 2), [0.0, 0.0, 0.7])  # X_WMesh
-
-
-def create_plant(model_directives: str, time_step: float) -> Tuple[DiagramBuilder, MultibodyPlant, SceneGraph]:
-    """
-    Creates a plant from `model_directives` with a time step of `time_step` seconds.
-    """
-    builder = DiagramBuilder()
-    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, time_step)
-    parser = get_parser(parser)
-    directives = LoadModelDirectivesFromString(model_directives)
-    ProcessModelDirectives(directives, parser)
-    plant.SetDefaultFreeBodyPose(plant.GetBodyByName("ycb_tomato_soup_can_base_link"), MESH_MANIPULANT_DEFAULT_POSE)
-    plant.Finalize()
-    return builder, plant, scene_graph
+SCENE_DIRECTIVE = "../models/table_pid_scene_directive.yaml"
+MANIPULAND_DIRECTIVE = "../models/table_pid_manipuland_directive.yaml"
+MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(0.0, 0.0, np.pi / 2), [0.0, 0.0, 0.7])  # X_WManipuland
 
 
 class TableAngleSource(LeafSystem):
@@ -114,15 +101,18 @@ def main():
     argument_parser.add_argument("--contact_viz", action="store_true", help="Whether to visualize the contact forces.")
     args = argument_parser.parse_args()
 
-    # TODO: Split manipulant into separate directive file. This way we can build the outer and inner simulation in the
-    # same way and then simply add different manipulands to them.
-    model_directives = """
-    directives:
-    - add_directives:
-        file: package://sim2sim/models/table_pid_directive.yaml
-    """
+    scene_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
+    manipuland_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), MANIPULAND_DIRECTIVE)
 
-    builder, plant, scene_graph = create_plant(model_directives, time_step=args.timestep)
+    # Create plant
+    builder = DiagramBuilder()
+    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, args.timestep)
+    parser = get_parser(plant)
+    for directive_path in [scene_directive, manipuland_directive]:
+        directives = LoadModelDirectives(directive_path)
+        ProcessModelDirectives(directives, parser)
+    plant.SetDefaultFreeBodyPose(plant.GetBodyByName("ycb_tomato_soup_can_base_link"), MANIPULANT_DEFAULT_POSE)
+    plant.Finalize()
 
     # Table controller
     pid_controller = builder.AddSystem(PidController(kp=np.array([10.0]), ki=np.array([1.0]), kd=np.array([1.0])))
@@ -141,7 +131,14 @@ def main():
 
     ## NOTE: Start temp
     ## NOTE: This represents the inner simulation environment
-    builder2, plant2, scene_graph2 = create_plant(model_directives, time_step=args.timestep)
+    builder2 = DiagramBuilder()
+    plant2, scene_graph2 = AddMultibodyPlantSceneGraph(builder2, args.timestep)
+    parser = get_parser(plant2)
+    for directive_path in [scene_directive, manipuland_directive]:
+        directives = LoadModelDirectives(directive_path)
+        ProcessModelDirectives(directives, parser)
+    plant2.SetDefaultFreeBodyPose(plant2.GetBodyByName("ycb_tomato_soup_can_base_link"), MANIPULANT_DEFAULT_POSE)
+    plant2.Finalize()
     pid_controller2 = builder2.AddSystem(PidController(kp=np.array([10.0]), ki=np.array([1.0]), kd=np.array([1.0])))
     pid_controller2.set_name("pid_controller")
     table_instance2 = plant2.GetModelInstanceByName("table")

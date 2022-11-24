@@ -19,8 +19,3 @@ directives:
     child: table::table_base_link
     X_PC:
         translation: [0, 0, 0.05]
-
-# Manipuland
-- add_model:
-    name: ycb_tomato_soup_can
-    file: package://sim2sim/models/ycb_tomato_soup_can_simplified.sdf
