@@ -3,3 +3,4 @@
 build/
 *.pyc
 sim2simenv/
+.vscode/settings.json
