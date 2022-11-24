@@ -2,12 +2,10 @@
 
 #!/bin/python3
 import argparse
-import os
 from typing import Tuple
 
 import numpy as np
 from pydrake.all import (
-    Parser,
     LoadModelDirectivesFromString,
     ProcessModelDirectives,
     MultibodyPlant,
@@ -20,10 +18,10 @@ from pydrake.all import (
     SceneGraph,
     PidController,
 )
-from manipulation.scenarios import AddPackagePaths
 
 from sim2sim.simulation import TablePIDSimulator
 from sim2sim.logging import DynamicLogger
+from sim2sim.util import get_parser
 
 MESH_MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(0.0, 0.0, np.pi / 2), [0.0, 0.0, 0.7])  # X_WMesh
 
@@ -34,9 +32,7 @@ def create_plant(model_directives: str, time_step: float) -> Tuple[DiagramBuilde
     """
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, time_step)
-    parser = Parser(plant)
-    parser.package_map().Add("sim2sim", os.path.abspath(""))
-    AddPackagePaths(parser)
+    parser = get_parser(parser)
     directives = LoadModelDirectivesFromString(model_directives)
     ProcessModelDirectives(directives, parser)
     plant.SetDefaultFreeBodyPose(plant.GetBodyByName("ycb_tomato_soup_can_base_link"), MESH_MANIPULANT_DEFAULT_POSE)
