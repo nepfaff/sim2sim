@@ -46,7 +46,6 @@ def get_look_at_views(points: np.ndarray, look_at_points: np.ndarray) -> Tuple[n
     Compute the world2cam rotation 'R' and translation 'T' using the camera locations 'points' and the
     look_at_points. Use the look_at_view_transform to get the R and T.
 
-    Args:
     :param points: Location of the cameras of shape (..., 3).
     :param look_at_points: Location where the cameras are pointed at of shape (..., 3).
     :return: A tuple of (R, T):
@@ -60,7 +59,6 @@ def get_look_at_views(points: np.ndarray, look_at_points: np.ndarray) -> Tuple[n
 def pytorch3d_world2cam_to_opencv_world2cam(R_pt3d: np.ndarray, t_pt3d: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """Convert the pytorch3d camera poses to opencv.
 
-    Args:
     :param R_pt3d: Rotation matrices for the world2cam matrix in Pytorch3d convention.
     :param t_pt3d: Translations for the world2cam matrix in Pytorch3d convention.
     :return: A tuple of (R_cv, t_cv):
@@ -85,10 +83,12 @@ def pytorch3d_world2cam_to_opencv_world2cam(R_pt3d: np.ndarray, t_pt3d: np.ndarr
     return R_cv, t_cv
 
 
-def generate_nerf_camera_pose_circle(
+def generate_camera_pose_circle(
     look_at_point: np.ndarray, camera_location_center: np.ndarray, radius: float, num_cam_poses: int
 ) -> np.ndarray:
     """
+    Generates a camera pose circle on the xy horizontal plane.
+
     :param look_at_point: The point that the cameras should look at.
     :param camera_location_center: The center of the camera circle.
     :param radius: The radius of the camera circle.
