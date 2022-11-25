@@ -1,4 +1,4 @@
-from typing import Tuple, Union
+from typing import Tuple, Union, List
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -21,15 +21,24 @@ class ImageGeneratorBase(ABC):
     @abstractmethod
     def generate_images(
         self,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, Union[np.ndarray, None], Union[np.ndarray, None]]:
+    ) -> Tuple[
+        List[np.ndarray],
+        List[np.ndarray],
+        List[np.ndarray],
+        Union[List[np.ndarray], None],
+        Union[List[np.ndarray], None],
+    ]:
         """
         Generate images using existing or new cameras.
 
         :return: A tuple of (images, intrinsics, extrinsics, depths, masks):
-            - images: The images.
-            - intrinsics: The intrinsic matrices associated with the images.
-            - extrinsics: The extrinsic matrices associated with the images.
-            - depths: The depth images associated with the images.
-            - masks: The segmentation masks associated with the images. Each image may have multiple associated masks.
+            - images: The RGB images of shape (m,n,3) where m is the image height and n is the image width.
+            - intrinsics: The intrinsic matrices associated with the images of shape (3,3).
+            - extrinsics: The extrinsic matrices associated with the images of shape (4,4).
+            - depths: The depth images associated with the images of shape (m,n) where m is the image height and n is
+                the image width.
+            - labels: The object detection labels. Each image may have multiple associated labels.
+            - masks: The binary segmentation masks associated with the labels of type np.uint8 and shape (m,n) where m
+                is the image height and n is the image width.
         """
         raise NotImplementedError
