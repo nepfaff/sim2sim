@@ -102,7 +102,7 @@ class DynamicLogger(DynamicLoggerBase):
         self._create_data_directories()
 
         meta_data = {
-            "creation_timestamp": self._creation_timestamp,
+            "logger_creation_timestamp": self._creation_timestamp,
             "logging_timestamp": str(datetime.datetime.now()),
         }
 
