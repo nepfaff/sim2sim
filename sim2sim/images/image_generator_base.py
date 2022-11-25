@@ -2,21 +2,25 @@ from typing import Tuple, Union, List
 from abc import ABC, abstractmethod
 
 import numpy as np
-from pydrake.all import MultibodyPlant, DiagramBuilder, SceneGraph
+from pydrake.all import DiagramBuilder, SceneGraph, MakeRenderEngineVtk, RenderEngineVtkParams
 
 
 class ImageGeneratorBase(ABC):
     """The image generator responsible for placing cameras and taking images."""
 
-    def __init__(self, builder: DiagramBuilder, plant: MultibodyPlant, scene_graph: SceneGraph):
+    def __init__(self, builder: DiagramBuilder, scene_graph: SceneGraph):
         """
         :param builder: The diagram builder.
-        :param plant: The finalized plant.
         :param scene_graph: The scene graph.
         """
         self._builder = builder
-        self._plant = plant
         self._scene_graph = scene_graph
+        self._diagram = None
+
+        # Add renderer
+        self._renderer = "ImageGeneratorRenderer"
+        if not self._scene_graph.HasRenderer(self._renderer):
+            self._scene_graph.AddRenderer(self._renderer, MakeRenderEngineVtk(RenderEngineVtkParams()))
 
     @abstractmethod
     def generate_images(

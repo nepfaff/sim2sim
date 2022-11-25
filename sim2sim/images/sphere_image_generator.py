@@ -1,17 +1,13 @@
-from typing import Tuple, Union, List
+from typing import Tuple, List
 import copy
-from itertools import chain
 
 import numpy as np
 from pydrake.all import (
-    MultibodyPlant,
     RigidTransform,
     DepthRenderCamera,
     ClippingRange,
     DepthRange,
     RenderCameraCore,
-    MakeRenderEngineVtk,
-    RenderEngineVtkParams,
     CameraInfo,
     RgbdSensor,
     DiagramBuilder,
@@ -32,8 +28,8 @@ class SphereImageGenerator(ImageGeneratorBase):
     def __init__(
         self,
         builder: DiagramBuilder,
-        plant: MultibodyPlant,
         scene_graph: SceneGraph,
+        simulate_time: float,
         look_at_point: np.ndarray,
         z_distances: np.ndarray,
         radii: np.ndarray,
@@ -41,8 +37,8 @@ class SphereImageGenerator(ImageGeneratorBase):
     ):
         """
         :param builder: The diagram builder.
-        :param plant: The finalized plant.
         :param scene_graph: The scene graph.
+        :param simulate_time: The time in seconds to simulate before generating the image data.
         :param look_at_point: The point that the cameras should look at of shape (3,).
         :param z_distances: The vertical distances (m) of the camera circles from `look_at_point` of shape (n,) where n
             is the number of camera circles. It is recommended to have distances increase monotonically.
@@ -51,12 +47,13 @@ class SphereImageGenerator(ImageGeneratorBase):
         :param num_poses: The number of poses for each camera circle of shape (n,) where n is the number of camera
             circles. The number of poses should decrease as the radius decreases.
         """
-        super().__init__(builder, plant, scene_graph)
+        super().__init__(builder, scene_graph)
 
         assert len(z_distances) == len(radii) and len(z_distances) == len(
             num_poses
         ), "'z_distances', 'radii', and 'num_poses' must have the same length."
 
+        self._simulate_time = simulate_time
         self._look_at_point = look_at_point
         self._z_distances = z_distances
         self._radii = radii
@@ -64,8 +61,6 @@ class SphereImageGenerator(ImageGeneratorBase):
 
         self._min_depth_range = 0.1
         self._max_depth_range = 10.0
-
-        # TODO: Does an image generator ever need the plant? If not, then remove from this and from base class
 
     def _generate_camera_poses(self) -> np.ndarray:
         """
@@ -82,38 +77,13 @@ class SphereImageGenerator(ImageGeneratorBase):
             camera_poses.append(X_WCs)
         return np.concatenate(camera_poses, axis=0)
 
-    def generate_images(
-        self,
-    ) -> Tuple[
-        List[np.ndarray],
-        List[np.ndarray],
-        List[np.ndarray],
-        Union[List[np.ndarray], None],
-        Union[List[np.ndarray], None],
-    ]:
-        camera_poses = self._generate_camera_poses()
-
-        # TODO: Clean this up!
-
-        # TODO: Move this rendering logic into the base class constructor
-        renderer = "my_renderer"
-        if not self._scene_graph.HasRenderer(renderer):
-            self._scene_graph.AddRenderer(renderer, MakeRenderEngineVtk(RenderEngineVtkParams()))
-
-        # Add cameras to scene
+    def _add_cameras(self, camera_poses: np.ndarray, camera_info: CameraInfo) -> None:
+        """Adds depth cameras to the scene."""
         parent_frame_id = self._scene_graph.world_frame_id()
-        camera_info = CameraInfo(width=640, height=480, fov_y=np.pi / 4.0)
-        intrinsics = np.array(
-            [
-                [camera_info.focal_x(), 0.0, camera_info.center_x()],
-                [0.0, camera_info.focal_y(), camera_info.center_y()],
-                [0.0, 0.0, 1.0],
-            ]
-        )
         for i, X_WC in enumerate(camera_poses):
             depth_camera = DepthRenderCamera(
                 RenderCameraCore(
-                    renderer,
+                    self._renderer,
                     camera_info,
                     ClippingRange(near=self._min_depth_range, far=self._max_depth_range),
                     RigidTransform(),
@@ -135,29 +105,60 @@ class SphereImageGenerator(ImageGeneratorBase):
             self._builder.ExportOutput(rgbd.depth_image_32F_output_port(), f"{i}_depth_image")
             self._builder.ExportOutput(rgbd.label_image_output_port(), f"{i}_label_image")
 
-        # TODO: Add light sources everywhere in scene to ensure consistent lighting
+    def _simulate_and_get_image_data(
+        self,
+        camera_poses: np.ndarray,
+    ) -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray]]:
+        """Simulates before taking camera data."""
+        assert self._diagram is not None, "Must build the diagram before generating image data."
 
-        diagram = self._builder.Build()
-
-        simulator = Simulator(diagram)
+        # Simulate before generating image data
+        simulator = Simulator(self._diagram)
+        simulator.AdvanceTo(self._simulate_time)
         context = simulator.get_mutable_context()
 
-        # Take images
         images, depths, labels, masks = [], [], [], []
         for i in range(len(camera_poses)):
-            rgba_image = diagram.GetOutputPort(f"{i}_rgba_image").Eval(context).data
+            rgba_image = self._diagram.GetOutputPort(f"{i}_rgba_image").Eval(context).data
             rgb_image = rgba_image[:, :, :3]
             images.append(rgb_image)
 
-            depth_image_read = diagram.GetOutputPort(f"{i}_depth_image").Eval(context).data.squeeze()
+            depth_image_read = self._diagram.GetOutputPort(f"{i}_depth_image").Eval(context).data.squeeze()
             depth_image = copy.deepcopy(depth_image_read)  # Make a mutable copy
             depth_image[depth_image == np.inf] = self._max_depth_range
             depths.append(depth_image)
 
-            label_image = diagram.GetOutputPort(f"{i}_label_image").Eval(context).data.squeeze()
+            label_image = self._diagram.GetOutputPort(f"{i}_label_image").Eval(context).data.squeeze()
             object_labels = np.unique(label_image)
             labels.append(object_labels)
             masks.append([np.uint8(np.where(label_image == label, 255, 0)) for label in object_labels])
+
+        return (
+            images,
+            depths,
+            labels,
+            masks,
+        )
+
+    def generate_images(
+        self,
+    ) -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray]]:
+        camera_poses = self._generate_camera_poses()
+        camera_info = CameraInfo(width=640, height=480, fov_y=np.pi / 4.0)
+        intrinsics = np.array(
+            [
+                [camera_info.focal_x(), 0.0, camera_info.center_x()],
+                [0.0, camera_info.focal_y(), camera_info.center_y()],
+                [0.0, 0.0, 1.0],
+            ]
+        )
+        self._add_cameras(camera_poses, camera_info)
+
+        # TODO: Add light sources everywhere in scene to ensure consistent lighting
+
+        self._diagram = self._builder.Build()
+
+        images, depths, labels, masks = self._simulate_and_get_image_data(camera_poses)
 
         return (
             images,
