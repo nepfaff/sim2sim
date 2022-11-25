@@ -9,17 +9,21 @@ from pydrake.all import (
     RenderEngineGlParams,
 )
 
+from sim2sim.logging import DynamicLoggerBase
+
 
 class ImageGeneratorBase(ABC):
     """The image generator responsible for placing cameras and taking images."""
 
-    def __init__(self, builder: DiagramBuilder, scene_graph: SceneGraph):
+    def __init__(self, builder: DiagramBuilder, scene_graph: SceneGraph, logger: DynamicLoggerBase):
         """
         :param builder: The diagram builder.
         :param scene_graph: The scene graph.
+        :param logger: The logger.
         """
         self._builder = builder
         self._scene_graph = scene_graph
+        self._logger = logger
         self._diagram = None
 
         # Add renderer

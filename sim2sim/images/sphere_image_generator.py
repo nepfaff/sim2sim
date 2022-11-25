@@ -15,6 +15,7 @@ from pydrake.all import (
     Simulator,
 )
 
+from sim2sim.logging import DynamicLoggerBase
 from .image_generator_base import ImageGeneratorBase
 from .cameras import generate_camera_pose_circle
 
@@ -29,6 +30,7 @@ class SphereImageGenerator(ImageGeneratorBase):
         self,
         builder: DiagramBuilder,
         scene_graph: SceneGraph,
+        logger: DynamicLoggerBase,
         simulate_time: float,
         look_at_point: np.ndarray,
         z_distances: np.ndarray,
@@ -38,6 +40,7 @@ class SphereImageGenerator(ImageGeneratorBase):
         """
         :param builder: The diagram builder.
         :param scene_graph: The scene graph.
+        :param logger: The logger.
         :param simulate_time: The time in seconds to simulate before generating the image data.
         :param look_at_point: The point that the cameras should look at of shape (3,).
         :param z_distances: The vertical distances (m) of the camera circles from `look_at_point` of shape (n,) where n
@@ -47,7 +50,7 @@ class SphereImageGenerator(ImageGeneratorBase):
         :param num_poses: The number of poses for each camera circle of shape (n,) where n is the number of camera
             circles. The number of poses should decrease as the radius decreases.
         """
-        super().__init__(builder, scene_graph)
+        super().__init__(builder, scene_graph, logger)
 
         assert len(z_distances) == len(radii) and len(z_distances) == len(
             num_poses
@@ -119,16 +122,16 @@ class SphereImageGenerator(ImageGeneratorBase):
 
         images, depths, labels, masks = [], [], [], []
         for i in range(len(camera_poses)):
-            rgba_image = self._diagram.GetOutputPort(f"{i}_rgba_image").Eval(context).data
+            # Need to make a copy as the original value changes with the simulation
+            rgba_image = copy.deepcopy(self._diagram.GetOutputPort(f"{i}_rgba_image").Eval(context).data)
             rgb_image = rgba_image[:, :, :3]
             images.append(rgb_image)
 
-            depth_image_read = self._diagram.GetOutputPort(f"{i}_depth_image").Eval(context).data.squeeze()
-            depth_image = copy.deepcopy(depth_image_read)  # Make a mutable copy
+            depth_image = copy.deepcopy(self._diagram.GetOutputPort(f"{i}_depth_image").Eval(context).data.squeeze())
             depth_image[depth_image == np.inf] = self._max_depth_range
             depths.append(depth_image)
 
-            label_image = self._diagram.GetOutputPort(f"{i}_label_image").Eval(context).data.squeeze()
+            label_image = copy.deepcopy(self._diagram.GetOutputPort(f"{i}_label_image").Eval(context).data.squeeze())
             object_labels = np.unique(label_image)
             labels.append(object_labels)
             masks.append([np.uint8(np.where(label_image == label, 255, 0)) for label in object_labels])
@@ -158,10 +161,21 @@ class SphereImageGenerator(ImageGeneratorBase):
 
         images, depths, labels, masks = self._simulate_and_get_image_data(camera_poses)
 
+        camera_poses_lst = list(camera_poses)
+        intrinsics_broadcasted = list(np.broadcast_to(intrinsics, (len(images), 3, 3)))
+        self._logger.log(
+            camera_poses=camera_poses_lst,
+            intrinsics=intrinsics_broadcasted,
+            images=images,
+            depths=depths,
+            labels=labels,
+            masks=masks,
+        )
+
         return (
             images,
-            np.broadcast_to(intrinsics, (len(images), 3, 3)),
-            list(camera_poses),
+            intrinsics_broadcasted,
+            camera_poses_lst,
             depths,
             labels,
             masks,

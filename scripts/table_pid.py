@@ -25,7 +25,7 @@ from sim2sim.images import SphereImageGenerator
 
 SCENE_DIRECTIVE = "../models/table_pid_scene_directive.yaml"
 MANIPULAND_DIRECTIVE = "../models/table_pid_manipuland_directive.yaml"
-MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(0.0, 0.0, np.pi / 2), [0.0, 0.0, 0.7])  # X_WManipuland
+MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(-np.pi / 2.0, 0.0, 0.0), [0.0, 0.0, 0.6])  # X_WManipuland
 
 
 class TableAngleSource(LeafSystem):
@@ -79,9 +79,9 @@ def main():
     argument_parser.add_argument(
         "--no_command_time",
         type=float,
-        default=2.0,
+        default=1.0,
         required=False,
-        help="The time before starting the table control.",
+        help="The time before starting the table control in seconds.",
     )
     argument_parser.add_argument(
         "--realtime_rate",
@@ -104,6 +104,9 @@ def main():
 
     scene_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
     manipuland_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), MANIPULAND_DIRECTIVE)
+
+    # Label 4 is the Tomato Soup Can in this simulation setup
+    logger = DynamicLogger(logging_frequency_hz=0.001, logging_path="test_logging_path", label_to_mask=4)
 
     # Create plant
     builder = DiagramBuilder()
@@ -151,26 +154,17 @@ def main():
     table_angle_source3.set_name("table_angle_source")
     builder3.Connect(table_angle_source3.get_output_port(), pid_controller3.get_input_port_desired_state())
     image_generator = SphereImageGenerator(
-        builder3,
-        plant3,
-        scene_graph3,
-        MANIPULANT_DEFAULT_POSE.translation(),
-        z_distances=[0.1, 0.3, 0.5],
-        radii=[0.5, 0.4, 0.2],
+        builder=builder3,
+        scene_graph=scene_graph3,
+        logger=logger,
+        simulate_time=args.no_command_time,
+        look_at_point=MANIPULANT_DEFAULT_POSE.translation(),
+        z_distances=[0.02, 0.2, 0.3],
+        radii=[0.4, 0.3, 0.3],
         num_poses=[30, 25, 15],
     )
-    images, intrinsics, extrinsics, depths, masks = image_generator.generate_images()
-
-    # TODO: Save and examine the images
-    for i, image in enumerate(images):
-        from PIL import Image
-
-        im = Image.fromarray(image)
-        im.save(f"temp_images/{i}.png")
-
-        # TODO: Need to place can on table as initial position (otherwise take images of floating can)
-
-    ## NOTE: End image gen temp
+    images, intrinsics, extrinsics, depths, labels, masks = image_generator.generate_images()
+    print("Finished generating images.")
 
     ## NOTE: Start temp
     ## NOTE: This represents the inner simulation environment
@@ -194,9 +188,10 @@ def main():
     builder2.Connect(table_angle_source2.get_output_port(), pid_controller2.get_input_port_desired_state())
     ## NOTE: End temp
 
-    logger = DynamicLogger(logging_frequency_hz=0.001, logging_path="test_logging_path")
     simulator = TablePIDSimulator(builder, scene_graph, builder2, scene_graph2, logger)
     simulator.simulate(args.sim_duration)
+
+    logger.save_data()
 
 
 if __name__ == "__main__":
