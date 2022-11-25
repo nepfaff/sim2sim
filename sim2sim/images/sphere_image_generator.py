@@ -1,4 +1,5 @@
 from typing import Tuple, Union, List
+import copy
 from itertools import chain
 
 import numpy as np
@@ -61,6 +62,9 @@ class SphereImageGenerator(ImageGeneratorBase):
         self._radii = radii
         self._num_poses = num_poses
 
+        self._min_depth_range = 0.1
+        self._max_depth_range = 10.0
+
         # TODO: Does an image generator ever need the plant? If not, then remove from this and from base class
 
     def _generate_camera_poses(self) -> np.ndarray:
@@ -80,7 +84,13 @@ class SphereImageGenerator(ImageGeneratorBase):
 
     def generate_images(
         self,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, Union[np.ndarray, None], Union[np.ndarray, None]]:
+    ) -> Tuple[
+        List[np.ndarray],
+        List[np.ndarray],
+        List[np.ndarray],
+        Union[List[np.ndarray], None],
+        Union[List[np.ndarray], None],
+    ]:
         camera_poses = self._generate_camera_poses()
 
         # TODO: Clean this up!
@@ -105,10 +115,10 @@ class SphereImageGenerator(ImageGeneratorBase):
                 RenderCameraCore(
                     renderer,
                     camera_info,
-                    ClippingRange(near=0.1, far=10.0),
+                    ClippingRange(near=self._min_depth_range, far=self._max_depth_range),
                     RigidTransform(),
                 ),
-                DepthRange(0.1, 10.0),
+                DepthRange(self._min_depth_range, self._max_depth_range),
             )
             rgbd = self._builder.AddSystem(
                 RgbdSensor(
@@ -133,15 +143,27 @@ class SphereImageGenerator(ImageGeneratorBase):
         context = simulator.get_mutable_context()
 
         # Take images
-        images, depths, masks = [], [], []
+        images, depths, labels, masks = [], [], [], []
         for i in range(len(camera_poses)):
             rgba_image = diagram.GetOutputPort(f"{i}_rgba_image").Eval(context).data
             rgb_image = rgba_image[:, :, :3]
-            depth_image = diagram.GetOutputPort(f"{i}_depth_image").Eval(context).data.squeeze()
-            label_image = diagram.GetOutputPort(f"{i}_label_image").Eval(context).data.squeeze()
-
             images.append(rgb_image)
-            depths.append(depth_image)
-            masks.append(label_image)
 
-        return images, np.broadcast_to(intrinsics, (len(images), 3, 3)), camera_poses, depths, masks
+            depth_image_read = diagram.GetOutputPort(f"{i}_depth_image").Eval(context).data.squeeze()
+            depth_image = copy.deepcopy(depth_image_read)  # Make a mutable copy
+            depth_image[depth_image == np.inf] = self._max_depth_range
+            depths.append(depth_image)
+
+            label_image = diagram.GetOutputPort(f"{i}_label_image").Eval(context).data.squeeze()
+            object_labels = np.unique(label_image)
+            labels.append(object_labels)
+            masks.append([np.uint8(np.where(label_image == label, 255, 0)) for label in object_labels])
+
+        return (
+            images,
+            np.broadcast_to(intrinsics, (len(images), 3, 3)),
+            list(camera_poses),
+            depths,
+            labels,
+            masks,
+        )
