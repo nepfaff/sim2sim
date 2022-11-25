@@ -21,8 +21,8 @@ from .cameras import generate_camera_pose_circle
 
 class SphereImageGenerator(ImageGeneratorBase):
     """
-    TODO
-    Talk about this being cheating (spawn cameras)
+    An image generator that spawns cameras in a sphere around a target point for generating image data. Also returns
+    ground truth object masks.
     """
 
     def __init__(
@@ -153,8 +153,6 @@ class SphereImageGenerator(ImageGeneratorBase):
             ]
         )
         self._add_cameras(camera_poses, camera_info)
-
-        # TODO: Add light sources everywhere in scene to ensure consistent lighting
 
         self._diagram = self._builder.Build()
 

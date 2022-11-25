@@ -2,7 +2,12 @@ from typing import Tuple, Union, List
 from abc import ABC, abstractmethod
 
 import numpy as np
-from pydrake.all import DiagramBuilder, SceneGraph, MakeRenderEngineVtk, RenderEngineVtkParams
+from pydrake.all import (
+    DiagramBuilder,
+    SceneGraph,
+    MakeRenderEngineGl,
+    RenderEngineGlParams,
+)
 
 
 class ImageGeneratorBase(ABC):
@@ -20,7 +25,7 @@ class ImageGeneratorBase(ABC):
         # Add renderer
         self._renderer = "ImageGeneratorRenderer"
         if not self._scene_graph.HasRenderer(self._renderer):
-            self._scene_graph.AddRenderer(self._renderer, MakeRenderEngineVtk(RenderEngineVtkParams()))
+            self._scene_graph.AddRenderer(self._renderer, MakeRenderEngineGl(RenderEngineGlParams()))
 
     @abstractmethod
     def generate_images(
