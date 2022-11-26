@@ -1,3 +1,5 @@
+import os
+
 from pydrake.all import (
     DiagramBuilder,
     SceneGraph,
@@ -58,5 +60,5 @@ class TablePIDSimulator(SimulatorBase):
 
             # TODO: Move this to the logger
             html = meshcat.StaticHtml()
-            with open(f"test{i}.thml", "w") as f:
+            with open(os.path.join(self._logger._logging_path, f"{'inner' if i else 'outer'}.html"), "w") as f:
                 f.write(html)
