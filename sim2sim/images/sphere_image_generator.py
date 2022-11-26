@@ -22,7 +22,7 @@ from .cameras import generate_camera_pose_circle
 
 class SphereImageGenerator(ImageGeneratorBase):
     """
-    An image generator that spawns cameras in a sphere around a target point for generating image data. Also returns
+    An image generator that spawns cameras in a sphere around a target point for generating camera data. Also returns
     ground truth object masks.
     """
 

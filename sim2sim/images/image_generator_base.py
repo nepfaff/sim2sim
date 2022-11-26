@@ -13,7 +13,7 @@ from sim2sim.logging import DynamicLoggerBase
 
 
 class ImageGeneratorBase(ABC):
-    """The image generator responsible for placing cameras and taking images."""
+    """The image generator responsible for placing cameras and generating camera data."""
 
     def __init__(self, builder: DiagramBuilder, scene_graph: SceneGraph, logger: DynamicLoggerBase):
         """
