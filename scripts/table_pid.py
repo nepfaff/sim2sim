@@ -10,6 +10,7 @@ import numpy as np
 import open3d as o3d
 from pydrake.all import (
     LoadModelDirectives,
+    LoadModelDirectivesFromString,
     ProcessModelDirectives,
     AddMultibodyPlantSceneGraph,
     LeafSystem,
@@ -57,15 +58,23 @@ class TableAngleSource(LeafSystem):
         output.SetFromVector([table_angle, 0.0])
 
 
-def create_env(directives: List[str], args: argparse.Namespace) -> Tuple[DiagramBuilder, SceneGraph]:
+def create_env(
+    args: argparse.Namespace,
+    directive_files: List[str] = [],
+    directive_strs: List[str] = [],
+) -> Tuple[DiagramBuilder, SceneGraph]:
     """Creates the table PID simulation environments without building it."""
     # Create plant
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, args.timestep)
     parser = get_parser(plant)
-    for directive_path in directives:
-        directives = LoadModelDirectives(directive_path)
-        ProcessModelDirectives(directives, parser)
+    for directive_path in directive_files:
+        directive = LoadModelDirectives(directive_path)
+        ProcessModelDirectives(directive, parser)
+    for directive_str in directive_strs:
+        directive = LoadModelDirectivesFromString(directive_str)
+        ProcessModelDirectives(directive, parser)
+
     plant.SetDefaultFreeBodyPose(plant.GetBodyByName("ycb_tomato_soup_can_base_link"), MANIPULANT_DEFAULT_POSE)
     plant.Finalize()
 
@@ -147,10 +156,10 @@ def main():
     # Label 4 is the Tomato Soup Can in this simulation setup
     logger = DynamicLogger(logging_frequency_hz=0.001, logging_path="test_logging_path", label_to_mask=4)
 
-    builder_outer, scene_graph_outer = create_env([scene_directive, manipuland_directive], args)
+    builder_outer, scene_graph_outer = create_env(directive_files=[scene_directive, manipuland_directive], args=args)
 
     # Create a new version of the scene for generating camera data
-    builder_camera, scene_graph_camera = create_env([scene_directive, manipuland_directive], args)
+    builder_camera, scene_graph_camera = create_env(directive_files=[scene_directive, manipuland_directive], args=args)
     image_generator = SphereImageGenerator(
         builder=builder_camera,
         scene_graph=scene_graph_camera,
@@ -172,7 +181,7 @@ def main():
     processed_mesh = mesh_processor.process_mesh(raw_mesh)
 
     # TODO: Replace the following builder and scene graph with the ones generated from InverseGraphics
-    builder_inner, scene_graph_inner = create_env([scene_directive, manipuland_directive], args)
+    builder_inner, scene_graph_inner = create_env(directive_files=[scene_directive, manipuland_directive], args=args)
 
     simulator = TablePIDSimulator(builder_outer, scene_graph_outer, builder_inner, scene_graph_inner, logger)
     simulator.simulate(args.sim_duration)
