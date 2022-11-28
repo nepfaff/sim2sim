@@ -60,9 +60,10 @@ class BasicInverseGraph(InverseGraphicsBase):
         """
 
         newMask = self.checkMaskMax(mask)
-        maskImg = image.copy()
-        maskImg[:, :] = image.img[:, :] * newMask[:, :]
-        return maskImg
+        npImage = np.asarray(image)
+        maskImg = npImage.copy()
+        maskImg = npImage * newMask
+        return o3d.geometry.Image(maskImg.astype(np.float32))
 
     def convertImage2RGBD(self, images=None, depth=None) -> o3d.geometry.RGBDImage:
         """
@@ -75,11 +76,18 @@ class BasicInverseGraph(InverseGraphicsBase):
         Returns:
             open3d RGDBD image.
         """
+        if images is not None and depth is not None:
+            images = images.astype(np.float32)
+            depth = depth.astype(np.float32)
+            return o3d.geometry.RGBDImage.create_from_color_and_depth(
+                o3d.geometry.Image(images),
+                o3d.geometry.Image(depth),
+            )
 
-        if not images and depth:
-            return o3d.geometry.RGBDImage.create_from_color_and_depth(images, depth)
-
-        return o3d.geometry.RGBDImage.create_from_color_and_depth(self.images, self.depth)
+        return o3d.geometry.RGBDImage.create_from_color_and_depth(
+            o3d.geometry.Image(self.images.astype(np.float32)),
+            o3d.geometry.Image(self.depth.astype(np.float32)),
+        )
 
     def convertImage2PC(self) -> o3d.geometry.PointCloud:
         """
@@ -124,25 +132,55 @@ class BasicInverseGraph(InverseGraphicsBase):
         # pcd.points = o3d.utility.Vector3dVector(self._images)
         # self.pointClouds = pcd.points
 
-        if self.depth is None:
-            pcd = o3d.geometry.PointCloud.create_from_rgbd_image(
-                image=self.convertImage2RGBD(self.applyMask(self.images, mask), self.applyMask(self.depth, mask)),
-                intrinsic=o3d.camera.PinholeCameraIntrinsic(intrinsic_matrix=self.intrinsics),
-                extrinsic=self.extrinsics,
-            )
-        else:
-            pcd = o3d.geometry.PointCloud.create_from_depth_image(
-                image=self.applyMask(self.depth, mask),
-                intrinsic=o3d.camera.PinholeCameraIntrinsic(intrinsic_matrix=self.intrinsics),
-                extrinsic=self.extrinsics,
-            )
+        input_image = self.convertImage2RGBD(self.images, self.depth)
+        # input_image = self.convertImage2RGBD(
+        #     self.applyMask(self.images, mask), self.applyMask(self.depth, mask)
+        # )
+        print(f"input_image={input_image}")
+        # input_image = self.applyMask(input_image, mask)
+        print(input_image.color)
+        pcd = o3d.geometry.PointCloud.create_from_rgbd_image(
+            image=input_image,
+            intrinsic=o3d.camera.PinholeCameraIntrinsic(
+                width=np.asarray(input_image.color).shape[0],
+                height=np.asarray(input_image.color).shape[1],
+                intrinsic_matrix=self.intrinsics,
+            ),
+            extrinsic=self.extrinsics,
+        )
+
+        # if self.depth is None:
+        #     input_image = self.convertImage2RGBD(
+        #         self.applyMask(self.images, mask), self.applyMask(self.depth, mask)
+        #     )
+        #     pcd = o3d.geometry.PointCloud.create_from_rgbd_image(
+        #         image=input_image,
+        #         intrinsic=o3d.camera.PinholeCameraIntrinsic(
+        #             width=input_image.shape[0],
+        #             height=input_image.shape[1],
+        #             intrinsic_matrix=self.intrinsics,
+        #         ),
+        #         extrinsic=self.extrinsics,
+        #     )
+        # else:
+        #     input_image = self.applyMask(self.depth, mask)
+        #     pcd = o3d.geometry.PointCloud.create_from_depth_image(
+        #         image=input_image,
+        #         intrinsic=o3d.camera.PinholeCameraIntrinsic(
+        #             width=input_image.shape[0],
+        #             height=input_image.shape[1],
+        #             intrinsic_matrix=self.intrinsics,
+        #         ),
+        #         extrinsic=self.extrinsics,
+        #     )
+
         pcd = pcd.transform(
             [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]
         )  # Flip it, otherwise the pointcloud will be upside down
 
         return pcd
 
-    def run(self) -> Tuple[o3d.geometry.TriangleMesh, o3d.utility.DoubleVector]:
+    def run(self, pointCloud=None) -> Tuple[o3d.geometry.TriangleMesh, o3d.utility.DoubleVector]:
         """
         Converts PointClouds into mesh and density with Poisson surface recontruction
 
@@ -150,8 +188,48 @@ class BasicInverseGraph(InverseGraphicsBase):
             Number of triangle mesh and the density.
         """
         print("run Poisson surface reconstruction")
-        pcd = self.convertImage2PC()
+        if pointCloud is None:
+            pcd = self.convertImage2PC()
+        else:
+            pcd = pointCloud
+
+        # pcd.estimate_normals()
+        # o3d.visualization.draw_geometries([pcd], point_show_normal=True)
+        # exit()
+        pcd.estimate_normals()
         with o3d.utility.VerbosityContextManager(o3d.utility.VerbosityLevel.Debug) as cm:
             mesh, densities = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=9)
         print(mesh)
         return mesh, densities
+
+
+def main():
+    sample_path = "../../data/sample_data/"
+    image_path = sample_path + "images/image0000.png"
+    depth_path = sample_path + "depths/depth0000.txt"
+    mask_path = sample_path + "binary_masks/mask0000.png"
+    intrinsic_path = sample_path + "intrinsics/intrinsics0000.txt"
+    extrinsic_path = sample_path + "camera_poses/pose0000.txt"
+    # image_path = "image0000.png"
+    colourRaw = np.asarray(o3d.io.read_image(image_path))
+    depthRaw = np.loadtxt(depth_path)
+    maskImg = np.asarray(o3d.io.read_image(mask_path))
+    intrinsic = np.loadtxt(intrinsic_path)
+    extrinsic = np.loadtxt(extrinsic_path)
+
+    # print(colourRaw.shape)
+    # print(colourRaw.shape[1])
+    # exit()
+
+    basicGraph = BasicInverseGraph(colourRaw, intrinsic, extrinsic, depthRaw)
+    pcd = basicGraph.convertImage2PCWMask(maskImg)
+    mesh, densities = basicGraph.run(pcd)
+    # print(mesh)
+    # print(densities)
+    # print(colourRaw)
+    # print(depthRaw)
+    # print(image_path)
+
+
+if __name__ == "__main__":
+    main()
