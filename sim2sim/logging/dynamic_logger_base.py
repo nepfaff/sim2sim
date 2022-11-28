@@ -4,6 +4,7 @@ import os
 import datetime
 
 import numpy as np
+import open3d as o3d
 from pydrake.all import MultibodyPlant
 
 
@@ -32,22 +33,27 @@ class DynamicLoggerBase(ABC):
         self._images_dir_path = os.path.join(logging_path, "images")
         self._depths_dir_path = os.path.join(logging_path, "depths")
         self._masks_dir_path = os.path.join(logging_path, "binary_masks")
+        self._mesh_dir_path = os.path.join(logging_path, "meshes")
         self._data_directory_paths = [
             self._camera_poses_dir_path,
             self._intrinsics_dir_path,
             self._images_dir_path,
             self._depths_dir_path,
             self._masks_dir_path,
+            self._mesh_dir_path,
         ]
+        self._create_data_directories()
         self._meta_data_file_path = os.path.join(logging_path, "meta_data.yaml")
 
         # Logging data
-        self._camera_poses: Optional[List[np.ndarray]] = []
-        self._intrinsics: Optional[List[np.ndarray]] = []
-        self._images: Optional[List[np.ndarray]] = []
-        self._depths: Optional[List[np.ndarray]] = []
-        self._labels: Optional[List[np.ndarray]] = []
-        self._masks: Optional[List[np.ndarray]] = []
+        self._camera_poses: List[np.ndarray] = []
+        self._intrinsics: List[np.ndarray] = []
+        self._images: List[np.ndarray] = []
+        self._depths: List[np.ndarray] = []
+        self._labels: List[np.ndarray] = []
+        self._masks: List[np.ndarray] = []
+        self._raw_mesh: Optional[o3d.geometry.TriangleMesh] = None
+        self._processed_mesh: Optional[o3d.geometry.TriangleMesh] = None
 
     def add_plants(self, outer_plant: MultibodyPlant, inner_plant: MultibodyPlant) -> None:
         """Add finalized plants."""
@@ -57,12 +63,14 @@ class DynamicLoggerBase(ABC):
     @abstractmethod
     def log(
         self,
-        camera_poses: Optional[List[np.ndarray]],
-        intrinsics: Optional[List[np.ndarray]],
-        images: Optional[List[np.ndarray]],
-        depths: Optional[List[np.ndarray]],
-        labels: Optional[List[np.ndarray]],
-        masks: Optional[List[np.ndarray]],
+        camera_poses: Optional[List[np.ndarray]] = None,
+        intrinsics: Optional[List[np.ndarray]] = None,
+        images: Optional[List[np.ndarray]] = None,
+        depths: Optional[List[np.ndarray]] = None,
+        labels: Optional[List[np.ndarray]] = None,
+        masks: Optional[List[np.ndarray]] = None,
+        raw_mesh: Optional[o3d.geometry.TriangleMesh] = None,
+        processed_mesh: Optional[o3d.geometry.TriangleMesh] = None,
     ) -> None:
         """TODO"""
         if camera_poses is not None:
@@ -77,6 +85,10 @@ class DynamicLoggerBase(ABC):
             self._labels.extend(labels)
         if masks is not None:
             self._masks.extend(masks)
+        if raw_mesh is not None:
+            self._raw_mesh = raw_mesh
+        if processed_mesh is not None:
+            self._processed_mesh = processed_mesh
 
     @abstractmethod
     def postprocess_data(self) -> None:
