@@ -4,6 +4,7 @@ import datetime
 import yaml
 
 import numpy as np
+import open3d as o3d
 from pydrake.all import (
     DiagramBuilder,
     SceneGraph,
@@ -84,28 +85,53 @@ class DynamicLogger(DynamicLoggerBase):
 
     def log(
         self,
-        camera_poses: Optional[List[np.ndarray]],
-        intrinsics: Optional[List[np.ndarray]],
-        images: Optional[List[np.ndarray]],
-        depths: Optional[List[np.ndarray]],
-        labels: Optional[List[np.ndarray]],
-        masks: Optional[List[np.ndarray]],
+        camera_poses: Optional[List[np.ndarray]] = None,
+        intrinsics: Optional[List[np.ndarray]] = None,
+        images: Optional[List[np.ndarray]] = None,
+        depths: Optional[List[np.ndarray]] = None,
+        labels: Optional[List[np.ndarray]] = None,
+        masks: Optional[List[np.ndarray]] = None,
+        raw_mesh: Optional[o3d.geometry.TriangleMesh] = None,
+        processed_mesh: Optional[o3d.geometry.TriangleMesh] = None,
     ) -> None:
         super().log(
-            camera_poses=camera_poses, intrinsics=intrinsics, images=images, depths=depths, labels=labels, masks=masks
+            camera_poses=camera_poses,
+            intrinsics=intrinsics,
+            images=images,
+            depths=depths,
+            labels=labels,
+            masks=masks,
+            raw_mesh=raw_mesh,
+            processed_mesh=processed_mesh,
         )
 
     def postprocess_data(self) -> None:
         raise NotImplementedError
 
-    def save_data(self) -> None:
-        self._create_data_directories()
+    def save_mesh_data(self) -> Tuple[str, str]:
+        """
+        Saves the raw and processed meshes if they exist.
 
+        :return: A tuple of (raw_mesh_file_path, processed_mesh_file_path).
+        """
+        raw_mesh_file_path = os.path.join(self._mesh_dir_path, "raw_mesh.obj")
+        processed_mesh_file_path = os.path.join(self._mesh_dir_path, "processed_mesh.obj")
+        if self._raw_mesh:
+            o3d.io.write_triangle_mesh(raw_mesh_file_path, self._raw_mesh)
+        if self._processed_mesh:
+            o3d.io.write_triangle_mesh(processed_mesh_file_path, self._processed_mesh)
+        return raw_mesh_file_path, processed_mesh_file_path
+
+    def save_data(self) -> None:
+        # Meta data
         meta_data = {
             "logger_creation_timestamp": self._creation_timestamp,
             "logging_timestamp": str(datetime.datetime.now()),
         }
+        with open(self._meta_data_file_path, "w") as f:
+            yaml.dump(meta_data, f)
 
+        # Camera data
         lengths = [
             len(self._camera_poses),
             len(self._intrinsics),
@@ -132,5 +158,5 @@ class DynamicLogger(DynamicLoggerBase):
                     mask_pil = Image.fromarray(mask)
                     mask_pil.save(os.path.join(self._masks_dir_path, f"mask{i:04d}.png"))
 
-        with open(self._meta_data_file_path, "w") as f:
-            yaml.dump(meta_data, f)
+        # Mesh data
+        self.save_mesh_data()

@@ -7,7 +7,6 @@ class IdentityMeshProcessor(MeshProcessorBase):
     """Implements an identity `process_mesh` function that directly outputs the input mesh."""
 
     def __init__(self):
-        """TODO"""
         super().__init__()
 
     def process_mesh(self, mesh: o3d.geometry.TriangleMesh, **kwargs) -> o3d.geometry.TriangleMesh:
