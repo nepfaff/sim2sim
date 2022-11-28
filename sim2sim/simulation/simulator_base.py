@@ -21,6 +21,7 @@ class SimulatorBase(ABC):
         :param outer_scene_graph: Scene graph for the outer simulation environment.
         :param inner_builder: Diagram builder for the inner simulation environment.
         :param inner_scene_graph: Scene graph for the inner simulation environment.
+        :param logger: The logger.
         """
         self._outer_builder = outer_builder
         self._outer_scene_graph = outer_scene_graph

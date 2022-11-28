@@ -4,6 +4,7 @@
 import os
 import argparse
 import pathlib
+from typing import List, Tuple
 
 import numpy as np
 from pydrake.all import (
@@ -16,15 +17,17 @@ from pydrake.all import (
     DiagramBuilder,
     RollPitchYaw,
     PidController,
+    SceneGraph,
 )
 
 from sim2sim.simulation import TablePIDSimulator
 from sim2sim.logging import DynamicLogger
 from sim2sim.util import get_parser
+from sim2sim.images import SphereImageGenerator
 
 SCENE_DIRECTIVE = "../models/table_pid_scene_directive.yaml"
 MANIPULAND_DIRECTIVE = "../models/table_pid_manipuland_directive.yaml"
-MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(0.0, 0.0, np.pi / 2), [0.0, 0.0, 0.7])  # X_WManipuland
+MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(-np.pi / 2.0, 0.0, 0.0), [0.0, 0.0, 0.6])  # X_WManipuland
 
 
 class TableAngleSource(LeafSystem):
@@ -52,7 +55,37 @@ class TableAngleSource(LeafSystem):
         output.SetFromVector([table_angle, 0.0])
 
 
-def main():
+def create_env(directives: List[str], args: argparse.Namespace) -> Tuple[DiagramBuilder, SceneGraph]:
+    """Creates the table PID simulation environments without building it."""
+    # Create plant
+    builder = DiagramBuilder()
+    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, args.timestep)
+    parser = get_parser(plant)
+    for directive_path in directives:
+        directives = LoadModelDirectives(directive_path)
+        ProcessModelDirectives(directives, parser)
+    plant.SetDefaultFreeBodyPose(plant.GetBodyByName("ycb_tomato_soup_can_base_link"), MANIPULANT_DEFAULT_POSE)
+    plant.Finalize()
+
+    # Table controller
+    pid_controller = builder.AddSystem(PidController(kp=np.array([10.0]), ki=np.array([1.0]), kd=np.array([1.0])))
+    pid_controller.set_name("pid_controller")
+
+    # Now "wire up" the controller to the plant
+    table_instance = plant.GetModelInstanceByName("table")
+    builder.Connect(plant.get_state_output_port(table_instance), pid_controller.get_input_port_estimated_state())
+    builder.Connect(pid_controller.get_output_port_control(), plant.get_actuation_input_port(table_instance))
+
+    table_angle_source = builder.AddSystem(
+        TableAngleSource(args.final_table_angle, no_command_time=args.no_command_time)
+    )
+    table_angle_source.set_name("table_angle_source")
+    builder.Connect(table_angle_source.get_output_port(), pid_controller.get_input_port_desired_state())
+
+    return builder, scene_graph
+
+
+def parse_args() -> argparse.Namespace:
     argument_parser = argparse.ArgumentParser()
     argument_parser.add_argument(
         "--sim_duration",
@@ -78,9 +111,9 @@ def main():
     argument_parser.add_argument(
         "--no_command_time",
         type=float,
-        default=2.0,
+        default=1.0,
         required=False,
-        help="The time before starting the table control.",
+        help="The time before starting the table control in seconds.",
     )
     argument_parser.add_argument(
         "--realtime_rate",
@@ -100,60 +133,44 @@ def main():
     )
     argument_parser.add_argument("--contact_viz", action="store_true", help="Whether to visualize the contact forces.")
     args = argument_parser.parse_args()
+    return args
+
+
+def main():
+    args = parse_args()
 
     scene_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
     manipuland_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), MANIPULAND_DIRECTIVE)
 
-    # Create plant
-    builder = DiagramBuilder()
-    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, args.timestep)
-    parser = get_parser(plant)
-    for directive_path in [scene_directive, manipuland_directive]:
-        directives = LoadModelDirectives(directive_path)
-        ProcessModelDirectives(directives, parser)
-    plant.SetDefaultFreeBodyPose(plant.GetBodyByName("ycb_tomato_soup_can_base_link"), MANIPULANT_DEFAULT_POSE)
-    plant.Finalize()
+    # Label 4 is the Tomato Soup Can in this simulation setup
+    logger = DynamicLogger(logging_frequency_hz=0.001, logging_path="test_logging_path", label_to_mask=4)
 
-    # Table controller
-    pid_controller = builder.AddSystem(PidController(kp=np.array([10.0]), ki=np.array([1.0]), kd=np.array([1.0])))
-    pid_controller.set_name("pid_controller")
+    builder_outer, scene_graph_outer = create_env([scene_directive, manipuland_directive], args)
 
-    # Now "wire up" the controller to the plant
-    table_instance = plant.GetModelInstanceByName("table")
-    builder.Connect(plant.get_state_output_port(table_instance), pid_controller.get_input_port_estimated_state())
-    builder.Connect(pid_controller.get_output_port_control(), plant.get_actuation_input_port(table_instance))
-
-    table_angle_source = builder.AddSystem(
-        TableAngleSource(args.final_table_angle, no_command_time=args.no_command_time)
+    # Create a new version of the scene for generating camera data
+    builder_camera, scene_graph_camera = create_env([scene_directive, manipuland_directive], args)
+    image_generator = SphereImageGenerator(
+        builder=builder_camera,
+        scene_graph=scene_graph_camera,
+        logger=logger,
+        simulate_time=args.no_command_time,
+        look_at_point=MANIPULANT_DEFAULT_POSE.translation(),
+        z_distances=[0.02, 0.2, 0.3],
+        radii=[0.4, 0.3, 0.3],
+        num_poses=[30, 25, 15],
     )
-    table_angle_source.set_name("table_angle_source")
-    builder.Connect(table_angle_source.get_output_port(), pid_controller.get_input_port_desired_state())
 
-    ## NOTE: Start temp
-    ## NOTE: This represents the inner simulation environment
-    builder2 = DiagramBuilder()
-    plant2, scene_graph2 = AddMultibodyPlantSceneGraph(builder2, args.timestep)
-    parser = get_parser(plant2)
-    for directive_path in [scene_directive, manipuland_directive]:
-        directives = LoadModelDirectives(directive_path)
-        ProcessModelDirectives(directives, parser)
-    plant2.SetDefaultFreeBodyPose(plant2.GetBodyByName("ycb_tomato_soup_can_base_link"), MANIPULANT_DEFAULT_POSE)
-    plant2.Finalize()
-    pid_controller2 = builder2.AddSystem(PidController(kp=np.array([10.0]), ki=np.array([1.0]), kd=np.array([1.0])))
-    pid_controller2.set_name("pid_controller")
-    table_instance2 = plant2.GetModelInstanceByName("table")
-    builder2.Connect(plant2.get_state_output_port(table_instance2), pid_controller2.get_input_port_estimated_state())
-    builder2.Connect(pid_controller2.get_output_port_control(), plant2.get_actuation_input_port(table_instance2))
-    table_angle_source2 = builder2.AddSystem(
-        TableAngleSource(args.final_table_angle, no_command_time=args.no_command_time)
-    )
-    table_angle_source2.set_name("table_angle_source")
-    builder2.Connect(table_angle_source2.get_output_port(), pid_controller2.get_input_port_desired_state())
-    ## NOTE: End temp
+    images, intrinsics, extrinsics, depths, labels, masks = image_generator.generate_images()
+    print("Finished generating images.")
 
-    logger = DynamicLogger(logging_frequency_hz=0.001, logging_path="test_logging_path")
-    simulator = TablePIDSimulator(builder, scene_graph, builder2, scene_graph2, logger)
+    # TODO: Replace the following builder and scene graph with the ones generated from InverseGraphics
+    builder_inner, scene_graph_inner = create_env([scene_directive, manipuland_directive], args)
+
+    simulator = TablePIDSimulator(builder_outer, scene_graph_outer, builder_inner, scene_graph_inner, logger)
     simulator.simulate(args.sim_duration)
+
+    print("Saving data.")
+    logger.save_data()
 
 
 if __name__ == "__main__":
