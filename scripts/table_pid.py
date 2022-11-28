@@ -7,6 +7,7 @@ import pathlib
 from typing import List, Tuple
 
 import numpy as np
+import open3d as o3d
 from pydrake.all import (
     LoadModelDirectives,
     ProcessModelDirectives,
@@ -24,6 +25,7 @@ from sim2sim.simulation import TablePIDSimulator
 from sim2sim.logging import DynamicLogger
 from sim2sim.util import get_parser
 from sim2sim.images import SphereImageGenerator
+from sim2sim.mesh_processing import IdentityMeshProcessor
 
 SCENE_DIRECTIVE = "../models/table_pid_scene_directive.yaml"
 MANIPULAND_DIRECTIVE = "../models/table_pid_manipuland_directive.yaml"
@@ -162,6 +164,12 @@ def main():
 
     images, intrinsics, extrinsics, depths, labels, masks = image_generator.generate_images()
     print("Finished generating images.")
+
+    # TODO: Replace this with a call to identity inverse graphics
+    raw_mesh = o3d.io.read_triangle_mesh("./data/ycb_tomato_soup_can/ycb_tomato_soup_can.obj")
+
+    mesh_processor = IdentityMeshProcessor()
+    processed_mesh = mesh_processor.process_mesh(raw_mesh)
 
     # TODO: Replace the following builder and scene graph with the ones generated from InverseGraphics
     builder_inner, scene_graph_inner = create_env([scene_directive, manipuland_directive], args)
