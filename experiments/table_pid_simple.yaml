@@ -1,0 +1,40 @@
+# Unique identifier for this experiment for logging
+experiment_id: "table_pid_simple"
+
+script:
+  name: "table_pid"
+  args:
+    sim_duration: 3.0
+    no_command_time: 1.0
+    timestep: 0.0001
+    final_table_angle: 0.7854
+    logging_frequency_hz: 0.001
+
+# Component specifications
+# 'args' are constructor arguments that are not part of the base class constructors
+logger:
+  class: "DynamicLogger"
+  args:
+    label_to_mask: 4 # This label corresponds to the tomato soup can in the table_pid simulation setup
+    kProximity: false
+
+image_generator:
+  class: "SphereImageGenerator"
+  args:
+    simulate_time: 1.0
+    look_at_point: [0.0, 0.0, 0.6]
+    z_distances: [0.02, 0.2, 0.3]
+    radii: [0.4, 0.3, 0.3]
+    num_poses: [30, 25, 15]
+
+inverse_graphics:
+  class: "IdentityInverseGraphics"
+  args:
+
+mesh_processor:
+  class: "IdentityMeshProcessor"
+  args:
+
+simulator:
+  class: "TablePIDSimulator"
+  args:

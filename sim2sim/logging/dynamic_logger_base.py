@@ -11,13 +11,15 @@ from pydrake.all import MultibodyPlant
 class DynamicLoggerBase(ABC):
     """Dynamics logger base class."""
 
-    def __init__(self, logging_frequency_hz: float, logging_path: str):
+    def __init__(self, logging_frequency_hz: float, logging_path: str, kProximity: bool):
         """
         :param logging_frequency_hz: The frequency at which we want to log at.
         :param logging_path: The path to the directory that we want to write the log files to.
+        :param kProximity: Whether to visualize kProximity or kIllustration. Visualize kProximity if true.
         """
         self._logging_frequency_hz = logging_frequency_hz
         self._logging_path = logging_path
+        self._kProximity = kProximity
 
         self._outer_plant: Union[MultibodyPlant, None] = None
         self._inner_plant: Union[MultibodyPlant, None] = None

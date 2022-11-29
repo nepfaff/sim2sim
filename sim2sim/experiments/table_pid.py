@@ -1,9 +1,5 @@
-"""sim2sim entrypoint with the table PID scene."""
-
-#!/bin/python3
 import os
 import shutil
-import argparse
 import pathlib
 from typing import List, Tuple
 
@@ -29,10 +25,30 @@ from sim2sim.util import get_parser, calc_mesh_inertia
 from sim2sim.images import SphereImageGenerator
 from sim2sim.mesh_processing import IdentityMeshProcessor
 
-SCENE_DIRECTIVE = "../models/table_pid_scene_directive.yaml"
-MANIPULAND_DIRECTIVE = "../models/table_pid_manipuland_directive.yaml"
+SCENE_DIRECTIVE = "../../models/table_pid_scene_directive.yaml"
+
+# TODO: Allow specifying manipulant with experiment yaml file
+MANIPULAND_DIRECTIVE = "../../models/table_pid_manipuland_directive.yaml"
 MANIPULAND_BASE_LINK_NAME = "ycb_tomato_soup_can_base_link"
 MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(-np.pi / 2.0, 0.0, 0.0), [0.0, 0.0, 0.6])  # X_WManipuland
+
+# TODO: Add type info using base classes
+LOGGERS = {
+    "DynamicLogger": DynamicLogger,
+}
+IMAGE_GENERATORS = {
+    "SphereImageGenerator": SphereImageGenerator,
+}
+# TODO
+# INVERSE_GRAPHICS = {
+#     "IdentityInverseGraphics": IdentityInverseGraphics,
+# }
+MESH_PROCESSORS = {
+    "IdentityMeshProcessor": IdentityMeshProcessor,
+}
+SIMULATORS = {
+    "TablePIDSimulator": TablePIDSimulator,
+}
 
 
 class TableAngleSource(LeafSystem):
@@ -61,7 +77,9 @@ class TableAngleSource(LeafSystem):
 
 
 def create_env(
-    args: argparse.Namespace,
+    timestep: float,
+    final_table_angle: float,
+    no_command_time: float,
     directive_files: List[str] = [],
     directive_strs: List[str] = [],
     manipuland_pose: RigidTransform = MANIPULANT_DEFAULT_POSE,
@@ -69,7 +87,7 @@ def create_env(
     """Creates the table PID simulation environments without building it."""
     # Create plant
     builder = DiagramBuilder()
-    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, args.timestep)
+    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, timestep)
     parser = get_parser(plant)
     for directive_path in directive_files:
         directive = LoadModelDirectives(directive_path)
@@ -90,9 +108,7 @@ def create_env(
     builder.Connect(plant.get_state_output_port(table_instance), pid_controller.get_input_port_estimated_state())
     builder.Connect(pid_controller.get_output_port_control(), plant.get_actuation_input_port(table_instance))
 
-    table_angle_source = builder.AddSystem(
-        TableAngleSource(args.final_table_angle, no_command_time=args.no_command_time)
-    )
+    table_angle_source = builder.AddSystem(TableAngleSource(final_table_angle, no_command_time=no_command_time))
     table_angle_source.set_name("table_angle_source")
     builder.Connect(table_angle_source.get_output_port(), pid_controller.get_input_port_desired_state())
 
@@ -180,95 +196,59 @@ def create_processed_mesh_directive_str(
     return processed_mesh_directive
 
 
-def parse_args() -> argparse.Namespace:
-    argument_parser = argparse.ArgumentParser()
-    argument_parser.add_argument(
-        "--sim_duration",
-        type=float,
-        default=3.0,
-        required=False,
-        help="The simulation duration in seconds.",
-    )
-    argument_parser.add_argument(
-        "--timestep",
-        type=float,
-        default=0.0001,
-        required=False,
-        help="The timestep to use in seconds.",
-    )
-    argument_parser.add_argument(
-        "--final_table_angle",
-        type=float,
-        default=np.pi / 4,
-        required=False,
-        help="The final table angle in radians.",
-    )
-    argument_parser.add_argument(
-        "--no_command_time",
-        type=float,
-        default=1.0,
-        required=False,
-        help="The time before starting the table control in seconds.",
-    )
-    argument_parser.add_argument(
-        "--realtime_rate",
-        type=float,
-        default=1.0,
-        required=False,
-        help="The simulation realtime rate.",
-    )
-    argument_parser.add_argument(
-        "--html",
-        type=str,
-        required=False,
-        help="Path to save the meshcat html to. The file should end with .html.",
-    )
-    argument_parser.add_argument(
-        "--logging_path",
-        type=str,
-        default="test_logging_path",
-        required=False,
-        help="The path to log the data to.",
-    )
-    argument_parser.add_argument(
-        "--kProximity", action="store_true", help="Whether to visualize kProximity or kIllustration."
-    )
-    # TODO: Use this argument to turn the hydroelastic engine on or off
-    # argument_parser.add_argument(
-    #     "--use_hydroelastic", action="store_true", help="Whether to use the Hydroelastic contact model."
-    # )
-    argument_parser.add_argument("--contact_viz", action="store_true", help="Whether to visualize the contact forces.")
-    args = argument_parser.parse_args()
-    return args
+def run_table_pid(
+    logging_path: str,
+    params: dict,
+    sim_duration: float,
+    timestep: float,
+    final_table_angle: float,
+    no_command_time: float,
+    logging_frequency_hz: float,
+):
+    """
+    Experiment entrypoint for the table PID scene.
 
-
-def main():
-    args = parse_args()
+    :param logging_path: The path to log the data to.
+    :param params: The experiment yaml file dict.
+    :param sim_duration: The simulation duration in seconds.
+    :param timestep: The timestep to use in seconds.
+    :param final_table_angle: The final table angle in radians.
+    :param no_command_time: The time before starting the table control in seconds.
+    :param logging_frequency_hz: The dynamics logging frequency.
+    """
 
     scene_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
     manipuland_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), MANIPULAND_DIRECTIVE)
 
-    # Label 4 is the Tomato Soup Can in this simulation setup
-    logger = DynamicLogger(logging_frequency_hz=0.001, logging_path=args.logging_path, label_to_mask=4)
+    logger_class = LOGGERS[params["logger"]["class"]]
+    logger = logger_class(
+        logging_frequency_hz=logging_frequency_hz,
+        logging_path=logging_path,
+        **(params["logger"]["args"] if params["logger"]["args"] is not None else {}),
+    )
 
     # Create folder for temporary files
-    tmp_folder = os.path.join(args.logging_path, "tmp")
+    tmp_folder = os.path.join(logging_path, "tmp")
     if not os.path.exists(tmp_folder):
         os.mkdir(tmp_folder)
 
-    builder_outer, scene_graph_outer = create_env(directive_files=[scene_directive, manipuland_directive], args=args)
+    builder_outer, scene_graph_outer = create_env(
+        timestep,
+        final_table_angle,
+        no_command_time,
+        directive_files=[scene_directive, manipuland_directive],
+    )
 
     # Create a new version of the scene for generating camera data
-    builder_camera, scene_graph_camera = create_env(directive_files=[scene_directive, manipuland_directive], args=args)
-    image_generator = SphereImageGenerator(
+    builder_camera, scene_graph_camera = create_env(
+        timestep, final_table_angle, no_command_time, directive_files=[scene_directive, manipuland_directive]
+    )
+    image_generator_class = IMAGE_GENERATORS[params["image_generator"]["class"]]
+    image_generator = image_generator_class(
         builder=builder_camera,
         scene_graph=scene_graph_camera,
         logger=logger,
-        simulate_time=args.no_command_time,
-        look_at_point=MANIPULANT_DEFAULT_POSE.translation(),
-        z_distances=[0.02, 0.2, 0.3],
-        radii=[0.4, 0.3, 0.3],
-        num_poses=[30, 25, 15],
+        **(params["image_generator"]["args"] if params["image_generator"]["args"] is not None else {}),
     )
 
     images, intrinsics, extrinsics, depths, labels, masks = image_generator.generate_images()
@@ -278,7 +258,10 @@ def main():
     raw_mesh = o3d.io.read_triangle_mesh("./data/ycb_tomato_soup_can/ycb_tomato_soup_can.obj")
     raw_mesh_pose = RigidTransform(RollPitchYaw(0.0, 0.0, 0.0), [0.0, 0.0, 0.6])
 
-    mesh_processor = IdentityMeshProcessor()
+    mesh_processor_class = MESH_PROCESSORS[params["mesh_processor"]["class"]]
+    mesh_processor = mesh_processor_class(
+        **(params["mesh_processor"]["args"] if params["mesh_processor"]["args"] is not None else {}),
+    )
     processed_mesh = mesh_processor.process_mesh(raw_mesh)
 
     # Compute mesh inertia and mass assuming constant density of water
@@ -287,27 +270,33 @@ def main():
     # Save mesh data to create SDF files that can be added to a new simulation environment
     logger.log(raw_mesh=raw_mesh, processed_mesh=processed_mesh)
     _, processed_mesh_file_path = logger.save_mesh_data()
-    processed_mesh_file_path = os.path.join(pathlib.Path(__file__).parent.resolve(), "..", processed_mesh_file_path)
+    processed_mesh_file_path = os.path.join(pathlib.Path(__file__).parent.resolve(), "../..", processed_mesh_file_path)
 
     # Create a directive for processed_mesh manipuland
     processed_mesh_directive = create_processed_mesh_directive_str(mass, inertia, processed_mesh_file_path, tmp_folder)
 
     builder_inner, scene_graph_inner = create_env(
+        timestep,
+        final_table_angle,
+        no_command_time,
         directive_files=[scene_directive],
         directive_strs=[processed_mesh_directive],
-        args=args,
         manipuland_pose=raw_mesh_pose,
     )
 
-    simulator = TablePIDSimulator(builder_outer, scene_graph_outer, builder_inner, scene_graph_inner, logger)
-    simulator.simulate(args.sim_duration)
+    simulator_class = SIMULATORS[params["simulator"]["class"]]
+    simulator = simulator_class(
+        outer_builder=builder_outer,
+        outer_scene_graph=scene_graph_outer,
+        inner_builder=builder_inner,
+        inner_scene_graph=scene_graph_inner,
+        logger=logger,
+        **(params["simulator"]["args"] if params["simulator"]["args"] is not None else {}),
+    )
+    simulator.simulate(sim_duration)
 
     print("Saving data.")
     logger.save_data()
 
     # Clean up temporary files
     shutil.rmtree(tmp_folder)
-
-
-if __name__ == "__main__":
-    main()
