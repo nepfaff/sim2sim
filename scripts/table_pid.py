@@ -226,7 +226,7 @@ def parse_args() -> argparse.Namespace:
     argument_parser.add_argument(
         "--logging_path",
         type=str,
-        default="test_logging_path",
+        default="logs/test_logging_path",
         required=False,
         help="The path to log the data to.",
     )
