@@ -11,10 +11,10 @@ class IdentityInverseGraphicsProcessor(InverseGraphicsBase):
     def __init__(self):
         super().__init__()
 
-    def run(self) -> Tuple[o3d.geometry.TriangleMesh, np.ndarray]:
+    def run(self, mesh) -> Tuple[o3d.geometry.TriangleMesh, np.ndarray]:
         """
         Implements an identity function.
 
         :return: The tuple if the mesh and pose.
         """
-        return Tuple[o3d.geometry.TriangleMesh, np.ndarray]
+        return mesh
