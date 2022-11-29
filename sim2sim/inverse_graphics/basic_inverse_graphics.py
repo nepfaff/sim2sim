@@ -3,6 +3,8 @@ from typing import Optional, Tuple
 
 import numpy as np
 import open3d as o3d
+import matplotlib.pyplot as plt
+import os, os.path
 
 
 class BasicInverseGraph(InverseGraphicsBase):
@@ -42,7 +44,7 @@ class BasicInverseGraph(InverseGraphicsBase):
         """
 
         if np.max(arr) > 0:
-            newArr = np.where(arr > 0, -1, arr)
+            newArr = np.where(arr > 0, 1, arr)
         else:
             return arr
         return newArr
@@ -96,25 +98,37 @@ class BasicInverseGraph(InverseGraphicsBase):
         Returns:
             open3d PointCloud.
         """
-        # pcd = o3d.geometry.PointCloud()
-        # pcd.points = o3d.utility.Vector3dVector(self._images)
-        # self.pointClouds = pcd.points
 
         if self.depth is None:
+            print("converting rgbd to point cloud")
+            input_image = self.convertImage2RGBD(self.images, self.depth)
             pcd = o3d.geometry.PointCloud.create_from_rgbd_image(
-                image=self.convertImage2RGBD(),
-                intrinsic=o3d.camera.PinholeCameraIntrinsic(intrinsic_matrix=self.intrinsics),
+                image=input_image,
+                intrinsic=o3d.camera.PinholeCameraIntrinsic(
+                    width=np.asarray(input_image.color).shape[0],
+                    height=np.asarray(input_image.color).shape[1],
+                    intrinsic_matrix=self.intrinsics,
+                ),
                 extrinsic=self.extrinsics,
             )
         else:
-            pcd = o3d.geometry.PointCloud.create_from_depth_image(
-                image=self.depth,
-                intrinsic=o3d.camera.PinholeCameraIntrinsic(intrinsic_matrix=self.intrinsics),
+            print("converting depth to point cloud")
+            input_image = self.convertImage2RGBD(self.images, self.depth)
+            pcd = o3d.geometry.PointCloud.create_from_rgbd_image(
+                image=input_image,
+                intrinsic=o3d.camera.PinholeCameraIntrinsic(
+                    width=np.asarray(input_image.color).shape[0],
+                    height=np.asarray(input_image.color).shape[1],
+                    intrinsic_matrix=self.intrinsics,
+                ),
                 extrinsic=self.extrinsics,
             )
-        pcd = pcd.transform(
+
+        pcd.transform(
             [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]
         )  # Flip it, otherwise the pointcloud will be upside down
+
+        pcd.estimate_normals()
 
         return pcd
 
@@ -128,17 +142,14 @@ class BasicInverseGraph(InverseGraphicsBase):
         Returns:
             open3d PointCloud.
         """
-        # pcd = o3d.geometry.PointCloud()
-        # pcd.points = o3d.utility.Vector3dVector(self._images)
-        # self.pointClouds = pcd.points
 
-        input_image = self.convertImage2RGBD(self.images, self.depth)
-        # input_image = self.convertImage2RGBD(
-        #     self.applyMask(self.images, mask), self.applyMask(self.depth, mask)
-        # )
-        print(f"input_image={input_image}")
-        # input_image = self.applyMask(input_image, mask)
-        print(input_image.color)
+        mask = self.checkMaskMax(mask)
+        mask_3d = np.stack((mask, mask, mask), axis=2)
+        input_rgb = self.images * mask_3d
+        input_depth = self.depth * mask
+
+        input_image = self.convertImage2RGBD(np.ascontiguousarray(input_rgb), np.ascontiguousarray(input_depth))
+
         pcd = o3d.geometry.PointCloud.create_from_rgbd_image(
             image=input_image,
             intrinsic=o3d.camera.PinholeCameraIntrinsic(
@@ -149,34 +160,11 @@ class BasicInverseGraph(InverseGraphicsBase):
             extrinsic=self.extrinsics,
         )
 
-        # if self.depth is None:
-        #     input_image = self.convertImage2RGBD(
-        #         self.applyMask(self.images, mask), self.applyMask(self.depth, mask)
-        #     )
-        #     pcd = o3d.geometry.PointCloud.create_from_rgbd_image(
-        #         image=input_image,
-        #         intrinsic=o3d.camera.PinholeCameraIntrinsic(
-        #             width=input_image.shape[0],
-        #             height=input_image.shape[1],
-        #             intrinsic_matrix=self.intrinsics,
-        #         ),
-        #         extrinsic=self.extrinsics,
-        #     )
-        # else:
-        #     input_image = self.applyMask(self.depth, mask)
-        #     pcd = o3d.geometry.PointCloud.create_from_depth_image(
-        #         image=input_image,
-        #         intrinsic=o3d.camera.PinholeCameraIntrinsic(
-        #             width=input_image.shape[0],
-        #             height=input_image.shape[1],
-        #             intrinsic_matrix=self.intrinsics,
-        #         ),
-        #         extrinsic=self.extrinsics,
-        #     )
-
-        pcd = pcd.transform(
+        pcd.transform(
             [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]
         )  # Flip it, otherwise the pointcloud will be upside down
+
+        pcd.estimate_normals()
 
         return pcd
 
@@ -189,18 +177,77 @@ class BasicInverseGraph(InverseGraphicsBase):
         """
         print("run Poisson surface reconstruction")
         if pointCloud is None:
+            print("converting image to point cloud")
             pcd = self.convertImage2PC()
         else:
             pcd = pointCloud
 
-        # pcd.estimate_normals()
-        # o3d.visualization.draw_geometries([pcd], point_show_normal=True)
-        # exit()
-        pcd.estimate_normals()
+        print("creating triangle mesh")
         with o3d.utility.VerbosityContextManager(o3d.utility.VerbosityLevel.Debug) as cm:
             mesh, densities = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=9)
-        print(mesh)
         return mesh, densities
+
+
+def pairwise_registration(source, target, max_correspondence_distance_coarse, max_correspondence_distance_fine):
+    print("Apply point-to-plane ICP")
+    icp_coarse = o3d.pipelines.registration.registration_icp(
+        source,
+        target,
+        max_correspondence_distance_coarse,
+        np.identity(4),
+        o3d.pipelines.registration.TransformationEstimationPointToPlane(),
+    )
+    icp_fine = o3d.pipelines.registration.registration_icp(
+        source,
+        target,
+        max_correspondence_distance_fine,
+        icp_coarse.transformation,
+        o3d.pipelines.registration.TransformationEstimationPointToPlane(),
+    )
+    transformation_icp = icp_fine.transformation
+    information_icp = o3d.pipelines.registration.get_information_matrix_from_point_clouds(
+        source, target, max_correspondence_distance_fine, icp_fine.transformation
+    )
+    return transformation_icp, information_icp
+
+
+def full_registration(pcds, max_correspondence_distance_coarse, max_correspondence_distance_fine):
+    pose_graph = o3d.pipelines.registration.PoseGraph()
+    odometry = np.identity(4)
+    pose_graph.nodes.append(o3d.pipelines.registration.PoseGraphNode(odometry))
+    n_pcds = len(pcds)
+    for source_id in range(n_pcds):
+        for target_id in range(source_id + 1, n_pcds):
+            transformation_icp, information_icp = pairwise_registration(
+                pcds[source_id],
+                pcds[target_id],
+                max_correspondence_distance_coarse,
+                max_correspondence_distance_fine,
+            )
+            print("Build o3d.pipelines.registration.PoseGraph")
+            if target_id == source_id + 1:  # odometry case
+                odometry = np.dot(transformation_icp, odometry)
+                pose_graph.nodes.append(o3d.pipelines.registration.PoseGraphNode(np.linalg.inv(odometry)))
+                pose_graph.edges.append(
+                    o3d.pipelines.registration.PoseGraphEdge(
+                        source_id,
+                        target_id,
+                        transformation_icp,
+                        information_icp,
+                        uncertain=False,
+                    )
+                )
+            else:  # loop closure case
+                pose_graph.edges.append(
+                    o3d.pipelines.registration.PoseGraphEdge(
+                        source_id,
+                        target_id,
+                        transformation_icp,
+                        information_icp,
+                        uncertain=True,
+                    )
+                )
+    return pose_graph
 
 
 def main():
@@ -210,25 +257,15 @@ def main():
     mask_path = sample_path + "binary_masks/mask0000.png"
     intrinsic_path = sample_path + "intrinsics/intrinsics0000.txt"
     extrinsic_path = sample_path + "camera_poses/pose0000.txt"
-    # image_path = "image0000.png"
     colourRaw = np.asarray(o3d.io.read_image(image_path))
     depthRaw = np.loadtxt(depth_path)
     maskImg = np.asarray(o3d.io.read_image(mask_path))
     intrinsic = np.loadtxt(intrinsic_path)
     extrinsic = np.loadtxt(extrinsic_path)
 
-    # print(colourRaw.shape)
-    # print(colourRaw.shape[1])
-    # exit()
-
     basicGraph = BasicInverseGraph(colourRaw, intrinsic, extrinsic, depthRaw)
     pcd = basicGraph.convertImage2PCWMask(maskImg)
-    mesh, densities = basicGraph.run(pcd)
-    # print(mesh)
-    # print(densities)
-    # print(colourRaw)
-    # print(depthRaw)
-    # print(image_path)
+    # mesh, densities = basicGraph.run(pcd)
 
 
 if __name__ == "__main__":
