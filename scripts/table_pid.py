@@ -6,6 +6,7 @@ import shutil
 import argparse
 import pathlib
 from typing import List, Tuple
+import yaml
 
 import numpy as np
 import open3d as o3d
@@ -218,12 +219,6 @@ def parse_args() -> argparse.Namespace:
         help="The simulation realtime rate.",
     )
     argument_parser.add_argument(
-        "--html",
-        type=str,
-        required=False,
-        help="Path to save the meshcat html to. The file should end with .html.",
-    )
-    argument_parser.add_argument(
         "--logging_path",
         type=str,
         default="logs/test_logging_path",
@@ -243,13 +238,45 @@ def parse_args() -> argparse.Namespace:
 
 
 def main():
+    ## TODO: Start of tmp
+    ## TODO: Will want to move this into a separate script which calls this or another entrypoint script
+
+    # TODO: Add type info using base classes
+    loggers = {
+        "DynamicLogger": DynamicLogger,
+    }
+    image_generators = {
+        "SphereImageGenerator": SphereImageGenerator,
+    }
+    # TODO
+    # inverse_graphics = {
+    #     "IdentityInverseGraphics": IdentityInverseGraphics,
+    # }
+    mesh_processors = {
+        "IdentityMeshProcessor": IdentityMeshProcessor,
+    }
+    simulators = {
+        "TablePIDSimulator": TablePIDSimulator,
+    }
+
+    experiment_specification = yaml.safe_load(open("experiments/table_pid_simple.yaml", "r"))
+
+    ## TODO: End of tmp
+
     args = parse_args()
 
     scene_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
     manipuland_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), MANIPULAND_DIRECTIVE)
 
     # Label 4 is the Tomato Soup Can in this simulation setup
-    logger = DynamicLogger(logging_frequency_hz=0.001, logging_path=args.logging_path, label_to_mask=4)
+    logger_class = loggers[experiment_specification["logger"]["class"]]
+    logger = logger_class(
+        logging_frequency_hz=0.001,
+        logging_path=args.logging_path,
+        **(
+            experiment_specification["logger"]["args"] if experiment_specification["logger"]["args"] is not None else {}
+        ),
+    )
 
     # Create folder for temporary files
     tmp_folder = os.path.join(args.logging_path, "tmp")
@@ -260,15 +287,16 @@ def main():
 
     # Create a new version of the scene for generating camera data
     builder_camera, scene_graph_camera = create_env(directive_files=[scene_directive, manipuland_directive], args=args)
-    image_generator = SphereImageGenerator(
+    image_generator_class = image_generators[experiment_specification["image_generator"]["class"]]
+    image_generator = image_generator_class(
         builder=builder_camera,
         scene_graph=scene_graph_camera,
         logger=logger,
-        simulate_time=args.no_command_time,
-        look_at_point=MANIPULANT_DEFAULT_POSE.translation(),
-        z_distances=[0.02, 0.2, 0.3],
-        radii=[0.4, 0.3, 0.3],
-        num_poses=[30, 25, 15],
+        **(
+            experiment_specification["image_generator"]["args"]
+            if experiment_specification["image_generator"]["args"] is not None
+            else {}
+        ),
     )
 
     images, intrinsics, extrinsics, depths, labels, masks = image_generator.generate_images()
@@ -278,7 +306,14 @@ def main():
     raw_mesh = o3d.io.read_triangle_mesh("./data/ycb_tomato_soup_can/ycb_tomato_soup_can.obj")
     raw_mesh_pose = RigidTransform(RollPitchYaw(0.0, 0.0, 0.0), [0.0, 0.0, 0.6])
 
-    mesh_processor = IdentityMeshProcessor()
+    mesh_processor_class = mesh_processors[experiment_specification["mesh_processor"]["class"]]
+    mesh_processor = mesh_processor_class(
+        **(
+            experiment_specification["mesh_processor"]["args"]
+            if experiment_specification["mesh_processor"]["args"] is not None
+            else {}
+        ),
+    )
     processed_mesh = mesh_processor.process_mesh(raw_mesh)
 
     # Compute mesh inertia and mass assuming constant density of water
@@ -299,7 +334,19 @@ def main():
         manipuland_pose=raw_mesh_pose,
     )
 
-    simulator = TablePIDSimulator(builder_outer, scene_graph_outer, builder_inner, scene_graph_inner, logger)
+    simulator_class = simulators[experiment_specification["simulator"]["class"]]
+    simulator = simulator_class(
+        outer_builder=builder_outer,
+        outer_scene_graph=scene_graph_outer,
+        inner_builder=builder_inner,
+        inner_scene_graph=scene_graph_inner,
+        logger=logger,
+        **(
+            experiment_specification["simulator"]["args"]
+            if experiment_specification["simulator"]["args"] is not None
+            else {}
+        ),
+    )
     simulator.simulate(args.sim_duration)
 
     print("Saving data.")

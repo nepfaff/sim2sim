@@ -1,4 +1,4 @@
-from typing import Tuple, List
+from typing import Tuple, List, Union
 import copy
 
 import numpy as np
@@ -32,10 +32,10 @@ class SphereImageGenerator(ImageGeneratorBase):
         scene_graph: SceneGraph,
         logger: DynamicLoggerBase,
         simulate_time: float,
-        look_at_point: np.ndarray,
-        z_distances: np.ndarray,
-        radii: np.ndarray,
-        num_poses: np.ndarray,
+        look_at_point: Union[List, np.ndarray],
+        z_distances: Union[List, np.ndarray],
+        radii: Union[List, np.ndarray],
+        num_poses: Union[List, np.ndarray],
     ):
         """
         :param builder: The diagram builder.
@@ -57,10 +57,10 @@ class SphereImageGenerator(ImageGeneratorBase):
         ), "'z_distances', 'radii', and 'num_poses' must have the same length."
 
         self._simulate_time = simulate_time
-        self._look_at_point = look_at_point
-        self._z_distances = z_distances
-        self._radii = radii
-        self._num_poses = num_poses
+        self._look_at_point = look_at_point if isinstance(look_at_point, np.ndarray) else np.asarray(look_at_point)
+        self._z_distances = z_distances if isinstance(z_distances, np.ndarray) else np.asarray(z_distances)
+        self._radii = radii if isinstance(radii, np.ndarray) else np.asarray(radii)
+        self._num_poses = num_poses if isinstance(num_poses, np.ndarray) else np.asarray(num_poses)
 
         self._min_depth_range = 0.1
         self._max_depth_range = 10.0
