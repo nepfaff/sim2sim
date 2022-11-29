@@ -23,19 +23,20 @@ from sim2sim.logging import DynamicLoggerBase
 
 
 class DynamicLogger(DynamicLoggerBase):
-    def __init__(self, logging_frequency_hz: float, logging_path: str, label_to_mask: int):
+    def __init__(self, logging_frequency_hz: float, logging_path: str, kProximity: bool, label_to_mask: int):
         """
         :param logging_frequency_hz: The frequency at which we want to log at.
         :param logging_path: The path to the directory that we want to write the log files to.
+        :param kProximity: Whether to visualize kProximity or kIllustration. Visualize kProximity if true.
         :param label_to_mask: The label that we want to save binary masks for.
         """
-        super().__init__(logging_frequency_hz, logging_path)
+        super().__init__(logging_frequency_hz, logging_path, kProximity)
 
         self._label_to_mask = label_to_mask
 
     @staticmethod
     def _add_meshcat_visualizer(
-        builder: DiagramBuilder, scene_graph: SceneGraph, kProximity: bool = False
+        builder: DiagramBuilder, scene_graph: SceneGraph, kProximity: bool
     ) -> Tuple[MeshcatVisualizer, Meshcat]:
         """
         Adds a meshcat visualizer to `builder`.
@@ -78,7 +79,7 @@ class DynamicLogger(DynamicLoggerBase):
         :param scene_graph: The scene graph of the scene to visualize.
         :return: A tuple of (visualizer, meshcat).
         """
-        visualizer, meshcat = self._add_meshcat_visualizer(builder, scene_graph)
+        visualizer, meshcat = self._add_meshcat_visualizer(builder, scene_graph, self._kProximity)
         if self._inner_plant is not None and self._outer_plant is not None:
             self._add_contact_visualizer(builder, meshcat, self._outer_plant if is_outer else self._inner_plant)
         return visualizer, meshcat
