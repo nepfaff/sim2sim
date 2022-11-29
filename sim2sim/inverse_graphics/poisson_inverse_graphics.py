@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import os, os.path
 
 
-class BasicInverseGraph(InverseGraphicsBase):
+class PoissonPointCloudInverseGraphics(InverseGraphicsBase):
     """
     Basic Inverse Graph generator with Poisson Surface
 
