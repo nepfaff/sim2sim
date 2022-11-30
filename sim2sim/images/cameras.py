@@ -116,11 +116,10 @@ def generate_camera_pose_circle(
         U, _, V = np.linalg.svd(r_new)
         r_new = U @ V
 
-        X_CW = np.eye(4)
-        X_CW[:3, :3] = r_new
-        X_CW[:3, 3] = t
+        X_WC = np.eye(4)
+        X_WC[:3, :3] = r_new
+        X_WC[:3, 3] = t
 
-        X_WC = np.linalg.inv(X_CW)
         camera_poses.append(X_WC)
 
     return camera_poses
