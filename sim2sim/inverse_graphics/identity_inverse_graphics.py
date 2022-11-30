@@ -18,4 +18,5 @@ class IdentityInverseGraphicsProcessor(InverseGraphicsBase):
 
         :return: The tuple if the mesh and pose.
         """
-        return self.mesh, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        mesh = o3d.io.read_triangle_mesh(self.mesh)
+        return mesh, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
