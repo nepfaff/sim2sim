@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+    <model name="ycb_tomato_soup_can">
+        <link name="ycb_tomato_soup_can_base_link">
+            <!-- Inertia and mass from ycb_tomato_soup_can.sdf -->
+            <inertial>
+                <inertia>
+                    <ixx>0.000402</ixx>
+                    <ixy>0</ixy>
+                    <ixz>0</ixz>
+                    <iyy>0.000200</iyy>
+                    <iyz>0</iyz>
+                    <izz>0.000402</izz>
+                </inertia>
+                <mass>0.349000</mass>
+            </inertial>
+
+            <visual name="visual">
+                <pose>0.0 0 0 0 0 0</pose>
+                <geometry>
+                    <mesh>
+                        <uri>../data/ycb_tomato_soup_can/ycb_tomato_soup_can.obj</uri>
+                    </mesh>
+                </geometry>
+            </visual>
+            <collision name="collision">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                    <mesh>
+                        <uri>../data/ycb_tomato_soup_can/ycb_tomato_soup_can.obj</uri>
+                    </mesh>
+                </geometry>
+                <drake:proximity_properties>
+                    <drake:rigid_hydroelastic/>
+                </drake:proximity_properties>
+            </collision>
+        </link>
+        <frame name="ycb_tomato_soup_can">
+            <pose relative_to="ycb_tomato_soup_can_base_link">0 0 0.0 0 0 0</pose>
+        </frame>
+    </model>
+</sdf>
