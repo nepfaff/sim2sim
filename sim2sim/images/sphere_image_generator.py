@@ -67,23 +67,28 @@ class SphereImageGenerator(ImageGeneratorBase):
 
     def _generate_camera_poses(self) -> np.ndarray:
         """
-        :return: Homogenous cam2world transforms of shape (n,4,4) where n is the number of camera poses.
+        :return: Homogenous world2cam transforms of shape (n,4,4) where n is the number of camera poses. OpenCV convention.
         """
         camera_poses = []
         for z_dist, radius, num_poses in zip(self._z_distances, self._radii, self._num_poses):
-            X_WCs = generate_camera_pose_circle(
+            X_CWs = generate_camera_pose_circle(
                 look_at_point=self._look_at_point,
                 camera_location_center=self._look_at_point + [0.0, 0.0, z_dist],
                 radius=radius,
                 num_cam_poses=num_poses,
             )
-            camera_poses.append(X_WCs)
+            camera_poses.append(X_CWs)
         return np.concatenate(camera_poses, axis=0)
 
     def _add_cameras(self, camera_poses: np.ndarray, camera_info: CameraInfo) -> None:
-        """Adds depth cameras to the scene."""
+        """
+        Adds depth cameras to the scene.
+
+        :param camera_poses: Homogenous world2cam transforms of shape (n,4,4) where n is the number of camera poses.
+            OpenCV convention.
+        """
         parent_frame_id = self._scene_graph.world_frame_id()
-        for i, X_WC in enumerate(camera_poses):
+        for i, X_CW in enumerate(camera_poses):
             depth_camera = DepthRenderCamera(
                 RenderCameraCore(
                     self._renderer,
@@ -96,7 +101,7 @@ class SphereImageGenerator(ImageGeneratorBase):
             rgbd = self._builder.AddSystem(
                 RgbdSensor(
                     parent_id=parent_frame_id,
-                    X_PB=RigidTransform(X_WC),
+                    X_PB=RigidTransform(np.linalg.inv(X_CW)),
                     depth_camera=depth_camera,
                     show_window=False,
                 )
@@ -146,7 +151,7 @@ class SphereImageGenerator(ImageGeneratorBase):
     def generate_images(
         self,
     ) -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray]]:
-        camera_poses = self._generate_camera_poses()
+        X_CW = self._generate_camera_poses()
         camera_info = CameraInfo(width=1920, height=1440, fov_y=np.pi / 4.0)
         intrinsics = np.array(
             [
@@ -155,13 +160,13 @@ class SphereImageGenerator(ImageGeneratorBase):
                 [0.0, 0.0, 1.0],
             ]
         )
-        self._add_cameras(camera_poses, camera_info)
+        self._add_cameras(X_CW, camera_info)
 
         self._diagram = self._builder.Build()
 
-        images, depths, labels, masks = self._simulate_and_get_image_data(camera_poses)
+        images, depths, labels, masks = self._simulate_and_get_image_data(X_CW)
 
-        camera_poses_lst = list(camera_poses)
+        camera_poses_lst = list(X_CW)
         intrinsics_broadcasted = list(np.broadcast_to(intrinsics, (len(images), 3, 3)))
         self._logger.log(
             camera_poses=camera_poses_lst,

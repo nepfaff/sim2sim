@@ -93,7 +93,7 @@ def generate_camera_pose_circle(
     :param camera_location_center: The center of the camera circle.
     :param radius: The radius of the camera circle.
     :param num_cam_poses: The number of camera poses to generate.
-    :return: Homogenous cam2world transforms of shape (n,4,4) where n is the number of camera poses. OpenCV convention.
+    :return: Homogenous world2cam transforms of shape (n,4,4) where n is the number of camera poses. OpenCV convention.
     """
     # Rotation from pytorch3d xz to OpenCV xy plane
     rot = R.from_euler("xz", [90, 180], degrees=True).as_matrix()
@@ -116,10 +116,10 @@ def generate_camera_pose_circle(
         U, _, V = np.linalg.svd(r_new)
         r_new = U @ V
 
-        X_WC = np.eye(4)
-        X_WC[:3, :3] = r_new
-        X_WC[:3, 3] = t
+        X_CW = np.eye(4)
+        X_CW[:3, :3] = r_new
+        X_CW[:3, 3] = t
 
-        camera_poses.append(X_WC)
+        camera_poses.append(X_CW)
 
     return camera_poses
