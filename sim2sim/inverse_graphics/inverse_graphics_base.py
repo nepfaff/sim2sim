@@ -7,7 +7,11 @@ import open3d as o3d
 
 class InverseGraphicsBase(ABC):
     def __init__(
-        self, images: np.ndarray, intrinsics: np.ndarray, extrinsics: np.ndarray, depth: Optional[np.ndarray] = None
+        self,
+        images: np.ndarray,
+        intrinsics: np.ndarray,
+        extrinsics: np.ndarray,
+        depth: Optional[np.ndarray] = None,
     ):
         """TODO"""
         self._images = images
