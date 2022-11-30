@@ -8,13 +8,14 @@ from inverse_graphics_base import InverseGraphicsBase
 class IdentityInverseGraphicsProcessor(InverseGraphicsBase):
     """Implements an identity `run` function that directly outputs the input inverse graphics."""
 
-    def __init__(self):
+    def __init__(self, mesh):
         super().__init__()
+        self.mesh = mesh
 
-    def run(self, mesh) -> Tuple[o3d.geometry.TriangleMesh, np.ndarray]:
+    def run(self) -> Tuple[o3d.geometry.TriangleMesh, np.ndarray]:
         """
         Implements an identity function.
 
         :return: The tuple if the mesh and pose.
         """
-        return mesh
+        return self.mesh, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
