@@ -10,7 +10,7 @@ class IdentityInverseGraphicsProcessor(InverseGraphicsBase):
 
     def __init__(self, mesh):
         super().__init__()
-        self.mesh = mesh
+        self.mesh = o3d.io.read_triangle_mesh(mesh)
 
     def run(self) -> Tuple[o3d.geometry.TriangleMesh, np.ndarray]:
         """
@@ -18,5 +18,4 @@ class IdentityInverseGraphicsProcessor(InverseGraphicsBase):
 
         :return: The tuple if the mesh and pose.
         """
-        mesh = o3d.io.read_triangle_mesh(self.mesh)
-        return mesh, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        return self.mesh, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
