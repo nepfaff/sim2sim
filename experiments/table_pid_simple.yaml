@@ -23,8 +23,8 @@ image_generator:
   args:
     simulate_time: 1.0
     look_at_point: [0.0, 0.0, 0.6]
-    z_distances: [0.02, 0.2, 0.3]
-    radii: [0.4, 0.3, 0.3]
+    z_distances: [0.02, 0.08, 0.12]
+    radii: [0.25, 0.2, 0.15]
     num_poses: [30, 25, 15]
 
 inverse_graphics:
