@@ -3,7 +3,7 @@
   <model name="actuated_table">
     <link name="table_top_link">
       <inertial>
-        <mass>10.0</mass>
+        <mass>100000.0</mass>
       </inertial>
       <visual name="table_top_visual">
         <pose>0 0 0.5 0 0 0</pose>
@@ -36,7 +36,7 @@
 
     <link name="table_base_link">
       <inertial>
-        <mass>5.0</mass>
+        <mass>100000.0</mass>
       </inertial>
       <visual name="table_base_visual">
         <pose>0 0 0.25 0 0 0</pose>
