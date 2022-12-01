@@ -16,6 +16,7 @@ from pydrake.all import (
     RollPitchYaw,
     PidController,
     SceneGraph,
+    MultibodyPlant,
 )
 
 from sim2sim.simulation import TablePIDSimulator
@@ -29,6 +30,7 @@ SCENE_DIRECTIVE = "../../models/table_pid_scene_directive.yaml"
 
 # TODO: Allow specifying manipulant with experiment yaml file
 MANIPULAND_DIRECTIVE = "../../models/table_pid_manipuland_directive.yaml"
+MANIPULAND_NAME = "ycb_tomato_soup_can"
 MANIPULAND_BASE_LINK_NAME = "ycb_tomato_soup_can_base_link"
 MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(-np.pi / 2.0, 0.0, 0.0), [0.0, 0.0, 0.6])  # X_WManipuland
 
@@ -82,7 +84,7 @@ def create_env(
     directive_files: List[str] = [],
     directive_strs: List[str] = [],
     manipuland_pose: RigidTransform = MANIPULANT_DEFAULT_POSE,
-) -> Tuple[DiagramBuilder, SceneGraph]:
+) -> Tuple[DiagramBuilder, SceneGraph, MultibodyPlant]:
     """Creates the table PID simulation environments without building it."""
     # Create plant
     builder = DiagramBuilder()
@@ -111,7 +113,7 @@ def create_env(
     table_angle_source.set_name("table_angle_source")
     builder.Connect(table_angle_source.get_output_port(), pid_controller.get_input_port_desired_state())
 
-    return builder, scene_graph
+    return builder, scene_graph, plant
 
 
 def create_processed_mesh_sdf_file(
@@ -189,7 +191,7 @@ def create_processed_mesh_directive_str(
     processed_mesh_directive = f"""
         directives:
         - add_model:
-            name: processed_manipuland_mesh
+            name: ycb_tomato_soup_can
             file: package://sim2sim/{procesed_mesh_sdf_path}
     """
     return processed_mesh_directive
@@ -231,7 +233,7 @@ def run_table_pid(
     if not os.path.exists(tmp_folder):
         os.mkdir(tmp_folder)
 
-    builder_outer, scene_graph_outer = create_env(
+    builder_outer, scene_graph_outer, outer_plant = create_env(
         timestep,
         final_table_angle,
         no_command_time,
@@ -239,7 +241,7 @@ def run_table_pid(
     )
 
     # Create a new version of the scene for generating camera data
-    builder_camera, scene_graph_camera = create_env(
+    builder_camera, scene_graph_camera, _ = create_env(
         timestep, final_table_angle, no_command_time, directive_files=[scene_directive, manipuland_directive]
     )
     image_generator_class = IMAGE_GENERATORS[params["image_generator"]["class"]]
@@ -284,7 +286,7 @@ def run_table_pid(
     # Create a directive for processed_mesh manipuland
     processed_mesh_directive = create_processed_mesh_directive_str(mass, inertia, processed_mesh_file_path, tmp_folder)
 
-    builder_inner, scene_graph_inner = create_env(
+    builder_inner, scene_graph_inner, inner_plant = create_env(
         timestep,
         final_table_angle,
         no_command_time,
@@ -292,6 +294,8 @@ def run_table_pid(
         directive_strs=[processed_mesh_directive],
         manipuland_pose=RigidTransform(RollPitchYaw(*raw_mesh_pose[:3]), raw_mesh_pose[3:]),
     )
+
+    logger.add_plants(outer_plant, inner_plant)
 
     simulator_class = SIMULATORS[params["simulator"]["class"]]
     simulator = simulator_class(
