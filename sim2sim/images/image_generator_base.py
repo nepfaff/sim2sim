@@ -38,6 +38,7 @@ class ImageGeneratorBase(ABC):
         List[np.ndarray],
         List[np.ndarray],
         List[np.ndarray],
+        List[np.ndarray],
         Union[List[np.ndarray], None],
         Union[List[np.ndarray], None],
     ]:

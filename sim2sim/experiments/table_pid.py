@@ -4,7 +4,6 @@ import pathlib
 from typing import List, Tuple
 
 import numpy as np
-import open3d as o3d
 from pydrake.all import (
     LoadModelDirectives,
     LoadModelDirectivesFromString,
@@ -23,6 +22,7 @@ from sim2sim.simulation import TablePIDSimulator
 from sim2sim.logging import DynamicLogger
 from sim2sim.util import get_parser, calc_mesh_inertia
 from sim2sim.images import SphereImageGenerator
+from sim2sim.inverse_graphics import IdentityInverseGraphics
 from sim2sim.mesh_processing import IdentityMeshProcessor
 
 SCENE_DIRECTIVE = "../../models/table_pid_scene_directive.yaml"
@@ -39,10 +39,9 @@ LOGGERS = {
 IMAGE_GENERATORS = {
     "SphereImageGenerator": SphereImageGenerator,
 }
-# TODO
-# INVERSE_GRAPHICS = {
-#     "IdentityInverseGraphics": IdentityInverseGraphics,
-# }
+INVERSE_GRAPHICS = {
+    "IdentityInverseGraphics": IdentityInverseGraphics,
+}
 MESH_PROCESSORS = {
     "IdentityMeshProcessor": IdentityMeshProcessor,
 }
@@ -254,15 +253,25 @@ def run_table_pid(
     images, intrinsics, extrinsics, depths, labels, masks = image_generator.generate_images()
     print("Finished generating images.")
 
-    # TODO: Replace this with a call to identity inverse graphics
-    raw_mesh = o3d.io.read_triangle_mesh("./data/ycb_tomato_soup_can/ycb_tomato_soup_can.obj")
-    raw_mesh_pose = RigidTransform(RollPitchYaw(0.0, 0.0, 0.0), [0.0, 0.0, 0.6])
+    inverse_graphics_class = INVERSE_GRAPHICS[params["inverse_graphics"]["class"]]
+    inverse_graphics = inverse_graphics_class(
+        **(params["inverse_graphics"]["args"] if params["inverse_graphics"]["args"] is not None else {}),
+        images=images,
+        intrinsics=intrinsics,
+        extrinsics=extrinsics,
+        depth=depths,
+        labels=labels,
+        masks=masks,
+    )
+    raw_mesh, raw_mesh_pose = inverse_graphics.run()
+    print("Finished running inverse graphics.")
 
     mesh_processor_class = MESH_PROCESSORS[params["mesh_processor"]["class"]]
     mesh_processor = mesh_processor_class(
         **(params["mesh_processor"]["args"] if params["mesh_processor"]["args"] is not None else {}),
     )
     processed_mesh = mesh_processor.process_mesh(raw_mesh)
+    print("Finished mesh processing.")
 
     # Compute mesh inertia and mass assuming constant density of water
     mass, inertia = calc_mesh_inertia(processed_mesh)
@@ -281,7 +290,7 @@ def run_table_pid(
         no_command_time,
         directive_files=[scene_directive],
         directive_strs=[processed_mesh_directive],
-        manipuland_pose=raw_mesh_pose,
+        manipuland_pose=RigidTransform(RollPitchYaw(*raw_mesh_pose[:3]), raw_mesh_pose[3:]),
     )
 
     simulator_class = SIMULATORS[params["simulator"]["class"]]
@@ -294,9 +303,10 @@ def run_table_pid(
         **(params["simulator"]["args"] if params["simulator"]["args"] is not None else {}),
     )
     simulator.simulate(sim_duration)
+    print("Finished simulating.")
 
-    print("Saving data.")
     logger.save_data()
+    print("Finished saving data.")
 
     # Clean up temporary files
     shutil.rmtree(tmp_folder)

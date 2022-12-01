@@ -150,7 +150,9 @@ class SphereImageGenerator(ImageGeneratorBase):
 
     def generate_images(
         self,
-    ) -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray]]:
+    ) -> Tuple[
+        List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray]
+    ]:
         X_CW = self._generate_camera_poses()
         camera_info = CameraInfo(width=1920, height=1440, fov_y=np.pi / 4.0)
         intrinsics = np.array(
