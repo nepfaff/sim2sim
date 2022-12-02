@@ -13,10 +13,9 @@ class MeshProcessorBase(ABC):
         pass
 
     @abstractmethod
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh, **kwargs) -> o3d.geometry.TriangleMesh:
+    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> o3d.geometry.TriangleMesh:
         """
         :param mesh: The mesh to process.
-        :param kwargs: Any process method specific arguments.
         :return: The processed mesh.
         """
         raise NotImplementedError

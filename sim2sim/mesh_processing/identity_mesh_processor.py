@@ -9,7 +9,7 @@ class IdentityMeshProcessor(MeshProcessorBase):
     def __init__(self):
         super().__init__()
 
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh, **kwargs) -> o3d.geometry.TriangleMesh:
+    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> o3d.geometry.TriangleMesh:
         """
         Implements an identity function.
 

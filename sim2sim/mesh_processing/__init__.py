@@ -1,1 +1,2 @@
 from sim2sim.mesh_processing.identity_mesh_processor import IdentityMeshProcessor
+from sim2sim.mesh_processing.quadric_decimation_mesh_processor import QuadricDecimationMeshProcessor
