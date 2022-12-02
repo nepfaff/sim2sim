@@ -46,6 +46,7 @@ INVERSE_GRAPHICS = {
 }
 MESH_PROCESSORS = {
     "IdentityMeshProcessor": IdentityMeshProcessor,
+    "QuadricDecimationMeshProcessor": QuadricDecimationMeshProcessor,
 }
 SIMULATORS = {
     "TablePIDSimulator": TablePIDSimulator,
