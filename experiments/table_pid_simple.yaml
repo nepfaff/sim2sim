@@ -8,7 +8,7 @@ script:
     no_command_time: 1.0
     timestep: 0.0001
     final_table_angle: 0.7854
-    logging_frequency_hz: 0.001
+    logging_frequency_hz: 100
 
 # Component specifications
 # 'args' are constructor arguments that are not part of the base class constructors
@@ -16,6 +16,7 @@ logger:
   class: "DynamicLogger"
   args:
     label_to_mask: 4 # This label corresponds to the tomato soup can in the table_pid simulation setup
+    manipuland_name: "ycb_tomato_soup_can"
     kProximity: false
 
 image_generator:

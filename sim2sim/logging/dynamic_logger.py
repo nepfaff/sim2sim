@@ -16,6 +16,8 @@ from pydrake.all import (
     ContactVisualizerParams,
     ContactVisualizer,
     MultibodyPlant,
+    LogVectorOutput,
+    Context,
 )
 from PIL import Image
 
@@ -23,16 +25,28 @@ from sim2sim.logging import DynamicLoggerBase
 
 
 class DynamicLogger(DynamicLoggerBase):
-    def __init__(self, logging_frequency_hz: float, logging_path: str, kProximity: bool, label_to_mask: int):
+    def __init__(
+        self, logging_frequency_hz: float, logging_path: str, kProximity: bool, label_to_mask: int, manipuland_name: str
+    ):
         """
         :param logging_frequency_hz: The frequency at which we want to log at.
         :param logging_path: The path to the directory that we want to write the log files to.
         :param kProximity: Whether to visualize kProximity or kIllustration. Visualize kProximity if true.
         :param label_to_mask: The label that we want to save binary masks for.
+        :param manipuland_name: The name of the manipuland. Required for pose logging.
         """
         super().__init__(logging_frequency_hz, logging_path, kProximity)
 
         self._label_to_mask = label_to_mask
+        self._manipuland_name = manipuland_name
+
+        # Pose data logs
+        self._outer_manipuland_pose_logger = None
+        self._outer_manipuland_poses: np.ndarray = None
+        self._outer_manipuland_pose_times: np.ndarray = None
+        self._inner_manipuland_pose_logger = None
+        self._inner_manipuland_poses: np.ndarray = None
+        self._inner_manipuland_pose_times: np.ndarray = None
 
     @staticmethod
     def _add_meshcat_visualizer(
@@ -83,6 +97,30 @@ class DynamicLogger(DynamicLoggerBase):
         if self._inner_plant is not None and self._outer_plant is not None:
             self._add_contact_visualizer(builder, meshcat, self._outer_plant if is_outer else self._inner_plant)
         return visualizer, meshcat
+
+    def add_pose_logging(self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder) -> None:
+        self._outer_manipuland_pose_logger = LogVectorOutput(
+            self._outer_plant.get_state_output_port(self._outer_plant.GetModelInstanceByName(self._manipuland_name)),
+            outer_builder,
+            1 / self._logging_frequency_hz,
+        )
+        self._inner_manipuland_pose_logger = LogVectorOutput(
+            self._inner_plant.get_state_output_port(self._inner_plant.GetModelInstanceByName(self._manipuland_name)),
+            inner_builder,
+            1 / self._logging_frequency_hz,
+        )
+
+    def log_poses(self, context: Context, is_outer: bool) -> None:
+        assert self._outer_manipuland_pose_logger is not None and self._inner_manipuland_pose_logger is not None
+
+        if is_outer:
+            log = self._outer_manipuland_pose_logger.FindLog(context)
+            self._outer_manipuland_pose_times = log.sample_times()
+            self._outer_manipuland_poses = log.data().T  # Shape (t, 13)
+        else:
+            log = self._inner_manipuland_pose_logger.FindLog(context)
+            self._inner_manipuland_pose_times = log.sample_times()
+            self._inner_manipuland_poses = log.data().T  # Shape (t, 13)
 
     def log(
         self,
@@ -158,6 +196,15 @@ class DynamicLogger(DynamicLoggerBase):
                 if label == self._label_to_mask:
                     mask_pil = Image.fromarray(mask)
                     mask_pil.save(os.path.join(self._masks_dir_path, f"mask{i:04d}.png"))
+
+        np.savetxt(os.path.join(self._logging_path, "outer_manipuland_poses.txt"), self._outer_manipuland_poses)
+        np.savetxt(
+            os.path.join(self._logging_path, "outer_manipuland_pose_times.txt"), self._outer_manipuland_pose_times
+        )
+        np.savetxt(os.path.join(self._logging_path, "inner_manipuland_poses.txt"), self._inner_manipuland_poses)
+        np.savetxt(
+            os.path.join(self._logging_path, "inner_manipuland_pose_times.txt"), self._inner_manipuland_pose_times
+        )
 
         # Mesh data
         self.save_mesh_data()
