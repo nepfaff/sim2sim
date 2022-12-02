@@ -34,8 +34,9 @@ inverse_graphics:
     mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
 
 mesh_processor:
-  class: "IdentityMeshProcessor"
+  class: "QuadricDecimationMeshProcessor"
   args:
+    target_triangle_num: 10000
 
 simulator:
   class: "TablePIDSimulator"
