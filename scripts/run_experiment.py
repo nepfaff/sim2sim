@@ -5,9 +5,12 @@
 import yaml
 import argparse
 
-from sim2sim.experiments import run_table_pid
+from sim2sim.experiments import run_table_pid, run_iiwa_rearrangement
 
-ENTRYPOINTS = {"table_pid": run_table_pid}
+ENTRYPOINTS = {
+    "table_pid": run_table_pid,
+    "iiwa_rearrangement": run_iiwa_rearrangement,
+}
 
 
 def main():
