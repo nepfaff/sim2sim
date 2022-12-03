@@ -26,10 +26,10 @@ from sim2sim.images import SphereImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
 from sim2sim.mesh_processing import IdentityMeshProcessor, QuadricDecimationMeshProcessor
 
-SCENE_DIRECTIVE = "../../models/table_pid_scene_directive.yaml"
+SCENE_DIRECTIVE = "../../models/table_pid/table_pid_scene_directive.yaml"
 
 # TODO: Allow specifying manipulant with experiment yaml file
-MANIPULAND_DIRECTIVE = "../../models/table_pid_manipuland_directive.yaml"
+MANIPULAND_DIRECTIVE = "../../models/table_pid/table_pid_manipuland_directive.yaml"
 MANIPULAND_NAME = "ycb_tomato_soup_can"
 MANIPULAND_BASE_LINK_NAME = "ycb_tomato_soup_can_base_link"
 MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(-np.pi / 2.0, 0.0, 0.0), [0.0, 0.0, 0.57545])  # X_WManipuland
