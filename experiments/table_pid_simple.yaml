@@ -4,7 +4,7 @@ experiment_id: "table_pid_simple"
 script:
   name: "table_pid"
   args:
-    sim_duration: 3.0
+    sim_duration: 2.0
     no_command_time: 0.1
     timestep: 0.0001
     final_table_angle: 0.7854
@@ -23,8 +23,8 @@ image_generator:
   class: "SphereImageGenerator"
   args:
     simulate_time: 0.1 # NOTE: This should be the same or shorter as `no_command_time`
-    look_at_point: [0.0, 0.0, 0.6]
-    z_distances: [0.02, 0.08, 0.12]
+    look_at_point: [0.0, 0.0, 0.57545]
+    z_distances: [0.0, 0.06, 0.12]
     radii: [0.25, 0.2, 0.15]
     num_poses: [30, 25, 15]
 
