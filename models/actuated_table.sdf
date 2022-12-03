@@ -38,17 +38,6 @@
       <inertial>
         <mass>100000.0</mass>
       </inertial>
-      <visual name="table_base_visual">
-        <pose>0 0 0.25 0 0 0</pose>
-        <geometry>
-          <box>
-            <size>0.1 0.1 0.5</size>
-          </box>
-        </geometry>
-        <material>
-          <diffuse>0.0 0.0 0.0 0.0</diffuse>
-        </material>
-      </visual>
       <!-- <collision name="table_base_collision">
         <pose>0 0 0.25 0 0 0</pose>
         <geometry>
