@@ -24,7 +24,7 @@ from sim2sim.logging import DynamicLogger
 from sim2sim.util import get_parser, calc_mesh_inertia
 from sim2sim.images import SphereImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
-from sim2sim.mesh_processing import IdentityMeshProcessor
+from sim2sim.mesh_processing import IdentityMeshProcessor, QuadricDecimationMeshProcessor
 
 SCENE_DIRECTIVE = "../../models/table_pid_scene_directive.yaml"
 
@@ -32,7 +32,7 @@ SCENE_DIRECTIVE = "../../models/table_pid_scene_directive.yaml"
 MANIPULAND_DIRECTIVE = "../../models/table_pid_manipuland_directive.yaml"
 MANIPULAND_NAME = "ycb_tomato_soup_can"
 MANIPULAND_BASE_LINK_NAME = "ycb_tomato_soup_can_base_link"
-MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(-np.pi / 2.0, 0.0, 0.0), [0.0, 0.0, 0.6])  # X_WManipuland
+MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(-np.pi / 2.0, 0.0, 0.0), [0.0, 0.0, 0.57545])  # X_WManipuland
 
 # TODO: Add type info using base classes
 LOGGERS = {

@@ -5,7 +5,7 @@ script:
   name: "table_pid"
   args:
     sim_duration: 3.0
-    no_command_time: 1.0
+    no_command_time: 0.1
     timestep: 0.0001
     final_table_angle: 0.7854
     logging_frequency_hz: 100
@@ -22,7 +22,7 @@ logger:
 image_generator:
   class: "SphereImageGenerator"
   args:
-    simulate_time: 1.0
+    simulate_time: 0.1 # NOTE: This should be the same or shorter as `no_command_time`
     look_at_point: [0.0, 0.0, 0.6]
     z_distances: [0.02, 0.08, 0.12]
     radii: [0.25, 0.2, 0.15]
@@ -31,8 +31,8 @@ image_generator:
 inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
-    mesh_path: ./data/ycb_tomato_soup_can/ycb_tomato_soup_can.obj
-    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
+    mesh_path: ./data/tomato_soup_can_instant_ngp.obj
+    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.57545] # NOTE: Identical to `X_WManipuland` specified in `table_pid.py`
 
 mesh_processor:
   class: "QuadricDecimationMeshProcessor"
