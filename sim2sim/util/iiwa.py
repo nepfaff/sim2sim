@@ -215,8 +215,8 @@ def convert_camera_poses_to_iiwa_eef_poses(X_CWs: np.ndarray) -> np.ndarray:
     """
     X_WGs = []
     for X_CW in X_CWs:
-        X_WGs.append(X_CW)
-    return np.concatenate(X_WGs, axis=0)
+        X_WGs.append(np.linalg.inv(X_CW))
+    return np.stack(X_WGs)
 
 
 class IIWAJointTrajectorySource(LeafSystem):
@@ -253,6 +253,10 @@ class IIWAJointTrajectorySource(LeafSystem):
         self.x_output_port = self.DeclareVectorOutputPort(
             "traj_x", BasicVector(self._iiwa_num_position * 2), self._calc_x
         )
+
+    def set_meshcat(self, meshcat: Meshcat) -> None:
+        """Replaces the meshcat visualizer."""
+        self._meshcat = meshcat
 
     def set_trajectory(
         self,
@@ -352,7 +356,7 @@ class IIWAJointTrajectorySource(LeafSystem):
         q_sol = result.GetSolution(q_variables)
         return q_sol
 
-    def _calc_x(self, context, output):
+    def _calc_x(self, context, output) -> None:
         """
         :return: The robot state [q, q_dot] where q are the joint positions.
         """
@@ -365,8 +369,10 @@ class IIWAJointTrajectorySource(LeafSystem):
             q_dot = np.array([0.0] * self._iiwa_num_position)
         output.SetFromVector(np.hstack([q, q_dot]))
 
-    def set_t_start(self, t_start_new: float):
+    def set_t_start(self, t_start_new: float) -> None:
         self._t_start = t_start_new
+        self._q_knots = []
+        self._breaks = []
 
     def _calc_q_traj(self) -> PiecewisePolynomial:
         """

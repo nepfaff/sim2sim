@@ -5,7 +5,7 @@ script:
   name: "iiwa_rearrangement"
   args:
     sim_duration: 2.0
-    timestep: 0.0001
+    timestep: 0.005
     logging_frequency_hz: 100
 
 # Component specifications
@@ -18,19 +18,19 @@ logger:
     kProximity: false
 
 image_generator:
-  class: "SphereImageGenerator"
+  class: "IIWAWristSphereImageGenerator"
   args:
-    simulate_time: 0.0 # NOTE: This should be the same or shorter as `no_command_time`
-    look_at_point: [0.0, 0.0, 0.57545]
-    z_distances: [0.0]
-    radii: [0.25]
-    num_poses: [5]
+    simulate_time: 1.0 # NOTE: This should be the same or shorter as `no_command_time`
+    look_at_point: [0.0, 0.6, 0.050450]
+    z_distances: [0.2, 0.3]
+    radii: [0.20, 0.15]
+    num_poses: [30, 30]
 
 inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
     mesh_path: ./data/tomato_soup_can_instant_ngp.obj
-    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.57545] # NOTE: Identical to `X_WManipuland` specified in `table_pid.py`
+    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.6, 0.050450] # NOTE: Identical to `X_WManipuland` specified in `table_pid.py`
 
 mesh_processor:
   class: "QuadricDecimationMeshProcessor"

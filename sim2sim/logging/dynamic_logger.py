@@ -49,7 +49,7 @@ class DynamicLogger(DynamicLoggerBase):
         self._inner_manipuland_pose_times: np.ndarray = None
 
     @staticmethod
-    def _add_meshcat_visualizer(
+    def add_meshcat_visualizer(
         builder: DiagramBuilder, scene_graph: SceneGraph, kProximity: bool
     ) -> Tuple[MeshcatVisualizer, Meshcat]:
         """
@@ -93,7 +93,7 @@ class DynamicLogger(DynamicLoggerBase):
         :param scene_graph: The scene graph of the scene to visualize.
         :return: A tuple of (visualizer, meshcat).
         """
-        visualizer, meshcat = self._add_meshcat_visualizer(builder, scene_graph, self._kProximity)
+        visualizer, meshcat = self.add_meshcat_visualizer(builder, scene_graph, self._kProximity)
         if self._inner_plant is not None and self._outer_plant is not None:
             self._add_contact_visualizer(builder, meshcat, self._outer_plant if is_outer else self._inner_plant)
         return visualizer, meshcat

@@ -19,8 +19,15 @@ from pydrake.all import (
 )
 
 from sim2sim.logging import DynamicLogger
-from sim2sim.util import get_parser, calc_mesh_inertia, make_iiwa_wsg_system, IIWAJointTrajectorySource
-from sim2sim.images import SphereImageGenerator
+from sim2sim.util import (
+    get_parser,
+    calc_mesh_inertia,
+    add_iiwa_system,
+    add_cameras,
+    add_wsg_system,
+    IIWAJointTrajectorySource,
+)
+from sim2sim.images import SphereImageGenerator, IIWAWristSphereImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
 from sim2sim.mesh_processing import IdentityMeshProcessor, QuadricDecimationMeshProcessor
 
@@ -31,7 +38,7 @@ IIWA_Q_NOMINAL = np.array([1.5, -0.4, 0.0, -1.75, 0.0, 1.5, 0.0])  # iiwa joint 
 MANIPULAND_DIRECTIVE = "../../models/iiwa_rearrangement/iiwa_rearrangement_manipuland_directive.yaml"
 MANIPULAND_NAME = "ycb_tomato_soup_can"
 MANIPULAND_BASE_LINK_NAME = "ycb_tomato_soup_can_base_link"
-MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(-np.pi / 2.0, 0.0, 0.0), [0.0, 0.0, 0.57545])  # X_WManipuland
+MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(-np.pi / 2.0, 0.0, 0.0), [0.0, 0.6, 0.050450])  # X_WManipuland
 
 LOGGERS = {
     "DynamicLogger": DynamicLogger,
@@ -39,6 +46,7 @@ LOGGERS = {
 # TODO: Add image generator that controls the iiwa to take images with the wrist camera
 IMAGE_GENERATORS = {
     "SphereImageGenerator": SphereImageGenerator,
+    "IIWAWristSphereImageGenerator": IIWAWristSphereImageGenerator,
 }
 INVERSE_GRAPHICS = {
     "IdentityInverseGraphics": IdentityInverseGraphics,
@@ -59,14 +67,9 @@ def create_env(
 ) -> Tuple[DiagramBuilder, SceneGraph, MultibodyPlant]:
     """Creates the iiwa rearrangement simulation environments without building it."""
 
-    # Builder for the top level diagram
-    builder_top_level = DiagramBuilder()
-    plant_top_level, scene_graph_top_level = AddMultibodyPlantSceneGraph(builder_top_level, timestep)
-    plant_top_level.Finalize()
-
     # Create plant
-    iiwa_wsg_system_builder = DiagramBuilder()
-    plant, scene_graph = AddMultibodyPlantSceneGraph(iiwa_wsg_system_builder, timestep)
+    builder = DiagramBuilder()
+    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, timestep)
     parser = get_parser(plant)
     for directive_path in directive_files:
         directive = LoadModelDirectives(directive_path)
@@ -78,30 +81,56 @@ def create_env(
     plant.SetDefaultFreeBodyPose(plant.GetBodyByName(MANIPULAND_BASE_LINK_NAME), manipuland_pose)
     plant.Finalize()
 
-    # Add iiwa and WSG controllers and convert it into a subsystem
-    iiwa_wsg_system = builder_top_level.AddSystem(
-        make_iiwa_wsg_system(
-            builder=iiwa_wsg_system_builder, plant=plant, scene_graph=scene_graph, iiwa_time_step=timestep
-        )
+    # Add iiwa controller
+    (
+        iiwa_controller,
+        iiwa_position_input,
+        iiwa_position_commanded_output,
+        iiwa_state_estimated_output,
+        iiwa_position_measured_output,
+        iiwa_velocity_estimated_output,
+        iiwa_feedforward_torque_input,
+        iiwa_torque_commanded_output,
+        iiwa_torque_external_output,
+    ) = add_iiwa_system(
+        builder=builder, plant=plant, iiwa_instance_idx=plant.GetModelInstanceByName("iiwa"), iiwa_time_step=timestep
     )
-    iiwa_controller_plant = iiwa_wsg_system.GetSubsystemByName("iiwa_controller").get_multibody_plant_for_control()
+
+    # Add wsg controller
+    (
+        wsg_position_input,
+        wsg_force_limit_input,
+        wsg_state_measured_output,
+        wsg_force_measured_output,
+    ) = add_wsg_system(builder=builder, plant=plant, wsg_instance_idx=plant.GetModelInstanceByName("wsg"))
+
+    add_cameras(
+        builder=builder,
+        plant=plant,
+        scene_graph=scene_graph,
+        width=1920,
+        height=1440,
+        fov_y=np.pi / 4.0,
+        camera_prefix="wrist_camera",
+    )
 
     # Add iiwa joint trajectory source
     iiwa_trajectory_source = IIWAJointTrajectorySource(
-        plant=iiwa_controller_plant,
+        plant=iiwa_controller.get_multibody_plant_for_control(),
         q_nominal=IIWA_Q_NOMINAL,
     )
-    iiwa_joint_trajectory_source = builder_top_level.AddSystem(iiwa_trajectory_source)
-    demux = builder_top_level.AddSystem(Demultiplexer(14, 7))  # Assume 7 iiwa joint positions
-    builder_top_level.Connect(iiwa_joint_trajectory_source.get_output_port(), demux.get_input_port())
-    builder_top_level.Connect(demux.get_output_port(0), iiwa_wsg_system.GetInputPort("iiwa_position"))
+    iiwa_joint_trajectory_source = builder.AddSystem(iiwa_trajectory_source)
+    iiwa_joint_trajectory_source.set_name("iiwa_joint_trajectory_source")
+    demux = builder.AddSystem(Demultiplexer(14, 7))  # Assume 7 iiwa joint positions
+    builder.Connect(iiwa_joint_trajectory_source.get_output_port(), demux.get_input_port())
+    builder.Connect(demux.get_output_port(0), iiwa_position_input)
 
     # Connect WSG controller to something
     # TODO: Connect to a system that we can control for picking items (stepping through simulation in loop and asking for new commands)
-    wsg_position = builder_top_level.AddSystem(ConstantVectorSource([0.1]))
-    builder_top_level.Connect(wsg_position.get_output_port(), iiwa_wsg_system.GetInputPort("wsg_position"))
+    wsg_position = builder.AddSystem(ConstantVectorSource([0.1]))
+    builder.Connect(wsg_position.get_output_port(), wsg_position_input)
 
-    return builder_top_level, scene_graph_top_level, plant
+    return builder, scene_graph, plant
 
 
 def create_processed_mesh_sdf_file(
