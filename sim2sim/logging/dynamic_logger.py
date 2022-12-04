@@ -192,13 +192,14 @@ class DynamicLogger(DynamicLoggerBase):
             image_pil = Image.fromarray(image)
             image_pil.save(os.path.join(self._images_dir_path, f"image{i:04d}.png"))
 
+            mask_pil = None
             for label, mask in zip(labels, masks):
                 if label == self._label_to_mask:
                     mask_pil = Image.fromarray(mask)
-                else:
-                    # Save black image
-                    mask_pil = Image.new("RGB", (image_pil.width, image_pil.height))
-                mask_pil.save(os.path.join(self._masks_dir_path, f"mask{i:04d}.png"))
+            if mask_pil is None:
+                # Save black image
+                mask_pil = Image.new("RGB", (image_pil.width, image_pil.height))
+            mask_pil.save(os.path.join(self._masks_dir_path, f"mask{i:04d}.png"))
 
         np.savetxt(os.path.join(self._logging_path, "outer_manipuland_poses.txt"), self._outer_manipuland_poses)
         np.savetxt(
