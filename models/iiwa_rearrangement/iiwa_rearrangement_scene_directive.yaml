@@ -50,3 +50,7 @@ directives:
     X_PC:
         translation: [0.05, 0, 0.09]
         rotation: !Rpy { deg: [90, 0, 90]}
+- add_frame:
+    name: wrist_camera
+    X_PF:
+        base_frame: wrist_camera::base

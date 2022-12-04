@@ -76,6 +76,7 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
         plant = self._diagram.GetSubsystemByName("plant")
         world_frame = plant.world_frame()
         gripper_frame = plant.GetFrameByName("body")
+        wrist_camera_frame = plant.GetFrameByName("wrist_camera")
         iiwa_trajectory_source = self._diagram.GetSubsystemByName("iiwa_joint_trajectory_source")
         iiwa_trajectory_source.set_meshcat(self._meshcat)
 
@@ -108,7 +109,7 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
             simulator.AdvanceTo(context.get_time() + self._time_between_camera_waypoints)
 
             # Get actual wrist camera pose
-            X_WG_actual = plant.CalcRelativeTransform(plant_context, frame_A=world_frame, frame_B=gripper_frame)
+            X_WG_actual = plant.CalcRelativeTransform(plant_context, frame_A=world_frame, frame_B=wrist_camera_frame)
             X_CWs.append(np.linalg.inv(X_WG_actual.GetAsMatrix4()))
 
             # Need to make a copy as the original value changes with the simulation
