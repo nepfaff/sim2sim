@@ -387,3 +387,20 @@ class IIWAJointTrajectorySource(LeafSystem):
             np.zeros(self._iiwa_num_position),
             np.zeros(self._iiwa_num_position),
         )
+
+
+def prune_infeasible_eef_poses(
+    X_WGs: np.ndarray,
+    iiwa_joint_trajectory_source: IIWAJointTrajectorySource,
+    position_tolerance: float,
+    orientation_tolerance: float,
+) -> np.ndarray:
+    """Removes all poses for which no iiwa IK can be found."""
+    X_WG_feasible = []
+    for X_WG in X_WGs:
+        sol = iiwa_joint_trajectory_source._inverse_kinematics(
+            RigidTransform(X_WG), position_tolerance, orientation_tolerance
+        )
+        if sol is not None:
+            X_WG_feasible.append(X_WG)
+    return np.stack(X_WG_feasible)
