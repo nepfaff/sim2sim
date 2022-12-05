@@ -291,7 +291,9 @@ class IIWAJointTrajectorySource(LeafSystem):
                     )
                     continue
                 else:
-                    raise RuntimeError(f"No IK solution found for {i}th pose.")
+                    raise RuntimeError(
+                        f"No IK solution found for {i}th pose. Translation: {X_WG.translation()}, Rotation:\n{X_WG.rotation()}"
+                    )
 
             self._q_knots.append(q)
             self._breaks.append(t)
