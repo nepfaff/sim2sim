@@ -13,7 +13,7 @@ script:
 logger:
   class: "DynamicLogger"
   args:
-    label_to_mask: 4 # This label corresponds to the tomato soup can in the table_pid simulation setup
+    label_to_mask: 20 # This label corresponds to the tomato soup can in the table_pid simulation setup
     manipuland_name: "ycb_tomato_soup_can"
     kProximity: false
 
@@ -21,16 +21,19 @@ image_generator:
   class: "IIWAWristSphereImageGenerator"
   args:
     simulate_time: 1.0 # NOTE: This should be the same or shorter as `no_command_time`
-    look_at_point: [0.0, 0.6, 0.050450]
-    z_distances: [0.2, 0.3]
-    radii: [0.20, 0.15]
-    num_poses: [30, 30]
+    look_at_point: [0.0, 0.5, 0.050450]
+    z_distances: [0.3, 0.4]
+    radii: [0.3, 0.25]
+    num_poses: [20, 20]
+    time_between_camera_waypoints: 1.0
+    has_leg_camera: True
+    num_cameras_below_table: 5
 
 inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
     mesh_path: ./data/tomato_soup_can_instant_ngp.obj
-    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.6, 0.050450] # NOTE: Identical to `X_WManipuland` specified in `table_pid.py`
+    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.5, 0.050450] # NOTE: Identical to `X_WManipuland` specified in `table_pid.py`
 
 mesh_processor:
   class: "QuadricDecimationMeshProcessor"

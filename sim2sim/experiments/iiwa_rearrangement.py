@@ -38,7 +38,7 @@ IIWA_Q_NOMINAL = np.array([1.5, -0.4, 0.0, -1.75, 0.0, 1.5, 0.0])  # iiwa joint 
 MANIPULAND_DIRECTIVE = "../../models/iiwa_rearrangement/iiwa_rearrangement_manipuland_directive.yaml"
 MANIPULAND_NAME = "ycb_tomato_soup_can"
 MANIPULAND_BASE_LINK_NAME = "ycb_tomato_soup_can_base_link"
-MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(-np.pi / 2.0, 0.0, 0.0), [0.0, 0.6, 0.050450])  # X_WManipuland
+MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(-np.pi / 2.0, 0.0, 0.0), [0.0, 0.5, 0.050450])  # X_WManipuland
 
 LOGGERS = {
     "DynamicLogger": DynamicLogger,
@@ -111,7 +111,6 @@ def create_env(
         width=1920,
         height=1440,
         fov_y=np.pi / 4.0,
-        camera_prefix="wrist_camera",
     )
 
     # Add iiwa joint trajectory source

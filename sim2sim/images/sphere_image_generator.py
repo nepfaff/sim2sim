@@ -13,6 +13,7 @@ from pydrake.all import (
     DiagramBuilder,
     SceneGraph,
     Simulator,
+    Context,
 )
 
 from sim2sim.logging import DynamicLoggerBase
@@ -109,9 +110,29 @@ class SphereImageGenerator(ImageGeneratorBase):
             self._builder.Connect(self._scene_graph.get_query_output_port(), rgbd.query_object_input_port())
 
             # Export the camera outputs
-            self._builder.ExportOutput(rgbd.color_image_output_port(), f"{i}_rgba_image")
+            self._builder.ExportOutput(rgbd.color_image_output_port(), f"{i}_rgb_image")
             self._builder.ExportOutput(rgbd.depth_image_32F_output_port(), f"{i}_depth_image")
             self._builder.ExportOutput(rgbd.label_image_output_port(), f"{i}_label_image")
+
+    def _get_camera_data(
+        self, camera_name: str, context: Context
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[np.ndarray]]:
+        # Need to make a copy as the original value changes with the simulation
+        rgba_image = copy.deepcopy(self._diagram.GetOutputPort(f"{camera_name}_rgb_image").Eval(context).data)
+        rgb_image = rgba_image[:, :, :3]
+
+        depth_image = copy.deepcopy(
+            self._diagram.GetOutputPort(f"{camera_name}_depth_image").Eval(context).data.squeeze()
+        )
+        depth_image[depth_image == np.inf] = self._max_depth_range
+
+        label_image = copy.deepcopy(
+            self._diagram.GetOutputPort(f"{camera_name}_label_image").Eval(context).data.squeeze()
+        )
+        object_labels = np.unique(label_image)
+        masks = [np.uint8(np.where(label_image == label, 255, 0)) for label in object_labels]
+
+        return rgb_image, depth_image, object_labels, masks
 
     def _simulate_and_get_image_data(
         self,
@@ -127,19 +148,11 @@ class SphereImageGenerator(ImageGeneratorBase):
 
         images, depths, labels, masks = [], [], [], []
         for i in range(len(camera_poses)):
-            # Need to make a copy as the original value changes with the simulation
-            rgba_image = copy.deepcopy(self._diagram.GetOutputPort(f"{i}_rgba_image").Eval(context).data)
-            rgb_image = rgba_image[:, :, :3]
-            images.append(rgb_image)
-
-            depth_image = copy.deepcopy(self._diagram.GetOutputPort(f"{i}_depth_image").Eval(context).data.squeeze())
-            depth_image[depth_image == np.inf] = self._max_depth_range
+            image, depth_image, object_labels, object_masks = self._get_camera_data(str(i), context)
+            images.append(image)
             depths.append(depth_image)
-
-            label_image = copy.deepcopy(self._diagram.GetOutputPort(f"{i}_label_image").Eval(context).data.squeeze())
-            object_labels = np.unique(label_image)
             labels.append(object_labels)
-            masks.append([np.uint8(np.where(label_image == label, 255, 0)) for label in object_labels])
+            masks.append(object_masks)
 
         return (
             images,

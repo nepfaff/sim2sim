@@ -42,15 +42,101 @@ directives:
 
 # Wrist camera
 - add_model:
-    name: wrist_camera
+    name: camera_wrist
     file: package://manipulation/camera_box.sdf
 - add_weld:
     parent: iiwa::iiwa_link_7
-    child: wrist_camera::base
+    child: camera_wrist::base
     X_PC:
         translation: [0.05, 0, 0.09]
         rotation: !Rpy { deg: [90, 0, 90]}
 - add_frame:
-    name: wrist_camera
+    name: camera_wrist
     X_PF:
-        base_frame: wrist_camera::base
+        base_frame: camera_wrist::base
+
+# Leg camera
+- add_model:
+    name: camera_leg
+    file: package://manipulation/camera_box.sdf
+- add_weld:
+    parent: table::table_top_center
+    child: camera_leg::base
+    X_PC:
+        translation: [0.0, -0.15, 0.07]
+        rotation: !Rpy { deg: [-90, 0, 0]}
+- add_frame:
+    name: camera_leg
+    X_PF:
+        base_frame: camera_leg::base
+
+# Below table cameras (Can be used if remove `table_top_visual` element of table - glass table)
+# Below table camera 0
+- add_model:
+    name: camera_below_table_0
+    file: package://manipulation/camera_box.sdf
+- add_weld:
+    parent: table::table_bottom_center
+    child: camera_below_table_0::base
+    X_PC:
+        translation: [0.0, 0.0, 0.3]
+        rotation: !Rpy { deg: [-40, 0, 0]}
+- add_frame:
+    name: camera_below_table_0
+    X_PF:
+        base_frame: camera_below_table_0::base
+# Below table camera 1
+- add_model:
+    name: camera_below_table_1
+    file: package://manipulation/camera_box.sdf
+- add_weld:
+    parent: table::table_bottom_center
+    child: camera_below_table_1::base
+    X_PC:
+        translation: [0.0, 0.2, 0.3]
+- add_frame:
+    name: camera_below_table_1
+    X_PF:
+        base_frame: camera_below_table_1::base
+# Below table camera 2
+- add_model:
+    name: camera_below_table_2
+    file: package://manipulation/camera_box.sdf
+- add_weld:
+    parent: table::table_bottom_center
+    child: camera_below_table_2::base
+    X_PC:
+        translation: [0.0, 0.4, 0.3]
+        rotation: !Rpy { deg: [40, 0, 0]}
+- add_frame:
+    name: camera_below_table_2
+    X_PF:
+        base_frame: camera_below_table_2::base
+# Below table camera 3
+- add_model:
+    name: camera_below_table_3
+    file: package://manipulation/camera_box.sdf
+- add_weld:
+    parent: table::table_bottom_center
+    child: camera_below_table_3::base
+    X_PC:
+        translation: [-0.3, 0.2, 0.3]
+        rotation: !Rpy { deg: [40, 0, 90]}
+- add_frame:
+    name: camera_below_table_3
+    X_PF:
+        base_frame: camera_below_table_3::base
+# Below table camera 4
+- add_model:
+    name: camera_below_table_4
+    file: package://manipulation/camera_box.sdf
+- add_weld:
+    parent: table::table_bottom_center
+    child: camera_below_table_4::base
+    X_PC:
+        translation: [0.3, 0.2, 0.3]
+        rotation: !Rpy { deg: [-40, 0, 90]}
+- add_frame:
+    name: camera_below_table_4
+    X_PF:
+        base_frame: camera_below_table_4::base

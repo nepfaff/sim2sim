@@ -1,5 +1,4 @@
 from typing import Tuple, List, Union
-import copy
 import os
 
 import numpy as np
@@ -12,7 +11,7 @@ from pydrake.all import (
 )
 
 from sim2sim.logging import DynamicLoggerBase
-from sim2sim.util import convert_camera_poses_to_iiwa_eef_poses
+from sim2sim.util import convert_camera_poses_to_iiwa_eef_poses, prune_infeasible_eef_poses
 from .sphere_image_generator import SphereImageGenerator
 
 
@@ -32,6 +31,9 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
         z_distances: Union[List, np.ndarray],
         radii: Union[List, np.ndarray],
         num_poses: Union[List, np.ndarray],
+        time_between_camera_waypoints: float,
+        has_leg_camera: bool,
+        num_cameras_below_table: int,
     ):
         """
         :param builder: The diagram builder.
@@ -45,6 +47,12 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
             recommended to have radii decrease monotonically.
         :param num_poses: The number of poses for each camera circle of shape (n,) where n is the number of camera
             circles. The number of poses should decrease as the radius decreases.
+        :param time_between_camera_waypoints: The time in seconds that the iiwa should take to move from one wrist camera
+            waypoint to the next.
+        :param has_leg_camera: Whether the setup has an iiwa leg camera of name `camera_leg`.
+        :param num_cameras_below_table: The number of cameras below the table. NOTE: The table must have no visual element
+            for these cameras to produce useful data. These cameras must have name `camera_below_table_{i}` where i is an
+            index in range 0...num_cameras_below_table-1.
         """
         super().__init__(
             builder,
@@ -57,8 +65,9 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
             num_poses,
         )
 
-        # TODO: Make this an argument
-        self._time_between_camera_waypoints = 1.0
+        self._time_between_camera_waypoints = time_between_camera_waypoints
+        self._has_leg_camera = has_leg_camera
+        self._num_cameras_below_table = num_cameras_below_table
 
         # Create meshcat
         self._visualizer, self._meshcat = self._logger.add_meshcat_visualizer(builder, scene_graph, kProximity=False)
@@ -75,10 +84,10 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
         # Get required systems
         plant = self._diagram.GetSubsystemByName("plant")
         world_frame = plant.world_frame()
-        gripper_frame = plant.GetFrameByName("body")
-        wrist_camera_frame = plant.GetFrameByName("wrist_camera")
         iiwa_trajectory_source = self._diagram.GetSubsystemByName("iiwa_joint_trajectory_source")
         iiwa_trajectory_source.set_meshcat(self._meshcat)
+
+        from sim2sim.util import visualize_poses
 
         # Simulate before generating image data
         self._visualizer.StartRecording()
@@ -88,8 +97,42 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
         plant_context = plant.GetMyContextFromRoot(context)
 
         X_CWs, images, depths, labels, masks = [], [], [], [], []
+
+        # Get image data from leg camera
+        X_WG_actual = plant.CalcRelativeTransform(
+            plant_context, frame_A=world_frame, frame_B=plant.GetFrameByName("camera_leg")
+        )
+        X_CWs.append(np.linalg.inv(X_WG_actual.GetAsMatrix4()))
+        image, depth_image, object_labels, object_masks = self._get_camera_data("camera_leg", context)
+        images.append(image)
+        depths.append(depth_image)
+        labels.append(object_labels)
+        masks.append(object_masks)
+
+        # Get image data from below table cameras
+        for i in range(self._num_cameras_below_table):
+            X_WG_actual = plant.CalcRelativeTransform(
+                plant_context, frame_A=world_frame, frame_B=plant.GetFrameByName(f"camera_below_table_{i}")
+            )
+            X_CWs.append(np.linalg.inv(X_WG_actual.GetAsMatrix4()))
+            image, depth_image, object_labels, object_masks = self._get_camera_data(f"camera_below_table_{i}", context)
+            images.append(image)
+            depths.append(depth_image)
+            labels.append(object_labels)
+            masks.append(object_masks)
+
+        # Prune camera poses that are not reachable with the wrist camera
+        X_WG_feasible = prune_infeasible_eef_poses(
+            X_WGs, iiwa_trajectory_source, position_tolerance=0.02, orientation_tolerance=0.02
+        )
+        print(f"Pruned {len(X_WGs)-len(X_WG_feasible)} infeasible wrist camera poses.")
+
+        visualize_poses(X_WG_feasible, self._meshcat)  # NOTE: Debug only
+
+        # Use wrist camera to generate image data
+        gripper_frame = plant.GetFrameByName("body")
         X_WG_last = plant.CalcRelativeTransform(plant_context, frame_A=world_frame, frame_B=gripper_frame)
-        for X_WG in X_WGs:
+        for X_WG in X_WG_feasible:
             iiwa_trajectory_source.set_t_start(context.get_time())
             iiwa_path = [X_WG_last, RigidTransform(X_WG)]
             try:
@@ -109,26 +152,16 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
             simulator.AdvanceTo(context.get_time() + self._time_between_camera_waypoints)
 
             # Get actual wrist camera pose
-            X_WG_actual = plant.CalcRelativeTransform(plant_context, frame_A=world_frame, frame_B=wrist_camera_frame)
+            X_WG_actual = plant.CalcRelativeTransform(
+                plant_context, frame_A=world_frame, frame_B=plant.GetFrameByName("camera_wrist")
+            )
             X_CWs.append(np.linalg.inv(X_WG_actual.GetAsMatrix4()))
 
-            # Need to make a copy as the original value changes with the simulation
-            rgba_image = copy.deepcopy(self._diagram.GetOutputPort("wrist_camera_rgb_image").Eval(context).data)
-            rgb_image = rgba_image[:, :, :3]
-            images.append(rgb_image)
-
-            depth_image = copy.deepcopy(
-                self._diagram.GetOutputPort("wrist_camera_depth_image").Eval(context).data.squeeze()
-            )
-            depth_image[depth_image == np.inf] = self._max_depth_range
+            image, depth_image, object_labels, object_masks = self._get_camera_data("camera_wrist", context)
+            images.append(image)
             depths.append(depth_image)
-
-            label_image = copy.deepcopy(
-                self._diagram.GetOutputPort("wrist_camera_label_image").Eval(context).data.squeeze()
-            )
-            object_labels = np.unique(label_image)
             labels.append(object_labels)
-            masks.append([np.uint8(np.where(label_image == label, 255, 0)) for label in object_labels])
+            masks.append(object_masks)
 
         self._visualizer.StopRecording()
         self._visualizer.PublishRecording()
