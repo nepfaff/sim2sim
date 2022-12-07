@@ -135,7 +135,6 @@ class IIWARearrangementSimulator(SimulatorBase):
             )
         ):
             # Get required systems
-            plant = diagram.GetSubsystemByName("plant")
             iiwa_trajectory_source: IIWAJointTrajectorySource = diagram.GetSubsystemByName(
                 "iiwa_joint_trajectory_source"
             )
