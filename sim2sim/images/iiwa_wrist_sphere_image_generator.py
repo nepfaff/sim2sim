@@ -87,8 +87,6 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
         iiwa_trajectory_source = self._diagram.GetSubsystemByName("iiwa_joint_trajectory_source")
         iiwa_trajectory_source.set_meshcat(self._meshcat)
 
-        from sim2sim.util import visualize_poses
-
         # Simulate before generating image data
         self._visualizer.StartRecording()
         simulator = Simulator(self._diagram)
@@ -126,8 +124,6 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
             X_WGs, iiwa_trajectory_source, position_tolerance=0.02, orientation_tolerance=0.02
         )
         print(f"Pruned {len(X_WGs)-len(X_WG_feasible)} infeasible wrist camera poses.")
-
-        visualize_poses(X_WG_feasible, self._meshcat)  # NOTE: Debug only
 
         # Use wrist camera to generate image data
         gripper_frame = plant.GetFrameByName("body")
