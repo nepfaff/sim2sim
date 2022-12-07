@@ -31,6 +31,10 @@ from pydrake.all import (
     CameraInfo,
     ClippingRange,
     DepthRange,
+    BsplineTrajectory,
+    PositionConstraint,
+    KinematicTrajectoryOptimization,
+    OrientationConstraint,
 )
 from pydrake.multibody import inverse_kinematics
 from manipulation.scenarios import AddIiwa, AddWsg, AddRgbdSensors, AddPlanarIiwa
@@ -76,6 +80,7 @@ def add_iiwa_system(
 
     # Make the plant for the iiwa controller to use
     iiwa_controller_plant = MultibodyPlant(time_step=iiwa_time_step)
+    iiwa_controller_plant.set_name(iiwa_instance_name + "_controller_plant")
     if plant.num_positions(iiwa_instance_idx) == 3:
         controller_iiwa = AddPlanarIiwa(iiwa_controller_plant)
     else:
@@ -219,6 +224,56 @@ def convert_camera_poses_to_iiwa_eef_poses(X_CWs: np.ndarray) -> np.ndarray:
     return np.stack(X_WGs)
 
 
+def calc_inverse_kinematics(
+    plant: MultibodyPlant,
+    X_G: RigidTransform,
+    initial_guess: np.ndarray,
+    position_tolerance: float,
+    orientation_tolerance: float,
+) -> Optional[np.ndarray]:
+    """
+    :param plant: The iiwa control plant.
+    :param X_G: Gripper pose to compute the joint angles for.
+    :param initial_guess: The initial guess to use of shape (n,) where n are the number of positions.
+    :param position_tolerance: The position tolerance to use for the global IK optimization problem.
+    :param orientation_tolerance: The orientation tolerance to use for the global IK optimization problem.
+    :return: Joint configuration for the iiwa. Returns None if no IK solution could be found.
+    """
+    ik = inverse_kinematics.InverseKinematics(plant)
+    q_variables = ik.q()
+
+    gripper_frame = plant.GetFrameByName("body")
+
+    # Position constraint
+    p_G_ref = X_G.translation()
+    ik.AddPositionConstraint(
+        frameB=gripper_frame,
+        p_BQ=np.zeros(3),
+        frameA=plant.world_frame(),
+        p_AQ_lower=p_G_ref - position_tolerance,
+        p_AQ_upper=p_G_ref + position_tolerance,
+    )
+
+    # Orientation constraint
+    R_G_ref = X_G.rotation()
+    ik.AddOrientationConstraint(
+        frameAbar=plant.world_frame(),
+        R_AbarA=R_G_ref,
+        frameBbar=gripper_frame,
+        R_BbarB=RotationMatrix(),
+        theta_bound=orientation_tolerance,
+    )
+
+    prog = ik.prog()
+    prog.SetInitialGuess(q_variables, initial_guess)
+
+    result = Solve(prog)
+    if not result.is_success():
+        return None
+    q_sol = result.GetSolution(q_variables)
+    return q_sol
+
+
 class IIWAJointTrajectorySource(LeafSystem):
     """Computes a trajectory between two poses in joint space."""
 
@@ -283,7 +338,11 @@ class IIWAJointTrajectorySource(LeafSystem):
 
         t = 0.0
         for i, X_WG in enumerate(X_WGs):
-            q = self._inverse_kinematics(X_WG, ik_position_tolerance, ik_orientation_tolerance)
+            # Use the eef pose at the previous knot point as an initial guess
+            initial_guess = self._q_nominal if len(self._q_knots) == 0 else self._q_knots[-1]
+            q = calc_inverse_kinematics(
+                self._plant, X_WG, initial_guess, ik_position_tolerance, ik_orientation_tolerance
+            )
             if q is None:
                 if allow_no_ik_sols:
                     print(
@@ -306,58 +365,6 @@ class IIWAJointTrajectorySource(LeafSystem):
                 AddMeshcatTriad(self._meshcat, f"X_WG{i}", length=0.15, radius=0.006, X_PT=X_WG)
         self._q_traj = self._calc_q_traj()
 
-    def _inverse_kinematics(
-        self,
-        X_G: RigidTransform,
-        position_tolerance: float,
-        orientation_tolerance: float,
-    ) -> Optional[np.ndarray]:
-        """
-        :param X_G: Gripper pose to compute the joint angles for.
-        :param position_tolerance: The position tolerance to use for the global IK optimization problem.
-        :param orientation_tolerance: The orientation tolerance to use for the global IK optimization problem.
-        :return: Joint configuration for the iiwa. Returns None if no IK solution could be found.
-        """
-        ik = inverse_kinematics.InverseKinematics(self._plant)
-        q_variables = ik.q()
-
-        gripper_frame = self._plant.GetFrameByName("body")
-
-        # Position constraint
-        p_G_ref = X_G.translation()
-        ik.AddPositionConstraint(
-            frameB=gripper_frame,
-            p_BQ=np.zeros(3),
-            frameA=self._plant.world_frame(),
-            p_AQ_lower=p_G_ref - position_tolerance,
-            p_AQ_upper=p_G_ref + position_tolerance,
-        )
-
-        # Orientation constraint
-        R_G_ref = X_G.rotation()
-        ik.AddOrientationConstraint(
-            frameAbar=self._plant.world_frame(),
-            R_AbarA=R_G_ref,
-            frameBbar=gripper_frame,
-            R_BbarB=RotationMatrix(),
-            theta_bound=orientation_tolerance,
-        )
-
-        prog = ik.prog()
-
-        # Use the eef pose at the previous knot point as an initial guess
-        if len(self._q_knots) == 0:
-            init_guess = self._q_nominal
-        else:
-            init_guess = self._q_knots[-1]
-        prog.SetInitialGuess(q_variables, init_guess)
-
-        result = Solve(prog)
-        if not result.is_success():
-            return None
-        q_sol = result.GetSolution(q_variables)
-        return q_sol
-
     def _calc_x(self, context, output) -> None:
         """
         :return: The robot state [q, q_dot] where q are the joint positions.
@@ -376,6 +383,9 @@ class IIWAJointTrajectorySource(LeafSystem):
         self._q_knots = []
         self._breaks = []
 
+    def get_q_traj(self) -> PiecewisePolynomial:
+        return self._q_traj
+
     def _calc_q_traj(self) -> PiecewisePolynomial:
         """
         Generate a joint configuration trajectory from a beginning and end configuration.
@@ -389,6 +399,157 @@ class IIWAJointTrajectorySource(LeafSystem):
             np.zeros(self._iiwa_num_position),
             np.zeros(self._iiwa_num_position),
         )
+
+
+class IIWAOptimizedJointTrajectorySource(LeafSystem):
+    """Computes a trajectory for a path using kinematic trajectory optimization."""
+
+    def __init__(
+        self,
+        iiwa_control_plant: MultibodyPlant,
+        q_nominal: np.ndarray,
+        t_start: float = 0.0,
+        iiwa_num_positions: int = 7,
+    ):
+        """
+        :param iiwa_control_plant: The iiwa control plant.
+        :param q_nominal: The iiwa initial joint positions.
+        :param t_start: The trajectory start time.
+        :param iiwa_num_positions: The number of joints of the iiwa contained in `plant`.
+        """
+        super().__init__()
+
+        self._iiwa_control_plant = iiwa_control_plant
+        self._q_nominal = q_nominal
+        self._t_start = t_start
+        self._iiwa_num_position = iiwa_num_positions
+
+        self._q_traj = None
+
+        # iiwa desired state [q, q_dot]
+        self.x_output_port = self.DeclareVectorOutputPort(
+            "traj_x", BasicVector(self._iiwa_num_position * 2), self._calc_x
+        )
+
+    def set_trajectory(
+        self,
+        X_WGs: List[RigidTransform],
+        initial_guess: np.ndarray,
+        ik_position_tolerance: float,
+        ik_orientation_tolerance: float,
+    ) -> float:
+        """
+        Used to set a new trajectory using kinematic trajectory optimization.
+
+        :param X_WG: The waypoints that the eef must go through (added as position constraints).
+        :param initial_guess: The initial joint position guess of shape (7, n) where n is the number of control points.
+        :param ik_position_tolerance: The position tolerance to use for the global IK optimization problem.
+        :param ik_orientation_tolerance: The orientation tolerance to use for the global IK optimization problem.
+        :param allow_no_ik_sols: If true, don't raise an exception on no IK solution found but skip to the next one.
+        :return: The trajectory end time.
+        """
+        num_control_points = initial_guess.shape[1]
+        plant_context = self._iiwa_control_plant.CreateDefaultContext()
+        num_q = self._iiwa_control_plant.num_positions()
+        gripper_frame = self._iiwa_control_plant.GetFrameByName("body")
+
+        trajopt = KinematicTrajectoryOptimization(
+            num_positions=self._iiwa_control_plant.num_positions(), num_control_points=num_control_points
+        )
+        prog = trajopt.get_mutable_prog()
+
+        # Set initial guess
+        path_guess = BsplineTrajectory(trajopt.basis(), initial_guess)
+        trajopt.SetInitialGuess(path_guess)
+
+        # Add iiwa limits
+        trajopt.AddPositionBounds(
+            self._iiwa_control_plant.GetPositionLowerLimits(), self._iiwa_control_plant.GetPositionUpperLimits()
+        )
+        # Enforce slow velocities
+        trajopt.AddVelocityBounds(
+            self._iiwa_control_plant.GetVelocityLowerLimits(), self._iiwa_control_plant.GetVelocityUpperLimits() / 5.0
+        )
+
+        # TODO: This should be an argument
+        trajopt.AddDurationConstraint(lb=2.0, ub=30.0)
+
+        # Add pose constraints
+        for i, s in enumerate(np.linspace(0, 1, len(X_WGs))):
+            translation_constraint = PositionConstraint(
+                plant=self._iiwa_control_plant,
+                frameA=self._iiwa_control_plant.world_frame(),
+                p_AQ_lower=X_WGs[i].translation() - ik_position_tolerance,
+                p_AQ_upper=X_WGs[i].translation() + ik_position_tolerance,
+                frameB=gripper_frame,
+                p_BQ=[0, 0, 0],
+                plant_context=plant_context,
+            )
+            trajopt.AddPathPositionConstraint(constraint=translation_constraint, s=s)
+
+            orientation_constraint = OrientationConstraint(
+                plant=self._iiwa_control_plant,
+                frameAbar=self._iiwa_control_plant.world_frame(),
+                R_AbarA=X_WGs[i].rotation(),
+                frameBbar=gripper_frame,
+                R_BbarB=RotationMatrix(),
+                theta_bound=ik_orientation_tolerance,
+                plant_context=plant_context,
+            )
+            trajopt.AddPathPositionConstraint(constraint=orientation_constraint, s=s)
+
+        # start and end with zero velocity
+        trajopt.AddPathVelocityConstraint(lb=np.zeros((num_q, 1)), ub=np.zeros((num_q, 1)), s=0)
+        trajopt.AddPathVelocityConstraint(lb=np.zeros((num_q, 1)), ub=np.zeros((num_q, 1)), s=1)
+
+        trajopt.AddDurationCost(1.0)
+
+        result = Solve(prog)
+        if not result.is_success():
+            print("Trajectory optimization failed. Executing trajectory anyways.")
+
+        self._q_traj = trajopt.ReconstructTrajectory(result)
+
+        return self._q_traj.end_time()
+
+    def _calc_x(self, context, output) -> None:
+        """
+        :return: The robot state [q, q_dot] where q are the joint positions.
+        """
+        if self._q_traj:
+            t = context.get_time() - self._t_start
+            q = self._q_traj.value(t).ravel()
+            q_dot = self._q_traj.MakeDerivative(1).value(t).ravel()
+        else:
+            q = self._q_nominal
+            q_dot = np.array([0.0] * self._iiwa_num_position)
+        output.SetFromVector(np.hstack([q, q_dot]))
+
+    def set_t_start(self, t_start_new: float) -> None:
+        self._t_start = t_start_new
+
+
+class WSGCommandSource(LeafSystem):
+    """Commands the WSG to the last specified position."""
+
+    def __init__(self, initial_pos: float):
+        """
+        :param initial_pos: The angle to command the table to.
+        """
+        super().__init__()
+
+        self._command_pos = initial_pos
+
+        self._control_output_port = self.DeclareVectorOutputPort("wsg_position", BasicVector(1), self.CalcOutput)
+
+    def set_new_pos_command(self, pos: float) -> None:
+        """
+        :param pos: The new WSG position to command.
+        """
+        self._command_pos = pos
+
+    def CalcOutput(self, context, output):
+        output.SetFromVector([self._command_pos])
 
 
 def prune_infeasible_eef_poses(
