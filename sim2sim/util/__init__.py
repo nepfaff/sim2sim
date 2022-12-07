@@ -6,5 +6,7 @@ from .iiwa import (
     add_cameras,
     convert_camera_poses_to_iiwa_eef_poses,
     IIWAJointTrajectorySource,
+    IIWAOptimizedJointTrajectorySource,
+    WSGCommandSource,
     prune_infeasible_eef_poses,
 )

@@ -8,14 +8,14 @@ from pydrake.all import (
     LoadModelDirectives,
     LoadModelDirectivesFromString,
     ProcessModelDirectives,
-    AddMultibodyPlantSceneGraph,
+    AddMultibodyPlant,
     RigidTransform,
     DiagramBuilder,
     RollPitchYaw,
     SceneGraph,
     MultibodyPlant,
     Demultiplexer,
-    ConstantVectorSource,
+    MultibodyPlantConfig,
 )
 
 from sim2sim.logging import DynamicLogger
@@ -26,10 +26,12 @@ from sim2sim.util import (
     add_cameras,
     add_wsg_system,
     IIWAJointTrajectorySource,
+    WSGCommandSource,
 )
 from sim2sim.images import SphereImageGenerator, IIWAWristSphereImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
 from sim2sim.mesh_processing import IdentityMeshProcessor, QuadricDecimationMeshProcessor
+from sim2sim.simulation import BasicSimulator, IIWARearrangementSimulator
 
 SCENE_DIRECTIVE = "../../models/iiwa_rearrangement/iiwa_rearrangement_scene_directive.yaml"
 IIWA_Q_NOMINAL = np.array([1.5, -0.4, 0.0, -1.75, 0.0, 1.5, 0.0])  # iiwa joint angles in radians
@@ -43,7 +45,6 @@ MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(-np.pi / 2.0, 0.0, 0.0), [
 LOGGERS = {
     "DynamicLogger": DynamicLogger,
 }
-# TODO: Add image generator that controls the iiwa to take images with the wrist camera
 IMAGE_GENERATORS = {
     "SphereImageGenerator": SphereImageGenerator,
     "IIWAWristSphereImageGenerator": IIWAWristSphereImageGenerator,
@@ -55,8 +56,10 @@ MESH_PROCESSORS = {
     "IdentityMeshProcessor": IdentityMeshProcessor,
     "QuadricDecimationMeshProcessor": QuadricDecimationMeshProcessor,
 }
-# TODO: Add iiwa rearrangement simulator
-SIMULATORS = {}
+SIMULATORS = {
+    "BasicSimulator": BasicSimulator,
+    "IIWARearrangementSimulator": IIWARearrangementSimulator,
+}
 
 
 def create_env(
@@ -69,7 +72,14 @@ def create_env(
 
     # Create plant
     builder = DiagramBuilder()
-    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, timestep)
+    multibody_plant_config = MultibodyPlantConfig(
+        time_step=timestep,
+        # contact_surface_representation="polygon",
+        contact_model="hydroelastic_with_fallback",  # "point"
+        discrete_contact_solver="sap",
+    )
+    plant, scene_graph = AddMultibodyPlant(multibody_plant_config, builder)
+    plant.set_name("plant")
     parser = get_parser(plant)
     for directive_path in directive_files:
         directive = LoadModelDirectives(directive_path)
@@ -124,10 +134,10 @@ def create_env(
     builder.Connect(iiwa_joint_trajectory_source.get_output_port(), demux.get_input_port())
     builder.Connect(demux.get_output_port(0), iiwa_position_input)
 
-    # Connect WSG controller to something
-    # TODO: Connect to a system that we can control for picking items (stepping through simulation in loop and asking for new commands)
-    wsg_position = builder.AddSystem(ConstantVectorSource([0.1]))
-    builder.Connect(wsg_position.get_output_port(), wsg_position_input)
+    # Add wsg position source
+    wsg_command_source = builder.AddSystem(WSGCommandSource(initial_pos=0.1))
+    wsg_command_source.set_name("wsg_command_source")
+    builder.Connect(wsg_command_source.get_output_port(), wsg_position_input)
 
     return builder, scene_graph, plant
 
@@ -305,16 +315,16 @@ def run_iiwa_rearrangement(
 
     logger.add_plants(outer_plant, inner_plant)
 
-    # simulator_class = SIMULATORS[params["simulator"]["class"]]
-    # simulator = simulator_class(
-    #     outer_builder=builder_outer,
-    #     outer_scene_graph=scene_graph_outer,
-    #     inner_builder=builder_inner,
-    #     inner_scene_graph=scene_graph_inner,
-    #     logger=logger,
-    #     **(params["simulator"]["args"] if params["simulator"]["args"] is not None else {}),
-    # )
-    # simulator.simulate(sim_duration)
+    simulator_class = SIMULATORS[params["simulator"]["class"]]
+    simulator = simulator_class(
+        outer_builder=builder_outer,
+        outer_scene_graph=scene_graph_outer,
+        inner_builder=builder_inner,
+        inner_scene_graph=scene_graph_inner,
+        logger=logger,
+        **(params["simulator"]["args"] if params["simulator"]["args"] is not None else {}),
+    )
+    simulator.simulate(sim_duration)
     print("Finished simulating.")
 
     logger.save_data()
