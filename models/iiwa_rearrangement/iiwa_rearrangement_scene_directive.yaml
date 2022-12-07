@@ -40,6 +40,16 @@ directives:
         translation: [0, 0, 0.09]
         rotation: !Rpy { deg: [90, 0, 90]}
 
+# Insertion box
+- add_model:
+    name: insertion_box
+    file: package://sim2sim/models/iiwa_rearrangement/insertion_box.sdf
+- add_weld:
+    parent: world
+    child: insertion_box::insertion_box_bottom_center
+    X_PC:
+        translation: [0.5, 0, 0]
+
 # Wrist camera
 - add_model:
     name: camera_wrist
