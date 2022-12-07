@@ -39,9 +39,6 @@ from pydrake.all import (
 from pydrake.multibody import inverse_kinematics
 from manipulation.scenarios import AddIiwa, AddWsg, AddRgbdSensors, AddPlanarIiwa
 
-# Transform from iiwa link 7 to eef (gripper)
-X_L7E = RigidTransform(RollPitchYaw(np.pi / 2, 0, np.pi / 2), np.array([0, 0, 0.09]))
-
 
 def add_iiwa_system(
     builder: DiagramBuilder,
