@@ -19,7 +19,7 @@ from pydrake.all import (
     MultibodyPlant,
 )
 
-from sim2sim.simulation import TablePIDSimulator
+from sim2sim.simulation import BasicSimulator
 from sim2sim.logging import DynamicLogger
 from sim2sim.util import get_parser, calc_mesh_inertia
 from sim2sim.images import SphereImageGenerator
@@ -49,7 +49,7 @@ MESH_PROCESSORS = {
     "QuadricDecimationMeshProcessor": QuadricDecimationMeshProcessor,
 }
 SIMULATORS = {
-    "TablePIDSimulator": TablePIDSimulator,
+    "BasicSimulator": BasicSimulator,
 }
 
 
