@@ -4,15 +4,14 @@ from pydrake.all import (
     DiagramBuilder,
     SceneGraph,
     Simulator,
-    LogVectorOutput,
 )
 
 from sim2sim.logging import DynamicLoggerBase
 from sim2sim.simulation import SimulatorBase
 
 
-class TablePIDSimulator(SimulatorBase):
-    """The simulator for the table PID scene."""
+class BasicSimulator(SimulatorBase):
+    """A simulator that simply simulates the scene for `duration` seconds."""
 
     def __init__(
         self,

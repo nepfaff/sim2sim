@@ -1,2 +1,3 @@
 from .simulator_base import SimulatorBase
-from .table_pid_simulator import TablePIDSimulator
+from .basic_simulator import BasicSimulator
+from .iiwa_rearrangement_simulator import IIWARearrangementSimulator
