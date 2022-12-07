@@ -313,17 +313,26 @@ class IIWAJointTrajectorySource(LeafSystem):
         """Replaces the meshcat visualizer."""
         self._meshcat = meshcat
 
-    def set_trajectory(
+    def set_trajectory(self, q_traj: PiecewisePolynomial, t_start: float = 0.0) -> None:
+        """
+        :param q_traj: The trajectory to set.
+        :param t_start: The trajectory start time.
+        """
+        self._q_traj = q_traj
+        self._t_start = t_start
+
+    def compute_and_set_trajectory(
         self,
         X_WGs: List[RigidTransform],
         time_between_breakpoints: Union[float, List[float]],
         ik_position_tolerance: float,
         ik_orientation_tolerance: float,
         allow_no_ik_sols: bool,
-        debug: bool,
-    ):
+        debug: bool = False,
+    ) -> PiecewisePolynomial:
         """
-        Used to set a new trajectory.
+        Computes and sets a new trajectory.
+        NOTE: We need to reset the state using `set_t_start` before we call this method a second time.
 
         :param X_WG: A path of eef poses.
         :param time_between_breakpoints: The time between the poses in the path. If a float, the same duration is used
@@ -333,6 +342,7 @@ class IIWAJointTrajectorySource(LeafSystem):
         :param ik_orientation_tolerance: The orientation tolerance to use for the global IK optimization problem.
         :param allow_no_ik_sols: If true, don't raise an exception on no IK solution found but skip to the next one.
         :param debug: If true, visualize the path in meshcat.
+        :return: The joint trajectory.
         """
         assert isinstance(time_between_breakpoints, float) or len(time_between_breakpoints) == len(X_WGs)
 
@@ -364,6 +374,8 @@ class IIWAJointTrajectorySource(LeafSystem):
             if debug and self._meshcat is not None:
                 AddMeshcatTriad(self._meshcat, f"X_WG{i}", length=0.15, radius=0.006, X_PT=X_WG)
         self._q_traj = self._calc_q_traj()
+
+        return self._q_traj
 
     def _calc_x(self, context, output) -> None:
         """
