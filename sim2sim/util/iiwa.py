@@ -1,4 +1,5 @@
 from typing import List, Union, Optional
+from enum import Enum
 
 import numpy as np
 from manipulation.meshcat_utils import AddMeshcatTriad
@@ -23,7 +24,6 @@ from pydrake.all import (
     LeafSystem,
     RotationMatrix,
     SceneGraph,
-    RollPitchYaw,
     MakeRenderEngineVtk,
     RenderEngineVtkParams,
     DepthRenderCamera,
@@ -35,6 +35,10 @@ from pydrake.all import (
     PositionConstraint,
     KinematicTrajectoryOptimization,
     OrientationConstraint,
+    JointStiffnessController,
+    PortSwitch,
+    AbstractValue,
+    InputPortIndex,
 )
 from pydrake.multibody import inverse_kinematics
 from manipulation.scenarios import AddIiwa, AddWsg, AddRgbdSensors, AddPlanarIiwa
@@ -85,8 +89,8 @@ def add_iiwa_system(
     AddWsg(iiwa_controller_plant, controller_iiwa, welded=True)
     iiwa_controller_plant.Finalize()
 
-    # Add the iiwa controller
-    iiwa_controller = builder.AddSystem(
+    # Add the iiwa controllers
+    iiwa_inverse_dynamics_controller = builder.AddSystem(
         InverseDynamicsController(
             iiwa_controller_plant,
             kp=[100] * num_iiwa_positions,
@@ -95,12 +99,38 @@ def add_iiwa_system(
             has_reference_acceleration=False,
         )
     )
-    iiwa_controller.set_name(iiwa_instance_name + "_controller")
-    builder.Connect(plant.get_state_output_port(iiwa_instance_idx), iiwa_controller.get_input_port_estimated_state())
+    iiwa_inverse_dynamics_controller.set_name(iiwa_instance_name + "_inverse_dynamics_controller")
+    iiwa_stiffness_controller = builder.AddSystem(
+        JointStiffnessController(
+            iiwa_controller_plant,
+            kp=[500] * num_iiwa_positions,
+            kd=[30] * num_iiwa_positions,
+        )
+    )
+    iiwa_stiffness_controller.set_name(iiwa_instance_name + "_stiffness_controller")
+    builder.Connect(
+        plant.get_state_output_port(iiwa_instance_idx),
+        iiwa_inverse_dynamics_controller.get_input_port_estimated_state(),
+    )
+    builder.Connect(
+        plant.get_state_output_port(iiwa_instance_idx), iiwa_stiffness_controller.get_input_port_estimated_state()
+    )
+
+    # Use a ports switch to switch between inverse dynamics and stiffness controllers
+    switch = builder.AddSystem(PortSwitch(num_iiwa_positions))
+    builder.Connect(
+        iiwa_inverse_dynamics_controller.get_output_port_control(),
+        switch.DeclareInputPort("inverse_dynamics"),
+    )
+    builder.Connect(iiwa_stiffness_controller.get_output_port_generalized_force(), switch.DeclareInputPort("stiffness"))
+    # Use a PassThrough system to export the control mode port
+    iiwa_control_mode = builder.AddSystem(PassThrough(AbstractValue.Make(InputPortIndex(0))))
+    iiwa_control_mode_input = iiwa_control_mode.get_input_port()
+    builder.Connect(iiwa_control_mode.get_output_port(), switch.get_port_selector_input_port())
 
     # Add in the feed-forward torque
     adder = builder.AddSystem(Adder(2, num_iiwa_positions))
-    builder.Connect(iiwa_controller.get_output_port_control(), adder.get_input_port(0))
+    builder.Connect(switch.get_output_port(), adder.get_input_port(0))
     # Use a PassThrough to make the port optional (it will provide zero values if not connected)
     torque_passthrough = builder.AddSystem(PassThrough([0] * num_iiwa_positions))
     builder.Connect(torque_passthrough.get_output_port(), adder.get_input_port(1))
@@ -112,7 +142,12 @@ def add_iiwa_system(
         StateInterpolatorWithDiscreteDerivative(num_iiwa_positions, iiwa_time_step, suppress_initial_transient=True)
     )
     desired_state_from_position.set_name(iiwa_instance_name + "_desired_state_from_position")
-    builder.Connect(desired_state_from_position.get_output_port(), iiwa_controller.get_input_port_desired_state())
+    builder.Connect(
+        desired_state_from_position.get_output_port(), iiwa_inverse_dynamics_controller.get_input_port_desired_state()
+    )
+    builder.Connect(
+        desired_state_from_position.get_output_port(), iiwa_stiffness_controller.get_input_port_desired_state()
+    )
     builder.Connect(iiwa_position.get_output_port(), desired_state_from_position.get_input_port())
 
     # Export commanded torques
@@ -120,7 +155,8 @@ def add_iiwa_system(
     torque_external_output = plant.get_generalized_contact_forces_output_port(iiwa_instance_idx)
 
     return (
-        iiwa_controller,
+        iiwa_controller_plant,
+        iiwa_control_mode_input,
         position_input,
         position_commanded_output,
         state_estimated_output,
@@ -576,3 +612,33 @@ def prune_infeasible_eef_poses(
         if sol is not None:
             X_WG_feasible.append(X_WG)
     return np.stack(X_WG_feasible)
+
+
+class IIWAControlModeSource(LeafSystem):
+    class ControllerMode(Enum):
+        INVERSE_DYNAMICS = 0
+        STIFFNESS = 1
+
+    def __init__(self):
+        super().__init__()
+
+        self._mode = self.ControllerMode.INVERSE_DYNAMICS
+
+        self.DeclareAbstractOutputPort(
+            "iiwa_control_mode", lambda: AbstractValue.Make(InputPortIndex(0)), self.CalcControlMode
+        )
+
+    def set_control_mode(self, control_mode: "IIWAControlModeSource.ControllerMode") -> None:
+        self._mode = control_mode
+
+    def CalcControlMode(self, context, output):
+        # mode = context.get_abstract_state(int(self._mode_index)).get_value()
+
+        output.set_value(InputPortIndex(2))
+
+        if self._mode == self.ControllerMode.INVERSE_DYNAMICS:
+            # inverse dynamics controller
+            output.set_value(InputPortIndex(1))
+        else:
+            # stiffness controller
+            output.set_value(InputPortIndex(2))

@@ -27,6 +27,7 @@ from sim2sim.util import (
     add_wsg_system,
     IIWAJointTrajectorySource,
     WSGCommandSource,
+    IIWAControlModeSource,
 )
 from sim2sim.images import SphereImageGenerator, IIWAWristSphereImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
@@ -74,7 +75,6 @@ def create_env(
     builder = DiagramBuilder()
     multibody_plant_config = MultibodyPlantConfig(
         time_step=timestep,
-        # contact_surface_representation="polygon",
         contact_model="hydroelastic_with_fallback",  # "point"
         discrete_contact_solver="sap",
     )
@@ -93,7 +93,8 @@ def create_env(
 
     # Add iiwa controller
     (
-        iiwa_controller,
+        iiwa_controller_plant,
+        iiwa_control_mode_input,
         iiwa_position_input,
         iiwa_position_commanded_output,
         iiwa_state_estimated_output,
@@ -105,6 +106,9 @@ def create_env(
     ) = add_iiwa_system(
         builder=builder, plant=plant, iiwa_instance_idx=plant.GetModelInstanceByName("iiwa"), iiwa_time_step=timestep
     )
+    iiwa_control_mode_source = builder.AddSystem(IIWAControlModeSource())
+    iiwa_control_mode_source.set_name("iiwa_control_mode_source")
+    builder.Connect(iiwa_control_mode_source.GetOutputPort("iiwa_control_mode"), iiwa_control_mode_input)
 
     # Add wsg controller
     (
@@ -124,11 +128,12 @@ def create_env(
     )
 
     # Add iiwa joint trajectory source
-    iiwa_trajectory_source = IIWAJointTrajectorySource(
-        plant=iiwa_controller.get_multibody_plant_for_control(),
-        q_nominal=IIWA_Q_NOMINAL,
+    iiwa_joint_trajectory_source = builder.AddSystem(
+        IIWAJointTrajectorySource(
+            plant=iiwa_controller_plant,
+            q_nominal=IIWA_Q_NOMINAL,
+        )
     )
-    iiwa_joint_trajectory_source = builder.AddSystem(iiwa_trajectory_source)
     iiwa_joint_trajectory_source.set_name("iiwa_joint_trajectory_source")
     demux = builder.AddSystem(Demultiplexer(14, 7))  # Assume 7 iiwa joint positions
     builder.Connect(iiwa_joint_trajectory_source.get_output_port(), demux.get_input_port())
@@ -332,11 +337,3 @@ def run_iiwa_rearrangement(
 
     # Clean up temporary files
     shutil.rmtree(tmp_folder)
-
-
-# TODO: Must do the following before using trajectory source
-# simulator = Simulator(diagram)
-# context = simulator.get_mutable_context()
-# plant_context = plant.GetMyContextFromRoot(context)
-# # Set initial iiwa joint position
-# plant.SetPositions(plant_context, iiwa_model, IIWA_Q_NOMINAL)

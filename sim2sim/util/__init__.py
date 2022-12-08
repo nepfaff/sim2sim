@@ -9,4 +9,5 @@ from .iiwa import (
     IIWAOptimizedJointTrajectorySource,
     WSGCommandSource,
     prune_infeasible_eef_poses,
+    IIWAControlModeSource,
 )
