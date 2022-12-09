@@ -1,18 +1,17 @@
 import os
 import pathlib
 
-import numpy as np
 from pydrake.all import RigidTransform, RollPitchYaw
 
 from sim2sim.experiments import run_iiwa_manip
 
-MANIPULAND_DIRECTIVE = "../../models/iiwa_manip/iiwa_manip_tomato_soup_can_manipuland_directive.yaml"
-MANIPULAND_NAME = "ycb_tomato_soup_can"
-MANIPULAND_BASE_LINK_NAME = "ycb_tomato_soup_can_base_link"
-MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(-np.pi / 2.0, 0.0, 0.0), [0.0, 0.5, 0.050450])  # X_WManipuland
+MANIPULAND_DIRECTIVE = "../../models/iiwa_manip/iiwa_manip_pepper_manipuland_directive.yaml"
+MANIPULAND_NAME = "pepper"
+MANIPULAND_BASE_LINK_NAME = "pepper_base_link"
+MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(0.0, 0.0, 0.0), [0.0, 0.45, 0.035])  # X_WManipuland
 
 
-def run_iiwa_manip_tomato_soup_can(
+def run_iiwa_manip_pepper(
     logging_path: str,
     params: dict,
     sim_duration: float,

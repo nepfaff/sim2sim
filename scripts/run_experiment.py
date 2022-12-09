@@ -5,11 +5,12 @@
 import yaml
 import argparse
 
-from sim2sim.experiments import run_table_pid, run_iiwa_manip_tomato_soup_can
+from sim2sim.experiments import run_table_pid, run_iiwa_manip_tomato_soup_can, run_iiwa_manip_pepper
 
 ENTRYPOINTS = {
     "table_pid": run_table_pid,
     "iiwa_manip_tomato_soup_can": run_iiwa_manip_tomato_soup_can,
+    "iiwa_manip_pepper": run_iiwa_manip_pepper,
 }
 
 
