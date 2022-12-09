@@ -13,7 +13,7 @@ script:
 logger:
   class: "DynamicLogger"
   args:
-    label_to_mask: 20 # This label corresponds to the tomato soup can in the iiwa_manip_tomato_soup_can setup
+    label_to_mask: 22 # This label corresponds to the tomato soup can in the iiwa_manip_tomato_soup_can setup
     manipuland_name: "ycb_tomato_soup_can"
     kProximity: false
 
