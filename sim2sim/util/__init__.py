@@ -1,4 +1,4 @@
-from .util import get_parser, visualize_poses
+from .util import get_parser, visualize_poses, create_processed_mesh_directive_str
 from .physics import calc_mesh_inertia
 from .iiwa import (
     add_iiwa_system,
