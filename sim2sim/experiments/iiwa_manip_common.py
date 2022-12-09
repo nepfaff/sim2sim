@@ -231,6 +231,7 @@ def run_iiwa_manip(
 
     # Compute mesh inertia and mass assuming constant density of water
     mass, inertia = calc_mesh_inertia(processed_mesh)
+    logger.log_manipuland_estimated_physics(manipuland_mass_estimated=mass, manipuland_inertia_estimated=inertia)
 
     # Save mesh data to create SDF files that can be added to a new simulation environment
     logger.log(raw_mesh=raw_mesh, processed_mesh=processed_mesh)

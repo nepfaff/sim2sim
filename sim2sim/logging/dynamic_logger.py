@@ -56,6 +56,10 @@ class DynamicLogger(DynamicLoggerBase):
         self._inner_manipuland_contact_forces: np.ndarray = None
         self._inner_manipuland_contact_force_times: np.ndarray = None
 
+        # Manipuland physics
+        self._manipuland_mass_estimated: float = None
+        self._manipuland_inertia_estimated: List[float] = None
+
     @staticmethod
     def add_meshcat_visualizer(
         builder: DiagramBuilder, scene_graph: SceneGraph, kProximity: bool
@@ -163,6 +167,12 @@ class DynamicLogger(DynamicLoggerBase):
             self._inner_manipuland_contact_force_times = log.sample_times()
             self._inner_manipuland_contact_forces = log.data().T  # Shape (t, 6)
 
+    def log_manipuland_estimated_physics(
+        self, manipuland_mass_estimated: float, manipuland_inertia_estimated: np.ndarray
+    ) -> None:
+        self._manipuland_mass_estimated = float(manipuland_mass_estimated)
+        self._manipuland_inertia_estimated = manipuland_inertia_estimated.tolist()
+
     def log(
         self,
         camera_poses: Optional[List[np.ndarray]] = None,
@@ -207,6 +217,8 @@ class DynamicLogger(DynamicLoggerBase):
         meta_data = {
             "logger_creation_timestamp": self._creation_timestamp,
             "logging_timestamp": str(datetime.datetime.now()),
+            "manipuland_mass_estimated": self._manipuland_mass_estimated,
+            "manipuland_inertia_estimated": self._manipuland_inertia_estimated,
         }
         with open(self._meta_data_file_path, "w") as f:
             yaml.dump(meta_data, f)
