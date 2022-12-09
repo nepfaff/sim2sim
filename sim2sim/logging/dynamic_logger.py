@@ -123,6 +123,7 @@ class DynamicLogger(DynamicLoggerBase):
         )
 
     def log_manipuland_poses(self, context: Context, is_outer: bool) -> None:
+        # NOTE: This really logs state which is both pose (7,) and spatial velocity (6,)
         assert self._outer_manipuland_pose_logger is not None and self._inner_manipuland_pose_logger is not None
 
         if is_outer:
