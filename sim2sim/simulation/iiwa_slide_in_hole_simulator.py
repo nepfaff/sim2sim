@@ -13,7 +13,7 @@ from sim2sim.simulation import IIWAJointTrajectorySimulatorBase
 from sim2sim.util import IIWAControlModeSource
 
 
-class IIWASlideInHoleSimulator(IIWAJointTrajectorySimulatorBase):
+class IIWAPushInHoleSimulator(IIWAJointTrajectorySimulatorBase):
     """The simulator for the iiwa slide in hole task."""
 
     def __init__(

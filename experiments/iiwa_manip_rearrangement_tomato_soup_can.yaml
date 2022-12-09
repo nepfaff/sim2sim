@@ -1,10 +1,10 @@
 # Unique identifier for this experiment for logging
-experiment_id: "iiwa_rearrangement"
+experiment_id: "iiwa_manip_rearrangement_tomato_soup_can"
 
 script:
-  name: "iiwa_rearrangement"
+  name: "iiwa_manip_tomato_soup_can"
   args:
-    sim_duration: 2.0
+    sim_duration: -1.0 # Not used for IIWARearrangementSimulator
     timestep: 0.001
     logging_frequency_hz: 100
 
@@ -13,21 +13,33 @@ script:
 logger:
   class: "DynamicLogger"
   args:
-    label_to_mask: 20 # This label corresponds to the tomato soup can in the table_pid simulation setup
+    label_to_mask: 20 # This label corresponds to the tomato soup can in the iiwa_manip_tomato_soup_can setup
     manipuland_name: "ycb_tomato_soup_can"
     kProximity: false
 
+# image_generator:
+#   class: "IIWAWristSphereImageGenerator"
+#   args:
+#     simulate_time: 0.1
+#     look_at_point: [0.0, 0.5, 0.050450]
+#     z_distances: [0.3, 0.4]
+#     radii: [0.3, 0.25]
+#     num_poses: [20, 20]
+#     time_between_camera_waypoints: 1.0
+#     has_leg_camera: True
+#     num_cameras_below_table: 5
+
 image_generator:
-  class: "IIWAWristSphereImageGenerator"
+  class: "SphereImageGenerator"
   args:
     simulate_time: 0.1
     look_at_point: [0.0, 0.5, 0.050450]
-    z_distances: [0.3, 0.4]
-    radii: [0.3, 0.25]
-    num_poses: [20, 20]
-    time_between_camera_waypoints: 1.0
-    has_leg_camera: True
-    num_cameras_below_table: 5
+    # z_distances: [0.0, 0.06, 0.12, -0.16, -0.20]
+    # radii: [0.25, 0.2, 0.15, 0.2, 0.15]
+    # num_poses: [30, 25, 15, 25, 15]
+    z_distances: [0.0]
+    radii: [0.25]
+    num_poses: [1]
 
 inverse_graphics:
   class: "IdentityInverseGraphics"

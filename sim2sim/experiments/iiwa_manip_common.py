@@ -33,16 +33,10 @@ from sim2sim.util import (
 from sim2sim.images import SphereImageGenerator, IIWAWristSphereImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
 from sim2sim.mesh_processing import IdentityMeshProcessor, QuadricDecimationMeshProcessor
-from sim2sim.simulation import BasicSimulator, IIWARearrangementSimulator, IIWASlideInHoleSimulator
+from sim2sim.simulation import BasicSimulator, IIWARearrangementSimulator, IIWAPushInHoleSimulator
 
 SCENE_DIRECTIVE = "../../models/iiwa_rearrangement/iiwa_rearrangement_scene_directive.yaml"
 IIWA_Q_NOMINAL = np.array([1.5, -0.4, 0.0, -1.75, 0.0, 1.5, 0.0])  # iiwa joint angles in radians
-
-# TODO: Allow specifying manipulant with experiment yaml file
-MANIPULAND_DIRECTIVE = "../../models/iiwa_rearrangement/iiwa_rearrangement_manipuland_directive.yaml"
-MANIPULAND_NAME = "ycb_tomato_soup_can"
-MANIPULAND_BASE_LINK_NAME = "ycb_tomato_soup_can_base_link"
-MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(-np.pi / 2.0, 0.0, 0.0), [0.0, 0.5, 0.050450])  # X_WManipuland
 
 LOGGERS = {
     "DynamicLogger": DynamicLogger,
@@ -61,15 +55,16 @@ MESH_PROCESSORS = {
 SIMULATORS = {
     "BasicSimulator": BasicSimulator,
     "IIWARearrangementSimulator": IIWARearrangementSimulator,
-    "IIWASlideInHoleSimulator": IIWASlideInHoleSimulator,
+    "IIWAPushInHoleSimulator": IIWAPushInHoleSimulator,
 }
 
 
 def create_env(
     timestep: float,
+    manipuland_pose: RigidTransform,
+    manipuland_base_link_name: str,
     directive_files: List[str] = [],
     directive_strs: List[str] = [],
-    manipuland_pose: RigidTransform = MANIPULANT_DEFAULT_POSE,
 ) -> Tuple[DiagramBuilder, SceneGraph, MultibodyPlant]:
     """Creates the iiwa rearrangement simulation environments without building it."""
 
@@ -90,7 +85,7 @@ def create_env(
         directive = LoadModelDirectivesFromString(directive_str)
         ProcessModelDirectives(directive, parser)
 
-    plant.SetDefaultFreeBodyPose(plant.GetBodyByName(MANIPULAND_BASE_LINK_NAME), manipuland_pose)
+    plant.SetDefaultFreeBodyPose(plant.GetBodyByName(manipuland_base_link_name), manipuland_pose)
     plant.Finalize()
 
     # Add iiwa controller
@@ -149,25 +144,33 @@ def create_env(
     return builder, scene_graph, plant
 
 
-def run_iiwa_rearrangement(
+def run_iiwa_manip(
     logging_path: str,
     params: dict,
     sim_duration: float,
     timestep: float,
     logging_frequency_hz: float,
+    manipuland_directive: str,
+    manipuland_pose: RigidTransform,
+    manipuland_base_link_name: str,
+    manipuland_name: str,
 ):
     """
-    Experiment entrypoint for the iiwa rearrangement scene.
+    Common run method for the iiwa manip scenes.
+    NOTE: This should not be used as a top level entrypoint.
 
     :param logging_path: The path to log the data to.
     :param params: The experiment yaml file dict.
     :param sim_duration: The simulation duration in seconds.
     :param timestep: The timestep to use in seconds.
     :param logging_frequency_hz: The dynamics logging frequency.
+    :param manipuland_directive: The model directive containing the manipuland.
+    :param manipuland_pose: The initial manipuland pose.
+    :param manipuland_base_link_name: The manipuland base link name.
+    :param manipuland_name: The name of the manipuland in the manipuland directive.
     """
 
     scene_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
-    manipuland_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), MANIPULAND_DIRECTIVE)
 
     logger_class = LOGGERS[params["logger"]["class"]]
     logger = logger_class(
@@ -182,13 +185,18 @@ def run_iiwa_rearrangement(
         os.mkdir(tmp_folder)
 
     builder_outer, scene_graph_outer, outer_plant = create_env(
-        timestep,
+        timestep=timestep,
+        manipuland_pose=manipuland_pose,
+        manipuland_base_link_name=manipuland_base_link_name,
         directive_files=[scene_directive, manipuland_directive],
     )
 
     # Create a new version of the scene for generating camera data
     builder_camera, scene_graph_camera, _ = create_env(
-        timestep, directive_files=[scene_directive, manipuland_directive]
+        timestep=timestep,
+        manipuland_pose=manipuland_pose,
+        manipuland_base_link_name=manipuland_base_link_name,
+        directive_files=[scene_directive, manipuland_directive],
     )
     image_generator_class = IMAGE_GENERATORS[params["image_generator"]["class"]]
     image_generator = image_generator_class(
@@ -231,14 +239,15 @@ def run_iiwa_rearrangement(
 
     # Create a directive for processed_mesh manipuland
     processed_mesh_directive = create_processed_mesh_directive_str(
-        mass, inertia, processed_mesh_file_path, tmp_folder, "ycb_tomato_soup_can", MANIPULAND_BASE_LINK_NAME
+        mass, inertia, processed_mesh_file_path, tmp_folder, manipuland_name, manipuland_base_link_name
     )
 
     builder_inner, scene_graph_inner, inner_plant = create_env(
-        timestep,
+        timestep=timestep,
+        manipuland_pose=RigidTransform(RollPitchYaw(*raw_mesh_pose[:3]), raw_mesh_pose[3:]),
+        manipuland_base_link_name=manipuland_base_link_name,
         directive_files=[scene_directive],
         directive_strs=[processed_mesh_directive],
-        manipuland_pose=RigidTransform(RollPitchYaw(*raw_mesh_pose[:3]), raw_mesh_pose[3:]),
     )
 
     logger.add_plants(outer_plant, inner_plant)

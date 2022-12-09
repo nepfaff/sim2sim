@@ -1,2 +1,3 @@
 from .table_pid import run_table_pid
-from .iiwa_rearrangement import run_iiwa_rearrangement
+from .iiwa_manip_common import run_iiwa_manip
+from .iiwa_manip_tomato_soup_can import run_iiwa_manip_tomato_soup_can

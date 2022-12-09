@@ -2,4 +2,4 @@ from .simulator_base import SimulatorBase
 from .iiwa_joint_trajectory_simulator_base import IIWAJointTrajectorySimulatorBase
 from .basic_simulator import BasicSimulator
 from .iiwa_rearrangement_simulator import IIWARearrangementSimulator
-from .iiwa_slide_in_hole_simulator import IIWASlideInHoleSimulator
+from .iiwa_slide_in_hole_simulator import IIWAPushInHoleSimulator
