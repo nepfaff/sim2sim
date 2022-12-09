@@ -252,6 +252,7 @@ def run_iiwa_manip(
     )
 
     logger.add_plants(outer_plant, inner_plant)
+    logger.add_scene_graphs(scene_graph_outer, scene_graph_inner)
 
     simulator_class = SIMULATORS[params["simulator"]["class"]]
     simulator = simulator_class(

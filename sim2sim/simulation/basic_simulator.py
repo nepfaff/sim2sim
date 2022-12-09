@@ -40,6 +40,7 @@ class BasicSimulator(SimulatorBase):
 
         self._logger.add_manipuland_pose_logging(self._outer_builder, self._inner_builder)
         self._logger.add_manipuland_contact_force_logging(self._outer_builder, self._inner_builder)
+        self._logger.add_contact_result_logging(self._outer_builder, self._inner_builder)
 
         self._outer_diagram = self._outer_builder.Build()
         self._inner_diagram = self._inner_builder.Build()

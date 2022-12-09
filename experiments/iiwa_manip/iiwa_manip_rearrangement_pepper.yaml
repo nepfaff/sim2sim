@@ -15,6 +15,7 @@ logger:
   args:
     label_to_mask: 22 # This label corresponds to the tomato soup can in the iiwa_manip_pepper setup
     manipuland_name: "pepper"
+    manipuland_base_link_name: "pepper_base_link"
     kProximity: false
 
 image_generator:

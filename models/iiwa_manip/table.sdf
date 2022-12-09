@@ -13,7 +13,7 @@
         </inertia>
         <mass>1000.0</mass>
       </inertial>
-      <!-- <visual name="table_top_visual">
+      <visual name="table_top_visual">
         <pose>0 0 0.5 0 0 0</pose>
         <geometry>
           <box>
@@ -23,7 +23,7 @@
         <material>
           <diffuse>0.9 0.8 0.7 1.0</diffuse>
         </material>
-      </visual> -->
+      </visual>
       <collision name="table_top_collision">
         <pose>0 0 0.5 0 0 0</pose>
         <geometry>

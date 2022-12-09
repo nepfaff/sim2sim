@@ -5,7 +5,7 @@ import datetime
 
 import numpy as np
 import open3d as o3d
-from pydrake.all import MultibodyPlant
+from pydrake.all import MultibodyPlant, SceneGraph
 
 
 class DynamicLoggerBase(ABC):
@@ -23,6 +23,8 @@ class DynamicLoggerBase(ABC):
 
         self._outer_plant: Union[MultibodyPlant, None] = None
         self._inner_plant: Union[MultibodyPlant, None] = None
+        self._outer_scene_graph: Union[SceneGraph, None] = None
+        self._inner_scene_graph: Union[SceneGraph, None] = None
 
         if not os.path.exists(logging_path):
             os.mkdir(logging_path)
@@ -63,6 +65,10 @@ class DynamicLoggerBase(ABC):
         """Add finalized plants."""
         self._outer_plant = outer_plant
         self._inner_plant = inner_plant
+
+    def add_scene_graphs(self, outer_scene_graph: SceneGraph, inner_scene_graph: SceneGraph) -> None:
+        self._outer_scene_graph = outer_scene_graph
+        self._inner_scene_graph = inner_scene_graph
 
     @abstractmethod
     def log(

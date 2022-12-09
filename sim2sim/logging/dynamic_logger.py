@@ -18,15 +18,23 @@ from pydrake.all import (
     MultibodyPlant,
     LogVectorOutput,
     Context,
+    ContactResults,
 )
 from PIL import Image
 
 from sim2sim.logging import DynamicLoggerBase
+from .abstract_value_logger import AbstractValueLogger
 
 
 class DynamicLogger(DynamicLoggerBase):
     def __init__(
-        self, logging_frequency_hz: float, logging_path: str, kProximity: bool, label_to_mask: int, manipuland_name: str
+        self,
+        logging_frequency_hz: float,
+        logging_path: str,
+        kProximity: bool,
+        label_to_mask: int,
+        manipuland_name: str,
+        manipuland_base_link_name: str,
     ):
         """
         :param logging_frequency_hz: The frequency at which we want to log at.
@@ -34,11 +42,13 @@ class DynamicLogger(DynamicLoggerBase):
         :param kProximity: Whether to visualize kProximity or kIllustration. Visualize kProximity if true.
         :param label_to_mask: The label that we want to save binary masks for.
         :param manipuland_name: The name of the manipuland. Required for pose logging.
+        :param manipuland_base_link_name: The manipuland base link name. Required for contact result force logging.
         """
         super().__init__(logging_frequency_hz, logging_path, kProximity)
 
         self._label_to_mask = label_to_mask
         self._manipuland_name = manipuland_name
+        self._manipuland_base_link_name = manipuland_base_link_name
 
         # Manipuland pose logs
         self._outer_manipuland_pose_logger = None
@@ -55,6 +65,10 @@ class DynamicLogger(DynamicLoggerBase):
         self._inner_manipuland_contact_force_logger = None
         self._inner_manipuland_contact_forces: np.ndarray = None
         self._inner_manipuland_contact_force_times: np.ndarray = None
+
+        # Contact result logs
+        self._outer_contact_result_logger = None
+        self._inner_contact_result_logger = None
 
         # Manipuland physics
         self._manipuland_mass_estimated: float = None
@@ -122,6 +136,22 @@ class DynamicLogger(DynamicLoggerBase):
             1 / self._logging_frequency_hz,
         )
 
+    def add_contact_result_logging(self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder) -> None:
+        self._outer_contact_result_logger = outer_builder.AddSystem(
+            AbstractValueLogger(ContactResults(), self._logging_frequency_hz)
+        )
+        outer_builder.Connect(
+            self._outer_plant.get_contact_results_output_port(),
+            self._outer_contact_result_logger.get_input_port(),
+        )
+        self._inner_contact_result_logger = inner_builder.AddSystem(
+            AbstractValueLogger(ContactResults(), self._logging_frequency_hz)
+        )
+        inner_builder.Connect(
+            self._inner_plant.get_contact_results_output_port(),
+            self._inner_contact_result_logger.get_input_port(),
+        )
+
     def log_manipuland_poses(self, context: Context, is_outer: bool) -> None:
         # NOTE: This really logs state which is both pose (7,) and spatial velocity (6,)
         assert self._outer_manipuland_pose_logger is not None and self._inner_manipuland_pose_logger is not None
@@ -174,6 +204,51 @@ class DynamicLogger(DynamicLoggerBase):
         self._manipuland_mass_estimated = float(manipuland_mass_estimated)
         self._manipuland_inertia_estimated = manipuland_inertia_estimated.tolist()
 
+    def _get_contact_result_forces(
+        self, is_outer: bool, body_of_interest: str
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        logs: Tuple[List[ContactResults], List[float]] = (
+            self._outer_contact_result_logger.get_logs() if is_outer else self._inner_contact_result_logger.get_logs()
+        )
+        contact_results, times = logs
+        plant = self._outer_plant if is_outer else self._inner_plant
+
+        inspector = self._outer_scene_graph.model_inspector() if is_outer else self._inner_scene_graph.model_inspector()
+
+        contact_result_centroids = []
+        contact_result_forces = []
+        for contact_result in contact_results:
+            contact_result_centroid = []
+            contact_result_force = []
+            for i in range(contact_result.num_hydroelastic_contacts()):
+                contact_info_i = contact_result.hydroelastic_contact_info(i)
+                contact_surface = contact_info_i.contact_surface()
+
+                body_ia_geometry_id = contact_surface.id_M()
+                body_ia_frame_id = inspector.GetFrameId(body_ia_geometry_id)
+                body_ia = plant.GetBodyFromFrameId(body_ia_frame_id)
+                body_ib_geometry_id = contact_surface.id_N()
+                body_ib_frame_id = inspector.GetFrameId(body_ib_geometry_id)
+                body_ib = plant.GetBodyFromFrameId(body_ib_frame_id)
+                if body_of_interest == body_ia.name() or body_of_interest == body_ib.name():
+                    contact_centroid = contact_surface.centroid()
+
+                    contact_spatial_force = contact_info_i.F_Ac_W()
+                    contact_force = contact_spatial_force.translational()
+                    # contact_torque = contact_spatial_force.rotational()
+
+                    contact_result_centroid.append(contact_centroid)
+                    contact_result_force.append(contact_force)
+
+            contact_result_centroids.append(contact_result_centroid)
+            contact_result_forces.append(contact_result_force)
+
+        return (
+            contact_result_centroids,
+            contact_result_forces,
+            times,
+        )
+
     def log(
         self,
         camera_poses: Optional[List[np.ndarray]] = None,
@@ -212,6 +287,70 @@ class DynamicLogger(DynamicLoggerBase):
         if self._processed_mesh:
             o3d.io.write_triangle_mesh(processed_mesh_file_path, self._processed_mesh)
         return raw_mesh_file_path, processed_mesh_file_path
+
+    def save_manipuland_pose_logs(self) -> None:
+        np.savetxt(os.path.join(self._time_logs_dir_path, "outer_manipuland_poses.txt"), self._outer_manipuland_poses)
+        np.savetxt(
+            os.path.join(self._time_logs_dir_path, "outer_manipuland_pose_times.txt"), self._outer_manipuland_pose_times
+        )
+        np.savetxt(os.path.join(self._time_logs_dir_path, "inner_manipuland_poses.txt"), self._inner_manipuland_poses)
+        np.savetxt(
+            os.path.join(self._time_logs_dir_path, "inner_manipuland_pose_times.txt"), self._inner_manipuland_pose_times
+        )
+
+    def save_manipuland_contact_force_logs(self) -> None:
+        np.savetxt(
+            os.path.join(self._time_logs_dir_path, "outer_manipuland_contact_forces.txt"),
+            self._outer_manipuland_contact_forces,
+        )
+        np.savetxt(
+            os.path.join(self._time_logs_dir_path, "outer_manipuland_contact_force_times.txt"),
+            self._outer_manipuland_contact_force_times,
+        )
+        np.savetxt(
+            os.path.join(self._time_logs_dir_path, "inner_manipuland_contact_forces.txt"),
+            self._inner_manipuland_contact_forces,
+        )
+        np.savetxt(
+            os.path.join(self._time_logs_dir_path, "inner_manipuland_contact_force_times.txt"),
+            self._inner_manipuland_contact_force_times,
+        )
+
+    def save_contact_result_force_logs(self, body_name: str) -> None:
+        (
+            outer_contact_result_centroids,
+            outer_contact_result_forces,
+            outer_contact_result_times,
+        ) = self._get_contact_result_forces(True, body_name)
+        np.save(
+            os.path.join(self._time_logs_dir_path, "outer_contact_result_centroids.npy"),
+            np.array(outer_contact_result_centroids),
+        )
+        np.save(
+            os.path.join(self._time_logs_dir_path, "outer_contact_result_forces.npy"),
+            np.array(outer_contact_result_forces),
+        )
+        np.save(
+            os.path.join(self._time_logs_dir_path, "outer_contact_result_times.npy"),
+            np.array(outer_contact_result_times),
+        )
+        (
+            inner_contact_result_centroids,
+            inner_contact_result_forces,
+            inner_contact_result_times,
+        ) = self._get_contact_result_forces(False, body_name)
+        np.save(
+            os.path.join(self._time_logs_dir_path, "inner_contact_result_centroids.npy"),
+            np.array(inner_contact_result_centroids),
+        )
+        np.save(
+            os.path.join(self._time_logs_dir_path, "inner_contact_result_forces.npy"),
+            np.array(inner_contact_result_forces),
+        )
+        np.save(
+            os.path.join(self._time_logs_dir_path, "inner_contact_result_times.npy"),
+            np.array(inner_contact_result_times),
+        )
 
     def save_data(self) -> None:
         # Meta data
@@ -255,33 +394,9 @@ class DynamicLogger(DynamicLoggerBase):
                 mask_pil = Image.new("RGB", (image_pil.width, image_pil.height))
             mask_pil.save(os.path.join(self._masks_dir_path, f"mask{i:04d}.png"))
 
-        # Save manipuland pose logs
-        np.savetxt(os.path.join(self._time_logs_dir_path, "outer_manipuland_poses.txt"), self._outer_manipuland_poses)
-        np.savetxt(
-            os.path.join(self._time_logs_dir_path, "outer_manipuland_pose_times.txt"), self._outer_manipuland_pose_times
-        )
-        np.savetxt(os.path.join(self._time_logs_dir_path, "inner_manipuland_poses.txt"), self._inner_manipuland_poses)
-        np.savetxt(
-            os.path.join(self._time_logs_dir_path, "inner_manipuland_pose_times.txt"), self._inner_manipuland_pose_times
-        )
-
-        # Save manipuland contact force logs
-        np.savetxt(
-            os.path.join(self._time_logs_dir_path, "outer_manipuland_contact_forces.txt"),
-            self._outer_manipuland_contact_forces,
-        )
-        np.savetxt(
-            os.path.join(self._time_logs_dir_path, "outer_manipuland_contact_force_times.txt"),
-            self._outer_manipuland_contact_force_times,
-        )
-        np.savetxt(
-            os.path.join(self._time_logs_dir_path, "inner_manipuland_contact_forces.txt"),
-            self._inner_manipuland_contact_forces,
-        )
-        np.savetxt(
-            os.path.join(self._time_logs_dir_path, "inner_manipuland_contact_force_times.txt"),
-            self._inner_manipuland_contact_force_times,
-        )
+        self.save_manipuland_pose_logs()
+        self.save_manipuland_contact_force_logs()
+        self.save_contact_result_force_logs(self._manipuland_base_link_name)
 
         # Mesh data
         self.save_mesh_data()
