@@ -36,6 +36,7 @@ class DynamicLoggerBase(ABC):
         self._depths_dir_path = os.path.join(logging_path, "depths")
         self._masks_dir_path = os.path.join(logging_path, "binary_masks")
         self._mesh_dir_path = os.path.join(logging_path, "meshes")
+        self._time_logs_dir_path = os.path.join(logging_path, "time_logs")
         self._data_directory_paths = [
             self._camera_poses_dir_path,
             self._intrinsics_dir_path,
@@ -43,6 +44,7 @@ class DynamicLoggerBase(ABC):
             self._depths_dir_path,
             self._masks_dir_path,
             self._mesh_dir_path,
+            self._time_logs_dir_path,
         ]
         self._create_data_directories()
         self._meta_data_file_path = os.path.join(logging_path, "meta_data.yaml")

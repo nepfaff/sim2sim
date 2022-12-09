@@ -40,13 +40,21 @@ class DynamicLogger(DynamicLoggerBase):
         self._label_to_mask = label_to_mask
         self._manipuland_name = manipuland_name
 
-        # Pose data logs
+        # Manipuland pose logs
         self._outer_manipuland_pose_logger = None
         self._outer_manipuland_poses: np.ndarray = None
         self._outer_manipuland_pose_times: np.ndarray = None
         self._inner_manipuland_pose_logger = None
         self._inner_manipuland_poses: np.ndarray = None
         self._inner_manipuland_pose_times: np.ndarray = None
+
+        # Manipuland contact force logs
+        self._outer_manipuland_contact_force_logger = None
+        self._outer_manipuland_contact_forces: np.ndarray = None
+        self._outer_manipuland_contact_force_times: np.ndarray = None
+        self._inner_manipuland_contact_force_logger = None
+        self._inner_manipuland_contact_forces: np.ndarray = None
+        self._inner_manipuland_contact_force_times: np.ndarray = None
 
     @staticmethod
     def add_meshcat_visualizer(
@@ -98,7 +106,7 @@ class DynamicLogger(DynamicLoggerBase):
             self._add_contact_visualizer(builder, meshcat, self._outer_plant if is_outer else self._inner_plant)
         return visualizer, meshcat
 
-    def add_pose_logging(self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder) -> None:
+    def add_manipuland_pose_logging(self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder) -> None:
         self._outer_manipuland_pose_logger = LogVectorOutput(
             self._outer_plant.get_state_output_port(self._outer_plant.GetModelInstanceByName(self._manipuland_name)),
             outer_builder,
@@ -110,7 +118,7 @@ class DynamicLogger(DynamicLoggerBase):
             1 / self._logging_frequency_hz,
         )
 
-    def log_poses(self, context: Context, is_outer: bool) -> None:
+    def log_manipuland_poses(self, context: Context, is_outer: bool) -> None:
         assert self._outer_manipuland_pose_logger is not None and self._inner_manipuland_pose_logger is not None
 
         if is_outer:
@@ -121,6 +129,39 @@ class DynamicLogger(DynamicLoggerBase):
             log = self._inner_manipuland_pose_logger.FindLog(context)
             self._inner_manipuland_pose_times = log.sample_times()
             self._inner_manipuland_poses = log.data().T  # Shape (t, 13)
+
+    def add_manipuland_contact_force_logging(
+        self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder
+    ) -> None:
+        self._outer_manipuland_contact_force_logger = LogVectorOutput(
+            self._outer_plant.get_generalized_contact_forces_output_port(
+                self._outer_plant.GetModelInstanceByName(self._manipuland_name)
+            ),
+            outer_builder,
+            1 / self._logging_frequency_hz,
+        )
+        self._inner_manipuland_contact_force_logger = LogVectorOutput(
+            self._inner_plant.get_generalized_contact_forces_output_port(
+                self._inner_plant.GetModelInstanceByName(self._manipuland_name)
+            ),
+            inner_builder,
+            1 / self._logging_frequency_hz,
+        )
+
+    def log_manipuland_contact_forces(self, context: Context, is_outer: bool) -> None:
+        assert (
+            self._outer_manipuland_contact_force_logger is not None
+            and self._inner_manipuland_contact_force_logger is not None
+        )
+
+        if is_outer:
+            log = self._outer_manipuland_contact_force_logger.FindLog(context)
+            self._outer_manipuland_contact_force_times = log.sample_times()
+            self._outer_manipuland_contact_forces = log.data().T  # Shape (t, 6)
+        else:
+            log = self._inner_manipuland_contact_force_logger.FindLog(context)
+            self._inner_manipuland_contact_force_times = log.sample_times()
+            self._inner_manipuland_contact_forces = log.data().T  # Shape (t, 6)
 
     def log(
         self,
@@ -201,13 +242,32 @@ class DynamicLogger(DynamicLoggerBase):
                 mask_pil = Image.new("RGB", (image_pil.width, image_pil.height))
             mask_pil.save(os.path.join(self._masks_dir_path, f"mask{i:04d}.png"))
 
-        np.savetxt(os.path.join(self._logging_path, "outer_manipuland_poses.txt"), self._outer_manipuland_poses)
+        # Save manipuland pose logs
+        np.savetxt(os.path.join(self._time_logs_dir_path, "outer_manipuland_poses.txt"), self._outer_manipuland_poses)
         np.savetxt(
-            os.path.join(self._logging_path, "outer_manipuland_pose_times.txt"), self._outer_manipuland_pose_times
+            os.path.join(self._time_logs_dir_path, "outer_manipuland_pose_times.txt"), self._outer_manipuland_pose_times
         )
-        np.savetxt(os.path.join(self._logging_path, "inner_manipuland_poses.txt"), self._inner_manipuland_poses)
+        np.savetxt(os.path.join(self._time_logs_dir_path, "inner_manipuland_poses.txt"), self._inner_manipuland_poses)
         np.savetxt(
-            os.path.join(self._logging_path, "inner_manipuland_pose_times.txt"), self._inner_manipuland_pose_times
+            os.path.join(self._time_logs_dir_path, "inner_manipuland_pose_times.txt"), self._inner_manipuland_pose_times
+        )
+
+        # Save manipuland contact force logs
+        np.savetxt(
+            os.path.join(self._time_logs_dir_path, "outer_manipuland_contact_forces.txt"),
+            self._outer_manipuland_contact_forces,
+        )
+        np.savetxt(
+            os.path.join(self._time_logs_dir_path, "outer_manipuland_contact_force_times.txt"),
+            self._outer_manipuland_contact_force_times,
+        )
+        np.savetxt(
+            os.path.join(self._time_logs_dir_path, "inner_manipuland_contact_forces.txt"),
+            self._inner_manipuland_contact_forces,
+        )
+        np.savetxt(
+            os.path.join(self._time_logs_dir_path, "inner_manipuland_contact_force_times.txt"),
+            self._inner_manipuland_contact_force_times,
         )
 
         # Mesh data

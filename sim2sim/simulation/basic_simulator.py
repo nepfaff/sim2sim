@@ -38,7 +38,8 @@ class BasicSimulator(SimulatorBase):
             is_outer=False,
         )
 
-        self._logger.add_pose_logging(self._outer_builder, self._inner_builder)
+        self._logger.add_manipuland_pose_logging(self._outer_builder, self._inner_builder)
+        self._logger.add_manipuland_contact_force_logging(self._outer_builder, self._inner_builder)
 
         self._outer_diagram = self._outer_builder.Build()
         self._inner_diagram = self._inner_builder.Build()
@@ -66,4 +67,5 @@ class BasicSimulator(SimulatorBase):
                 f.write(html)
 
             context = simulator.get_mutable_context()
-            self._logger.log_poses(context, is_outer=(i == 0))
+            self._logger.log_manipuland_poses(context, is_outer=(i == 0))
+            self._logger.log_manipuland_contact_forces(context, is_outer=(i == 0))

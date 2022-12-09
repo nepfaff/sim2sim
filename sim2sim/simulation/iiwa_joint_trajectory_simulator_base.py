@@ -53,7 +53,8 @@ class IIWAJointTrajectorySimulatorBase(SimulatorBase):
             is_outer=False,
         )
 
-        self._logger.add_pose_logging(self._outer_builder, self._inner_builder)
+        self._logger.add_manipuland_pose_logging(self._outer_builder, self._inner_builder)
+        self._logger.add_manipuland_contact_force_logging(self._outer_builder, self._inner_builder)
 
         self._outer_diagram = self._outer_builder.Build()
         self._inner_diagram = self._inner_builder.Build()
@@ -136,4 +137,5 @@ class IIWAJointTrajectorySimulatorBase(SimulatorBase):
             with open(os.path.join(self._logger._logging_path, f"{'inner' if i else 'outer'}.html"), "w") as f:
                 f.write(html)
 
-            self._logger.log_poses(context, is_outer=(i == 0))
+            self._logger.log_manipuland_poses(context, is_outer=(i == 0))
+            self._logger.log_manipuland_contact_forces(context, is_outer=(i == 0))
