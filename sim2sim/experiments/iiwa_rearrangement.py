@@ -32,7 +32,7 @@ from sim2sim.util import (
 from sim2sim.images import SphereImageGenerator, IIWAWristSphereImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
 from sim2sim.mesh_processing import IdentityMeshProcessor, QuadricDecimationMeshProcessor
-from sim2sim.simulation import BasicSimulator, IIWARearrangementSimulator
+from sim2sim.simulation import BasicSimulator, IIWARearrangementSimulator, IIWASlideInHoleSimulator
 
 SCENE_DIRECTIVE = "../../models/iiwa_rearrangement/iiwa_rearrangement_scene_directive.yaml"
 IIWA_Q_NOMINAL = np.array([1.5, -0.4, 0.0, -1.75, 0.0, 1.5, 0.0])  # iiwa joint angles in radians
@@ -60,6 +60,7 @@ MESH_PROCESSORS = {
 SIMULATORS = {
     "BasicSimulator": BasicSimulator,
     "IIWARearrangementSimulator": IIWARearrangementSimulator,
+    "IIWASlideInHoleSimulator": IIWASlideInHoleSimulator,
 }
 
 

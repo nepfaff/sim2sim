@@ -21,7 +21,7 @@
                     </box>
                 </geometry>
                 <material>
-                    <diffuse>0.0 0.8 0.7 1.0</diffuse>
+                    <diffuse>0.82 0.48 0.0 1.0</diffuse>
                 </material>
             </visual>
             <collision name="bottom_collision">
@@ -48,7 +48,7 @@
                     </box>
                 </geometry>
                 <material>
-                    <diffuse>0.0 0.8 0.7 1.0</diffuse>
+                    <diffuse>0.82 0.48 0.0 1.0</diffuse>
                 </material>
             </visual>
             <collision name="side1_collision">
@@ -75,7 +75,7 @@
                     </box>
                 </geometry>
                 <material>
-                    <diffuse>0.0 0.8 0.7 1.0</diffuse>
+                    <diffuse>0.82 0.48 0.0 1.0</diffuse>
                 </material>
             </visual>
             <collision name="side2_collision">
@@ -102,7 +102,7 @@
                     </box>
                 </geometry>
                 <material>
-                    <diffuse>0.0 0.8 0.7 1.0</diffuse>
+                    <diffuse>0.82 0.48 0.0 1.0</diffuse>
                 </material>
             </visual>
             <collision name="side3_collision">
@@ -129,7 +129,7 @@
                     </box>
                 </geometry>
                 <material>
-                    <diffuse>0.0 0.8 0.7 1.0</diffuse>
+                    <diffuse>0.82 0.48 0.0 1.0</diffuse>
                 </material>
             </visual>
             <collision name="side4_collision">

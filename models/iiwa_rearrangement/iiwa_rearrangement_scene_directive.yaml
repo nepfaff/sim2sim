@@ -48,6 +48,16 @@ directives:
     parent: world
     child: insertion_box::insertion_box_bottom_center
     X_PC:
+        translation: [-0.5, 0, 0]
+
+# Peg in hole box
+- add_model:
+    name: peg_in_hole_box
+    file: package://sim2sim/models/iiwa_rearrangement/peg_in_hole_box.sdf
+- add_weld:
+    parent: world
+    child: peg_in_hole_box::peg_in_hole_box_bottom_center
+    X_PC:
         translation: [0.5, 0, 0]
 
 # Wrist camera
