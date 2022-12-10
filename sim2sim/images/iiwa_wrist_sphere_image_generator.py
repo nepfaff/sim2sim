@@ -11,8 +11,8 @@ from pydrake.all import (
 )
 
 from sim2sim.logging import DynamicLoggerBase
-from sim2sim.util import convert_camera_poses_to_iiwa_eef_poses, prune_infeasible_eef_poses
-from .sphere_image_generator import SphereImageGenerator
+from sim2sim.util import convert_camera_poses_to_iiwa_eef_poses, prune_infeasible_eef_poses, IIWAJointTrajectorySource
+from sim2sim.images import SphereImageGenerator
 
 
 class IIWAWristSphereImageGenerator(SphereImageGenerator):
@@ -84,7 +84,12 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
         # Get required systems
         plant = self._diagram.GetSubsystemByName("plant")
         world_frame = plant.world_frame()
-        iiwa_trajectory_source = self._diagram.GetSubsystemByName("iiwa_joint_trajectory_source")
+        iiwa_controller_plant = self._diagram.GetSubsystemByName(
+            "iiwa_inverse_dynamics_controller"
+        ).get_multibody_plant_for_control()
+        iiwa_trajectory_source: IIWAJointTrajectorySource = self._diagram.GetSubsystemByName(
+            "iiwa_joint_trajectory_source"
+        )
         iiwa_trajectory_source.set_meshcat(self._meshcat)
 
         # Simulate before generating image data
@@ -121,7 +126,11 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
 
         # Prune camera poses that are not reachable with the wrist camera
         X_WG_feasible = prune_infeasible_eef_poses(
-            X_WGs, iiwa_trajectory_source, position_tolerance=0.02, orientation_tolerance=0.02
+            X_WGs,
+            iiwa_controller_plant,
+            initial_guess=iiwa_trajectory_source._q_nominal,
+            ik_position_tolerance=0.02,
+            ik_orientation_tolerance=0.02,
         )
         print(f"Pruned {len(X_WGs)-len(X_WG_feasible)} infeasible wrist camera poses.")
 
@@ -132,7 +141,7 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
             iiwa_trajectory_source.set_t_start(context.get_time())
             iiwa_path = [X_WG_last, RigidTransform(X_WG)]
             try:
-                iiwa_trajectory_source.set_trajectory(
+                iiwa_trajectory_source.compute_and_set_trajectory(
                     iiwa_path,
                     time_between_breakpoints=self._time_between_camera_waypoints,
                     ik_position_tolerance=0.02,
