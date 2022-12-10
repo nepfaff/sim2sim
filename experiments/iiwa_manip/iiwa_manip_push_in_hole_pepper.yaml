@@ -1,0 +1,47 @@
+# Unique identifier for this experiment for logging
+experiment_id: "iiwa_manip_push_in_hole_pepper"
+
+script:
+  name: "iiwa_manip_pepper"
+  args:
+    sim_duration: -1.0 # Not used for IIWARearrangementSimulator
+    timestep: 0.001
+    logging_frequency_hz: 100
+
+# Component specifications
+# 'args' are constructor arguments that are not part of the base class constructors
+logger:
+  class: "DynamicLogger"
+  args:
+    label_to_mask: 22 # This label corresponds to the tomato soup can in the iiwa_manip_pepper setup
+    manipuland_name: "pepper"
+    manipuland_base_link_name: "pepper_base_link"
+    kProximity: false
+
+image_generator:
+  class: "SphereImageGenerator"
+  args:
+    simulate_time: 0.1
+    look_at_point: [0.0, 0.45, 0.035]
+    # z_distances: [0.0, 0.06, 0.12, -0.16, -0.20]
+    # radii: [0.25, 0.2, 0.15, 0.2, 0.15]
+    # num_poses: [30, 25, 15, 25, 15]
+    z_distances: [0.0]
+    radii: [0.25]
+    num_poses: [1]
+
+inverse_graphics:
+  class: "IdentityInverseGraphics"
+  args:
+    mesh_path: ./data/pepper_instant_ngp.obj
+    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.45, 0.035] # NOTE: Identical to `X_WManipuland` specified in `table_pid.py`
+
+mesh_processor:
+  class: "QuadricDecimationMeshProcessor"
+  args:
+    target_triangle_num: 5000
+
+simulator:
+  class: "IIWAPushInHoleSimulator"
+  args:
+    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.45, 0.03]
