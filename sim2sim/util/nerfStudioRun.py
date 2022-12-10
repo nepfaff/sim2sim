@@ -4,28 +4,11 @@ import os, subprocess
 import json
 
 
-def preProcessImages(input_path, output_path):
-    os.system(f"ns-process-data images --data {input_path} --output-dir {output_path}")
-
-
-def preProcessVideo(input_path, output_path):
-    os.system(f"ns-process-data video --data {input_path} --output-dir {output_path}")
-
-
-def preProcessPolycam(input_path, output_path):
-    os.system(f"ns-process-data polycam --data {input_path} --output-dir {output_path}")
-
-
-def preProcessInsta360(input_path, output_path):
-    os.system(f"ns-process-data insta360 --data {input_path} --output-dir {output_path}")
-
-
-def preProcessRecord3d(input_path, output_path):
-    os.system(f"ns-process-data record3d --data {input_path} --output-dir {output_path}")
-
-
-def preProcessMetashape(input_path, output_path, xml_path):
-    os.system(f"ns-process-data record3d --data {input_path} --xml {xml_path} --output-dir {output_path}")
+def preProcessData(type: str, input_path: str, output_path: str, xml_path: str):
+    if type is not "metashape":
+        os.system(f"ns-process-data {type} --data {input_path} --output-dir {output_path}")
+    else:
+        os.system(f"ns-process-data metashape --data {input_path} --xml {xml_path} --output-dir {output_path}")
 
 
 if __name__ == "__main__":
