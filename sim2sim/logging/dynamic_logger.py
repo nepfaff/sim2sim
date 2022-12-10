@@ -259,8 +259,9 @@ class DynamicLogger(DynamicLoggerBase):
         masks: Optional[List[np.ndarray]] = None,
         raw_mesh: Optional[o3d.geometry.TriangleMesh] = None,
         processed_mesh: Optional[o3d.geometry.TriangleMesh] = None,
-        outer_simulation_time: float = None,
-        inner_simulation_time: float = None,
+        outer_simulation_time: Optional[float] = None,
+        inner_simulation_time: Optional[float] = None,
+        experiment_description: Optional[dict] = None,
     ) -> None:
         super().log(
             camera_poses=camera_poses,
@@ -273,6 +274,7 @@ class DynamicLogger(DynamicLoggerBase):
             processed_mesh=processed_mesh,
             outer_simulation_time=outer_simulation_time,
             inner_simulation_time=inner_simulation_time,
+            experiment_description=experiment_description,
         )
 
     def postprocess_data(self) -> None:
@@ -368,6 +370,10 @@ class DynamicLogger(DynamicLoggerBase):
         }
         with open(self._meta_data_file_path, "w") as f:
             yaml.dump(meta_data, f)
+
+        # Experiment description
+        with open(self._experiment_description_file_path, "w") as f:
+            yaml.dump(self._experiment_description, f)
 
         # Camera data
         lengths = [

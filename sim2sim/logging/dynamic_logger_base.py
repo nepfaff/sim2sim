@@ -50,6 +50,7 @@ class DynamicLoggerBase(ABC):
         ]
         self._create_data_directories()
         self._meta_data_file_path = os.path.join(logging_path, "meta_data.yaml")
+        self._experiment_description_file_path = os.path.join(logging_path, "experiment_description.yaml")
 
         # Logging data
         self._camera_poses: List[np.ndarray] = []
@@ -62,6 +63,7 @@ class DynamicLoggerBase(ABC):
         self._processed_mesh: Optional[o3d.geometry.TriangleMesh] = None
         self._outer_simulation_time: Optional[float] = None
         self._inner_simulation_time: Optional[float] = None
+        self._experiment_description: Optional[dict] = None
 
     def add_plants(self, outer_plant: MultibodyPlant, inner_plant: MultibodyPlant) -> None:
         """Add finalized plants."""
@@ -83,8 +85,9 @@ class DynamicLoggerBase(ABC):
         masks: Optional[List[np.ndarray]] = None,
         raw_mesh: Optional[o3d.geometry.TriangleMesh] = None,
         processed_mesh: Optional[o3d.geometry.TriangleMesh] = None,
-        outer_simulation_time: float = None,
-        inner_simulation_time: float = None,
+        outer_simulation_time: Optional[float] = None,
+        inner_simulation_time: Optional[float] = None,
+        experiment_description: Optional[dict] = None,
     ) -> None:
         """TODO"""
         if camera_poses is not None:
@@ -107,6 +110,8 @@ class DynamicLoggerBase(ABC):
             self._outer_simulation_time = outer_simulation_time
         if inner_simulation_time is not None:
             self._inner_simulation_time = inner_simulation_time
+        if experiment_description is not None:
+            self._experiment_description = experiment_description
 
     @abstractmethod
     def postprocess_data(self) -> None:

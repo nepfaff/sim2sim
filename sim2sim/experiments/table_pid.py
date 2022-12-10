@@ -147,6 +147,7 @@ def run_table_pid(
         logging_path=logging_path,
         **(params["logger"]["args"] if params["logger"]["args"] is not None else {}),
     )
+    logger.log(experiment_description=params)
 
     # Create folder for temporary files
     tmp_folder = os.path.join(logging_path, "tmp")
