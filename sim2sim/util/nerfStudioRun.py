@@ -7,13 +7,13 @@ import argparse
 
 def preProcessData(type: str, input_path: str, output_path: str, xml_path: str):
     if type != "metashape":
-        os.system(f"ns-process-data {type} --data {input_path} --output-dir {output_path}")
+        os.system(f"ns-process-data {type} --data {input_path} --output-dir {output_path} --num-downscales 0")
     else:
         os.system(f"ns-process-data metashape --data {input_path} --xml {xml_path} --output-dir {output_path}")
 
 
 def runNerfStudio(algo_type: str, input_path: str):
-    os.system(f"ns-train {algo_type} --data {input_path}")
+    os.system(f"ns-train {algo_type} --data {input_path} --pipeline.model.predict-normals True")
 
 
 if __name__ == "__main__":
