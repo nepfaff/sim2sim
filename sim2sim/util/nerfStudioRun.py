@@ -7,13 +7,23 @@ import argparse
 
 def preProcessData(type: str, input_path: str, output_path: str, xml_path: str):
     if type != "metashape":
-        os.system(f"ns-process-data {type} --data {input_path} --output-dir {output_path} --num-downscales 0")
+        os.system(f"ns-process-data {type} --data {input_path} --output-dir {output_path} --num-downscales 1")
     else:
         os.system(f"ns-process-data metashape --data {input_path} --xml {xml_path} --output-dir {output_path}")
 
 
 def runNerfStudio(algo_type: str, input_path: str):
-    os.system(f"ns-train {algo_type} --data {input_path} --pipeline.model.predict-normals True")
+    os.system(f"ns-train {algo_type} --data {input_path}")
+
+
+def generateMesh():
+    # ns-export poisson --load-config outputs/data-test_data/nerfacto/2022-12-11_043731/config.yml --output-dir exports/mesh/ --target-num-faces 50000 --num-pixels-per-side 2048 --normal-output-name normals --num-points 1000000 --remove-outliers True --use-bounding-box True --bounding-box-min -1 -1 -1 --bounding-box-max 1 1 1
+    pass
+
+
+def generaatePointCloud():
+    # ns-export pointcloud --load-config outputs/data-test_data/nerfacto/2022-12-11_043731/config.yml --output-dir exports/pcd/ --num-points 1000000 --remove-outliers True --estimate-normals False --use-bounding-box True --bounding-box-min -1 -1 -1 --bounding-box-max 1 1 1
+    pass
 
 
 if __name__ == "__main__":
