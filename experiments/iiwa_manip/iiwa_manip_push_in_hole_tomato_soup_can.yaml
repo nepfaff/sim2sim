@@ -39,7 +39,7 @@ inverse_graphics:
 mesh_processor:
   class: "QuadricDecimationMeshProcessor"
   args:
-    target_triangle_num: 5000
+    target_triangle_num: 10000
 
 simulator:
   class: "IIWAPushInHoleSimulator"
