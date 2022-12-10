@@ -259,6 +259,8 @@ class DynamicLogger(DynamicLoggerBase):
         masks: Optional[List[np.ndarray]] = None,
         raw_mesh: Optional[o3d.geometry.TriangleMesh] = None,
         processed_mesh: Optional[o3d.geometry.TriangleMesh] = None,
+        outer_simulation_time: float = None,
+        inner_simulation_time: float = None,
     ) -> None:
         super().log(
             camera_poses=camera_poses,
@@ -269,6 +271,8 @@ class DynamicLogger(DynamicLoggerBase):
             masks=masks,
             raw_mesh=raw_mesh,
             processed_mesh=processed_mesh,
+            outer_simulation_time=outer_simulation_time,
+            inner_simulation_time=inner_simulation_time,
         )
 
     def postprocess_data(self) -> None:
@@ -324,11 +328,11 @@ class DynamicLogger(DynamicLoggerBase):
         ) = self._get_contact_result_forces(True, body_name)
         np.save(
             os.path.join(self._time_logs_dir_path, "outer_contact_result_centroids.npy"),
-            np.array(outer_contact_result_centroids),
+            np.array(outer_contact_result_centroids, dtype=object),
         )
         np.save(
             os.path.join(self._time_logs_dir_path, "outer_contact_result_forces.npy"),
-            np.array(outer_contact_result_forces),
+            np.array(outer_contact_result_forces, dtype=object),
         )
         np.save(
             os.path.join(self._time_logs_dir_path, "outer_contact_result_times.npy"),
@@ -341,11 +345,11 @@ class DynamicLogger(DynamicLoggerBase):
         ) = self._get_contact_result_forces(False, body_name)
         np.save(
             os.path.join(self._time_logs_dir_path, "inner_contact_result_centroids.npy"),
-            np.array(inner_contact_result_centroids),
+            np.array(inner_contact_result_centroids, dtype=object),
         )
         np.save(
             os.path.join(self._time_logs_dir_path, "inner_contact_result_forces.npy"),
-            np.array(inner_contact_result_forces),
+            np.array(inner_contact_result_forces, dtype=object),
         )
         np.save(
             os.path.join(self._time_logs_dir_path, "inner_contact_result_times.npy"),
@@ -359,6 +363,8 @@ class DynamicLogger(DynamicLoggerBase):
             "logging_timestamp": str(datetime.datetime.now()),
             "manipuland_mass_estimated": self._manipuland_mass_estimated,
             "manipuland_inertia_estimated": self._manipuland_inertia_estimated,
+            "time_taken_to_simulate_outer_s": self._outer_simulation_time,
+            "time_taken_to_simulate_inner_s": self._inner_simulation_time,
         }
         with open(self._meta_data_file_path, "w") as f:
             yaml.dump(meta_data, f)

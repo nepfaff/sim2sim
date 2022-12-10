@@ -14,7 +14,7 @@ from sim2sim.util import IIWAControlModeSource
 
 
 class IIWAPushInHoleSimulator(IIWAJointTrajectorySimulatorBase):
-    """The simulator for the iiwa slide in hole task."""
+    """The simulator for the iiwa push in hole task."""
 
     def __init__(
         self,
@@ -63,7 +63,7 @@ class IIWAPushInHoleSimulator(IIWAJointTrajectorySimulatorBase):
                     RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), self._mesh_pose[3:] + [0.0, 0.0, 0.15]),
                     RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), self._mesh_pose[3:] + [0.0, 0.0, 0.3]),
                     RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), self._mesh_pose[3:] + [0.0, 0.0, 0.4]),
-                    RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.25, 0.4, 0.4]),
+                    RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.25, 0.4, 0.5]),
                     RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.5, 0.3, 0.5]),
                     RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.5, 0.3, 0.4]),
                 ],

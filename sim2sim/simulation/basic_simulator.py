@@ -1,4 +1,5 @@
 import os
+import time
 
 from pydrake.all import (
     DiagramBuilder,
@@ -58,7 +59,17 @@ class BasicSimulator(SimulatorBase):
             simulator.Initialize()
             # TODO: Move `StartRecording` and `StopRecording` into logger using `with` statement
             visualizer.StartRecording()
+
+            start_time = time.time()
+
             simulator.AdvanceTo(duration)
+
+            time_taken_to_simulate = time.time() - start_time
+            if i == 0:
+                self._logger.log(outer_simulation_time=time_taken_to_simulate)
+            else:
+                self._logger.log(inner_simulation_time=time_taken_to_simulate)
+
             visualizer.StopRecording()
             visualizer.PublishRecording()
 

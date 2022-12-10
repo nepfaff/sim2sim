@@ -1,5 +1,6 @@
 import os
 from typing import List
+import time
 
 import numpy as np
 from pydrake.all import (
@@ -113,6 +114,8 @@ class IIWAJointTrajectorySimulatorBase(SimulatorBase):
             visualizer.StartRecording()
             context = simulator.get_mutable_context()
 
+            start_time = time.time()
+
             for command in low_level_command_sequence:
                 # Chose controller
                 iiwa_control_mode_source: IIWAControlModeSource = diagram.GetSubsystemByName("iiwa_control_mode_source")
@@ -128,6 +131,12 @@ class IIWAJointTrajectorySimulatorBase(SimulatorBase):
 
                 # Simulate for some more
                 simulator.AdvanceTo(context.get_time() + command["time_to_simulate_after"])
+
+            time_taken_to_simulate = time.time() - start_time
+            if i == 0:
+                self._logger.log(outer_simulation_time=time_taken_to_simulate)
+            else:
+                self._logger.log(inner_simulation_time=time_taken_to_simulate)
 
             # Save recording
             visualizer.StopRecording()

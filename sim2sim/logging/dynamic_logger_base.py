@@ -60,6 +60,8 @@ class DynamicLoggerBase(ABC):
         self._masks: List[np.ndarray] = []
         self._raw_mesh: Optional[o3d.geometry.TriangleMesh] = None
         self._processed_mesh: Optional[o3d.geometry.TriangleMesh] = None
+        self._outer_simulation_time: Optional[float] = None
+        self._inner_simulation_time: Optional[float] = None
 
     def add_plants(self, outer_plant: MultibodyPlant, inner_plant: MultibodyPlant) -> None:
         """Add finalized plants."""
@@ -81,6 +83,8 @@ class DynamicLoggerBase(ABC):
         masks: Optional[List[np.ndarray]] = None,
         raw_mesh: Optional[o3d.geometry.TriangleMesh] = None,
         processed_mesh: Optional[o3d.geometry.TriangleMesh] = None,
+        outer_simulation_time: float = None,
+        inner_simulation_time: float = None,
     ) -> None:
         """TODO"""
         if camera_poses is not None:
@@ -99,6 +103,10 @@ class DynamicLoggerBase(ABC):
             self._raw_mesh = raw_mesh
         if processed_mesh is not None:
             self._processed_mesh = processed_mesh
+        if outer_simulation_time is not None:
+            self._outer_simulation_time = outer_simulation_time
+        if inner_simulation_time is not None:
+            self._inner_simulation_time = inner_simulation_time
 
     @abstractmethod
     def postprocess_data(self) -> None:
