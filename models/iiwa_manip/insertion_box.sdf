@@ -1,0 +1,157 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+    <model name="insertion_box">
+        <link name="insertion_box_link">
+            <inertial>
+                <inertia>
+                    <ixx>1</ixx>
+                    <ixy>0</ixy>
+                    <ixz>0</ixz>
+                    <iyy>1</iyy>
+                    <iyz>0</iyz>
+                    <izz>1</izz>
+                </inertia>
+                <mass>1000.0</mass>
+            </inertial>
+            <visual name="bottom_visual">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                    <box>
+                        <size>0.3 0.3 0.01</size>
+                    </box>
+                </geometry>
+                <material>
+                    <diffuse>0.82 0.48 0.0 1.0</diffuse>
+                </material>
+            </visual>
+            <collision name="bottom_collision">
+                <pose>0 0 0 0 0 0</pose>
+                <geometry>
+                    <box>
+                        <size>0.3 0.3 0.01</size>
+                    </box>
+                </geometry>
+                <drake:proximity_properties>
+                    <drake:compliant_hydroelastic/>
+                    <drake:hydroelastic_modulus>1e8</drake:hydroelastic_modulus>
+                    <drake:mesh_resolution_hint>1.0</drake:mesh_resolution_hint>
+                    <drake:mu_dynamic>0.3</drake:mu_dynamic>
+                    <drake:mu_static>0.3</drake:mu_static>
+                    <drake:hunt_crossley_dissipation>3.0</drake:hunt_crossley_dissipation>
+                </drake:proximity_properties>
+            </collision>
+            <visual name="side1_visual">
+                <pose>0.145 0 0.1 0 0 0</pose>
+                <geometry>
+                    <box>
+                        <size>0.01 0.3 0.2</size>
+                    </box>
+                </geometry>
+                <material>
+                    <diffuse>0.82 0.48 0.0 1.0</diffuse>
+                </material>
+            </visual>
+            <collision name="side1_collision">
+                <pose>0.145 0 0.1 0 0 0</pose>
+                <geometry>
+                    <box>
+                        <size>0.01 0.3 0.2</size>
+                    </box>
+                </geometry>
+                <drake:proximity_properties>
+                    <drake:compliant_hydroelastic/>
+                    <drake:hydroelastic_modulus>1e8</drake:hydroelastic_modulus>
+                    <drake:mesh_resolution_hint>1.0</drake:mesh_resolution_hint>
+                    <drake:mu_dynamic>0.3</drake:mu_dynamic>
+                    <drake:mu_static>0.3</drake:mu_static>
+                    <drake:hunt_crossley_dissipation>3.0</drake:hunt_crossley_dissipation>
+                </drake:proximity_properties>
+            </collision>
+            <visual name="side2_visual">
+                <pose>-0.145 0 0.1 0 0 0</pose>
+                <geometry>
+                    <box>
+                        <size>0.01 0.3 0.2</size>
+                    </box>
+                </geometry>
+                <material>
+                    <diffuse>0.82 0.48 0.0 1.0</diffuse>
+                </material>
+            </visual>
+            <collision name="side2_collision">
+                <pose>-0.145 0 0.1 0 0 0</pose>
+                <geometry>
+                    <box>
+                        <size>0.01 0.3 0.2</size>
+                    </box>
+                </geometry>
+                <drake:proximity_properties>
+                    <drake:compliant_hydroelastic/>
+                    <drake:hydroelastic_modulus>1e8</drake:hydroelastic_modulus>
+                    <drake:mesh_resolution_hint>1.0</drake:mesh_resolution_hint>
+                    <drake:mu_dynamic>0.3</drake:mu_dynamic>
+                    <drake:mu_static>0.3</drake:mu_static>
+                    <drake:hunt_crossley_dissipation>3.0</drake:hunt_crossley_dissipation>
+                </drake:proximity_properties>
+            </collision>
+            <visual name="side3_visual">
+                <pose>0 0.145 0.1 0 0 0</pose>
+                <geometry>
+                    <box>
+                        <size>0.3 0.01 0.2</size>
+                    </box>
+                </geometry>
+                <material>
+                    <diffuse>0.82 0.48 0.0 1.0</diffuse>
+                </material>
+            </visual>
+            <collision name="side3_collision">
+                <pose>0 0.145 0.1 0 0 0</pose>
+                <geometry>
+                    <box>
+                        <size>0.3 0.01 0.2</size>
+                    </box>
+                </geometry>
+                <drake:proximity_properties>
+                    <drake:compliant_hydroelastic/>
+                    <drake:hydroelastic_modulus>1e8</drake:hydroelastic_modulus>
+                    <drake:mesh_resolution_hint>1.0</drake:mesh_resolution_hint>
+                    <drake:mu_dynamic>0.3</drake:mu_dynamic>
+                    <drake:mu_static>0.3</drake:mu_static>
+                    <drake:hunt_crossley_dissipation>3.0</drake:hunt_crossley_dissipation>
+                </drake:proximity_properties>
+            </collision>
+            <visual name="side4_visual">
+                <pose>0 -0.145 0.1 0 0 0</pose>
+                <geometry>
+                    <box>
+                        <size>0.3 0.01 0.2</size>
+                    </box>
+                </geometry>
+                <material>
+                    <diffuse>0.82 0.48 0.0 1.0</diffuse>
+                </material>
+            </visual>
+            <collision name="side4_collision">
+                <pose>0 -0.145 0.1 0 0 0</pose>
+                <geometry>
+                    <box>
+                        <size>0.3 0.01 0.2</size>
+                    </box>
+                </geometry>
+                <drake:proximity_properties>
+                    <drake:compliant_hydroelastic/>
+                    <drake:hydroelastic_modulus>1e8</drake:hydroelastic_modulus>
+                    <drake:mesh_resolution_hint>1.0</drake:mesh_resolution_hint>
+                    <drake:mu_dynamic>0.3</drake:mu_dynamic>
+                    <drake:mu_static>0.3</drake:mu_static>
+                    <drake:hunt_crossley_dissipation>3.0</drake:hunt_crossley_dissipation>
+                </drake:proximity_properties>
+            </collision>
+
+        </link>
+        <frame name="insertion_box_bottom_center">
+            <pose relative_to="insertion_box_link">0 0 -0.005 0 0 0</pose>
+        </frame>
+    </model>
+</sdf>

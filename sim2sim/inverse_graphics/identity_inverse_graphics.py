@@ -23,7 +23,7 @@ class IdentityInverseGraphics(InverseGraphicsBase):
         """
         NOTE: All params apart from `mesh_path` and `mesh_pose` are ignored.
         :param mesh_path: The path to load the mesh from.
-        :param mesh_pose: The pose of the mesh in form [x, y, z, roll, pitch, yaw] where angles are in radians.
+        :param mesh_pose: The pose of the mesh in form [roll, pitch, yaw, x, y, z] where angles are in radians.
         """
         super().__init__(images, intrinsics, extrinsics, depth, labels, masks)
 

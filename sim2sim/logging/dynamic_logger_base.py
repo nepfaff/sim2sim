@@ -5,7 +5,7 @@ import datetime
 
 import numpy as np
 import open3d as o3d
-from pydrake.all import MultibodyPlant
+from pydrake.all import MultibodyPlant, SceneGraph
 
 
 class DynamicLoggerBase(ABC):
@@ -23,6 +23,8 @@ class DynamicLoggerBase(ABC):
 
         self._outer_plant: Union[MultibodyPlant, None] = None
         self._inner_plant: Union[MultibodyPlant, None] = None
+        self._outer_scene_graph: Union[SceneGraph, None] = None
+        self._inner_scene_graph: Union[SceneGraph, None] = None
 
         if not os.path.exists(logging_path):
             os.mkdir(logging_path)
@@ -36,6 +38,7 @@ class DynamicLoggerBase(ABC):
         self._depths_dir_path = os.path.join(logging_path, "depths")
         self._masks_dir_path = os.path.join(logging_path, "binary_masks")
         self._mesh_dir_path = os.path.join(logging_path, "meshes")
+        self._time_logs_dir_path = os.path.join(logging_path, "time_logs")
         self._data_directory_paths = [
             self._camera_poses_dir_path,
             self._intrinsics_dir_path,
@@ -43,9 +46,11 @@ class DynamicLoggerBase(ABC):
             self._depths_dir_path,
             self._masks_dir_path,
             self._mesh_dir_path,
+            self._time_logs_dir_path,
         ]
         self._create_data_directories()
         self._meta_data_file_path = os.path.join(logging_path, "meta_data.yaml")
+        self._experiment_description_file_path = os.path.join(logging_path, "experiment_description.yaml")
 
         # Logging data
         self._camera_poses: List[np.ndarray] = []
@@ -56,11 +61,18 @@ class DynamicLoggerBase(ABC):
         self._masks: List[np.ndarray] = []
         self._raw_mesh: Optional[o3d.geometry.TriangleMesh] = None
         self._processed_mesh: Optional[o3d.geometry.TriangleMesh] = None
+        self._outer_simulation_time: Optional[float] = None
+        self._inner_simulation_time: Optional[float] = None
+        self._experiment_description: Optional[dict] = None
 
     def add_plants(self, outer_plant: MultibodyPlant, inner_plant: MultibodyPlant) -> None:
         """Add finalized plants."""
         self._outer_plant = outer_plant
         self._inner_plant = inner_plant
+
+    def add_scene_graphs(self, outer_scene_graph: SceneGraph, inner_scene_graph: SceneGraph) -> None:
+        self._outer_scene_graph = outer_scene_graph
+        self._inner_scene_graph = inner_scene_graph
 
     @abstractmethod
     def log(
@@ -73,6 +85,9 @@ class DynamicLoggerBase(ABC):
         masks: Optional[List[np.ndarray]] = None,
         raw_mesh: Optional[o3d.geometry.TriangleMesh] = None,
         processed_mesh: Optional[o3d.geometry.TriangleMesh] = None,
+        outer_simulation_time: Optional[float] = None,
+        inner_simulation_time: Optional[float] = None,
+        experiment_description: Optional[dict] = None,
     ) -> None:
         """TODO"""
         if camera_poses is not None:
@@ -91,6 +106,12 @@ class DynamicLoggerBase(ABC):
             self._raw_mesh = raw_mesh
         if processed_mesh is not None:
             self._processed_mesh = processed_mesh
+        if outer_simulation_time is not None:
+            self._outer_simulation_time = outer_simulation_time
+        if inner_simulation_time is not None:
+            self._inner_simulation_time = inner_simulation_time
+        if experiment_description is not None:
+            self._experiment_description = experiment_description
 
     @abstractmethod
     def postprocess_data(self) -> None:

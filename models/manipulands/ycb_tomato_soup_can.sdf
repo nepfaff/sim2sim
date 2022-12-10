@@ -19,7 +19,7 @@
                 <pose>0.0 0 0 0 0 0</pose>
                 <geometry>
                     <mesh>
-                        <uri>../data/ycb_tomato_soup_can/ycb_tomato_soup_can.obj</uri>
+                        <uri>../../data/ycb_tomato_soup_can/ycb_tomato_soup_can.obj</uri>
                     </mesh>
                 </geometry>
             </visual>
@@ -27,7 +27,7 @@
                 <pose>0 0 0 0 0 0</pose>
                 <geometry>
                     <mesh>
-                        <uri>../data/ycb_tomato_soup_can/ycb_tomato_soup_can.obj</uri>
+                        <uri>../../data/ycb_tomato_soup_can/ycb_tomato_soup_can.obj</uri>
                     </mesh>
                 </geometry>
                 <drake:proximity_properties>

@@ -8,38 +8,42 @@ from pydrake.all import (
     LoadModelDirectives,
     LoadModelDirectivesFromString,
     ProcessModelDirectives,
-    AddMultibodyPlantSceneGraph,
-    LeafSystem,
-    BasicVector,
+    AddMultibodyPlant,
     RigidTransform,
     DiagramBuilder,
     RollPitchYaw,
-    PidController,
     SceneGraph,
     MultibodyPlant,
+    Demultiplexer,
+    MultibodyPlantConfig,
 )
 
-from sim2sim.simulation import BasicSimulator
 from sim2sim.logging import DynamicLogger
-from sim2sim.util import get_parser, calc_mesh_inertia, create_processed_mesh_directive_str
-from sim2sim.images import SphereImageGenerator
+from sim2sim.util import (
+    get_parser,
+    calc_mesh_inertia,
+    create_processed_mesh_directive_str,
+    add_iiwa_system,
+    add_cameras,
+    add_wsg_system,
+    IIWAJointTrajectorySource,
+    WSGCommandSource,
+    IIWAControlModeSource,
+)
+from sim2sim.images import SphereImageGenerator, IIWAWristSphereImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
 from sim2sim.mesh_processing import IdentityMeshProcessor, QuadricDecimationMeshProcessor
+from sim2sim.simulation import BasicSimulator, IIWARearrangementSimulator, IIWAPushInHoleSimulator
 
-SCENE_DIRECTIVE = "../../models/table_pid/table_pid_scene_directive.yaml"
+SCENE_DIRECTIVE = "../../models/iiwa_manip/iiwa_manip_scene_directive.yaml"
+IIWA_Q_NOMINAL = np.array([1.5, -0.4, 0.0, -1.75, 0.0, 1.5, 0.0])  # iiwa joint angles in radians
 
-# TODO: Allow specifying manipulant with experiment yaml file
-MANIPULAND_DIRECTIVE = "../../models/table_pid/table_pid_manipuland_directive.yaml"
-MANIPULAND_NAME = "ycb_tomato_soup_can"
-MANIPULAND_BASE_LINK_NAME = "ycb_tomato_soup_can_base_link"
-MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(-np.pi / 2.0, 0.0, 0.0), [0.0, 0.0, 0.57545])  # X_WManipuland
-
-# TODO: Add type info using base classes
 LOGGERS = {
     "DynamicLogger": DynamicLogger,
 }
 IMAGE_GENERATORS = {
     "SphereImageGenerator": SphereImageGenerator,
+    "IIWAWristSphereImageGenerator": IIWAWristSphereImageGenerator,
 }
 INVERSE_GRAPHICS = {
     "IdentityInverseGraphics": IdentityInverseGraphics,
@@ -50,46 +54,29 @@ MESH_PROCESSORS = {
 }
 SIMULATORS = {
     "BasicSimulator": BasicSimulator,
+    "IIWARearrangementSimulator": IIWARearrangementSimulator,
+    "IIWAPushInHoleSimulator": IIWAPushInHoleSimulator,
 }
-
-
-class TableAngleSource(LeafSystem):
-    def __init__(self, angle: float, no_command_time: float):
-        """
-        Commands zero for `no_command_time` and then commands `angle`.
-
-        :param angle: The angle to command the table to.
-        :param no_command_time: The time for which we command zero instead of `angle`.
-        """
-        LeafSystem.__init__(self)
-
-        self._angle = angle
-        self._start_time = None
-        self._no_command_time = no_command_time
-
-        self._control_output_port = self.DeclareVectorOutputPort("table_angle", BasicVector(2), self.CalcOutput)
-
-    def CalcOutput(self, context, output):
-        if context.get_time() < self._no_command_time:
-            table_angle = 0.0
-        else:
-            table_angle = self._angle
-
-        output.SetFromVector([table_angle, 0.0])
 
 
 def create_env(
     timestep: float,
-    final_table_angle: float,
-    no_command_time: float,
+    manipuland_pose: RigidTransform,
+    manipuland_base_link_name: str,
     directive_files: List[str] = [],
     directive_strs: List[str] = [],
-    manipuland_pose: RigidTransform = MANIPULANT_DEFAULT_POSE,
 ) -> Tuple[DiagramBuilder, SceneGraph, MultibodyPlant]:
-    """Creates the table PID simulation environments without building it."""
+    """Creates the iiwa rearrangement simulation environments without building it."""
+
     # Create plant
     builder = DiagramBuilder()
-    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, timestep)
+    multibody_plant_config = MultibodyPlantConfig(
+        time_step=timestep,
+        contact_model="hydroelastic_with_fallback",  # "point"
+        discrete_contact_solver="sap",
+    )
+    plant, scene_graph = AddMultibodyPlant(multibody_plant_config, builder)
+    plant.set_name("plant")
     parser = get_parser(plant)
     for directive_path in directive_files:
         directive = LoadModelDirectives(directive_path)
@@ -98,48 +85,92 @@ def create_env(
         directive = LoadModelDirectivesFromString(directive_str)
         ProcessModelDirectives(directive, parser)
 
-    plant.SetDefaultFreeBodyPose(plant.GetBodyByName(MANIPULAND_BASE_LINK_NAME), manipuland_pose)
+    plant.SetDefaultFreeBodyPose(plant.GetBodyByName(manipuland_base_link_name), manipuland_pose)
     plant.Finalize()
 
-    # Table controller
-    pid_controller = builder.AddSystem(PidController(kp=np.array([10.0]), ki=np.array([1.0]), kd=np.array([1.0])))
-    pid_controller.set_name("pid_controller")
+    # Add iiwa controller
+    (
+        iiwa_controller_plant,
+        iiwa_control_mode_input,
+        iiwa_position_input,
+        iiwa_position_commanded_output,
+        iiwa_state_estimated_output,
+        iiwa_position_measured_output,
+        iiwa_velocity_estimated_output,
+        iiwa_feedforward_torque_input,
+        iiwa_torque_commanded_output,
+        iiwa_torque_external_output,
+    ) = add_iiwa_system(
+        builder=builder, plant=plant, iiwa_instance_idx=plant.GetModelInstanceByName("iiwa"), iiwa_time_step=timestep
+    )
+    iiwa_control_mode_source = builder.AddSystem(IIWAControlModeSource())
+    iiwa_control_mode_source.set_name("iiwa_control_mode_source")
+    builder.Connect(iiwa_control_mode_source.GetOutputPort("iiwa_control_mode"), iiwa_control_mode_input)
 
-    # Now "wire up" the controller to the plant
-    table_instance = plant.GetModelInstanceByName("table")
-    builder.Connect(plant.get_state_output_port(table_instance), pid_controller.get_input_port_estimated_state())
-    builder.Connect(pid_controller.get_output_port_control(), plant.get_actuation_input_port(table_instance))
+    # Add wsg controller
+    (
+        wsg_position_input,
+        wsg_force_limit_input,
+        wsg_state_measured_output,
+        wsg_force_measured_output,
+    ) = add_wsg_system(builder=builder, plant=plant, wsg_instance_idx=plant.GetModelInstanceByName("wsg"))
 
-    table_angle_source = builder.AddSystem(TableAngleSource(final_table_angle, no_command_time=no_command_time))
-    table_angle_source.set_name("table_angle_source")
-    builder.Connect(table_angle_source.get_output_port(), pid_controller.get_input_port_desired_state())
+    add_cameras(
+        builder=builder,
+        plant=plant,
+        scene_graph=scene_graph,
+        width=1920,
+        height=1440,
+        fov_y=np.pi / 4.0,
+    )
+
+    # Add iiwa joint trajectory source
+    iiwa_joint_trajectory_source = builder.AddSystem(
+        IIWAJointTrajectorySource(
+            plant=iiwa_controller_plant,
+            q_nominal=IIWA_Q_NOMINAL,
+        )
+    )
+    iiwa_joint_trajectory_source.set_name("iiwa_joint_trajectory_source")
+    demux = builder.AddSystem(Demultiplexer(14, 7))  # Assume 7 iiwa joint positions
+    builder.Connect(iiwa_joint_trajectory_source.get_output_port(), demux.get_input_port())
+    builder.Connect(demux.get_output_port(0), iiwa_position_input)
+
+    # Add wsg position source
+    wsg_command_source = builder.AddSystem(WSGCommandSource(initial_pos=0.1))
+    wsg_command_source.set_name("wsg_command_source")
+    builder.Connect(wsg_command_source.get_output_port(), wsg_position_input)
 
     return builder, scene_graph, plant
 
 
-def run_table_pid(
+def run_iiwa_manip(
     logging_path: str,
     params: dict,
     sim_duration: float,
     timestep: float,
-    final_table_angle: float,
-    no_command_time: float,
     logging_frequency_hz: float,
+    manipuland_directive: str,
+    manipuland_pose: RigidTransform,
+    manipuland_base_link_name: str,
+    manipuland_name: str,
 ):
     """
-    Experiment entrypoint for the table PID scene.
+    Common run method for the iiwa manip scenes.
+    NOTE: This should not be used as a top level entrypoint.
 
     :param logging_path: The path to log the data to.
     :param params: The experiment yaml file dict.
     :param sim_duration: The simulation duration in seconds.
     :param timestep: The timestep to use in seconds.
-    :param final_table_angle: The final table angle in radians.
-    :param no_command_time: The time before starting the table control in seconds.
     :param logging_frequency_hz: The dynamics logging frequency.
+    :param manipuland_directive: The model directive containing the manipuland.
+    :param manipuland_pose: The initial manipuland pose.
+    :param manipuland_base_link_name: The manipuland base link name.
+    :param manipuland_name: The name of the manipuland in the manipuland directive.
     """
 
     scene_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
-    manipuland_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), MANIPULAND_DIRECTIVE)
 
     logger_class = LOGGERS[params["logger"]["class"]]
     logger = logger_class(
@@ -155,15 +186,18 @@ def run_table_pid(
         os.mkdir(tmp_folder)
 
     builder_outer, scene_graph_outer, outer_plant = create_env(
-        timestep,
-        final_table_angle,
-        no_command_time,
+        timestep=timestep,
+        manipuland_pose=manipuland_pose,
+        manipuland_base_link_name=manipuland_base_link_name,
         directive_files=[scene_directive, manipuland_directive],
     )
 
     # Create a new version of the scene for generating camera data
     builder_camera, scene_graph_camera, _ = create_env(
-        timestep, final_table_angle, no_command_time, directive_files=[scene_directive, manipuland_directive]
+        timestep=timestep,
+        manipuland_pose=manipuland_pose,
+        manipuland_base_link_name=manipuland_base_link_name,
+        directive_files=[scene_directive, manipuland_directive],
     )
     image_generator_class = IMAGE_GENERATORS[params["image_generator"]["class"]]
     image_generator = image_generator_class(
@@ -207,16 +241,15 @@ def run_table_pid(
 
     # Create a directive for processed_mesh manipuland
     processed_mesh_directive = create_processed_mesh_directive_str(
-        mass, inertia, processed_mesh_file_path, tmp_folder, "ycb_tomato_soup_can", MANIPULAND_BASE_LINK_NAME
+        mass, inertia, processed_mesh_file_path, tmp_folder, manipuland_name, manipuland_base_link_name
     )
 
     builder_inner, scene_graph_inner, inner_plant = create_env(
-        timestep,
-        final_table_angle,
-        no_command_time,
+        timestep=timestep,
+        manipuland_pose=RigidTransform(RollPitchYaw(*raw_mesh_pose[:3]), raw_mesh_pose[3:]),
+        manipuland_base_link_name=manipuland_base_link_name,
         directive_files=[scene_directive],
         directive_strs=[processed_mesh_directive],
-        manipuland_pose=RigidTransform(RollPitchYaw(*raw_mesh_pose[:3]), raw_mesh_pose[3:]),
     )
 
     logger.add_plants(outer_plant, inner_plant)

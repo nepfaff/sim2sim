@@ -17,6 +17,7 @@ logger:
   args:
     label_to_mask: 4 # This label corresponds to the tomato soup can in the table_pid simulation setup
     manipuland_name: "ycb_tomato_soup_can"
+    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
     kProximity: false
 
 image_generator:
@@ -40,5 +41,5 @@ mesh_processor:
     target_triangle_num: 10000
 
 simulator:
-  class: "TablePIDSimulator"
+  class: "BasicSimulator"
   args:

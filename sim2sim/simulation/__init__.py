@@ -1,2 +1,5 @@
 from .simulator_base import SimulatorBase
-from .table_pid_simulator import TablePIDSimulator
+from .iiwa_joint_trajectory_simulator_base import IIWAJointTrajectorySimulatorBase
+from .basic_simulator import BasicSimulator
+from .iiwa_rearrangement_simulator import IIWARearrangementSimulator
+from .iiwa_push_in_hole_simulator import IIWAPushInHoleSimulator
