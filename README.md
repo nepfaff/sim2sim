@@ -19,9 +19,9 @@ pre-commit install
 
 ## Running an experiment
 
-Replace `./experiments/table_pid_simple.yaml` in the command below with your experiment description file.
+Replace `experiments/table_pid/table_pid_simple.yaml` in the command below with your experiment description file.
 The experiment description file deterministically specifies an experiment.
 
 ```bash
-python scripts/run_experiment.py --experiment ./experiments/table_pid_simple.yaml
+python scripts/run_experiment.py --experiment_description experiments/table_pid/table_pid_simple.yaml
 ```
