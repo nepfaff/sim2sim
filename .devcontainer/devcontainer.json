@@ -4,6 +4,9 @@
     "service": "sim2sim",
     "workspaceFolder": "/workspace",
     "shutdownAction": "stopCompose",
+    "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+    },
     "extensions": [
         "ms-vscode.cpptools",
         "ms-vscode.cmake-tools",
