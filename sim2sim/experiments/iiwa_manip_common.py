@@ -30,7 +30,7 @@ from sim2sim.util import (
     WSGCommandSource,
     IIWAControlModeSource,
 )
-from sim2sim.images import SphereImageGenerator, IIWAWristSphereImageGenerator
+from sim2sim.images import NoneImageGenerator, SphereImageGenerator, IIWAWristSphereImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
 from sim2sim.mesh_processing import IdentityMeshProcessor, QuadricDecimationMeshProcessor
 from sim2sim.simulation import BasicSimulator, IIWARearrangementSimulator, IIWAPushInHoleSimulator
@@ -42,6 +42,7 @@ LOGGERS = {
     "DynamicLogger": DynamicLogger,
 }
 IMAGE_GENERATORS = {
+    "NoneImageGenerator": NoneImageGenerator,
     "SphereImageGenerator": SphereImageGenerator,
     "IIWAWristSphereImageGenerator": IIWAWristSphereImageGenerator,
 }
