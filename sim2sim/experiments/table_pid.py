@@ -19,7 +19,7 @@ from pydrake.all import (
     MultibodyPlant,
 )
 
-from sim2sim.simulation import BasicSimulator
+from sim2sim.simulation import BasicSimulator, BasicInnerOnlySimulator
 from sim2sim.logging import DynamicLogger
 from sim2sim.util import get_parser, calc_mesh_inertia, create_processed_mesh_directive_str
 from sim2sim.images import SphereImageGenerator, NoneImageGenerator
@@ -51,6 +51,7 @@ MESH_PROCESSORS = {
 }
 SIMULATORS = {
     "BasicSimulator": BasicSimulator,
+    "BasicInnerOnlySimulator": BasicInnerOnlySimulator,
 }
 
 
