@@ -295,32 +295,42 @@ class DynamicLogger(DynamicLoggerBase):
         return raw_mesh_file_path, processed_mesh_file_path
 
     def save_manipuland_pose_logs(self) -> None:
-        np.savetxt(os.path.join(self._time_logs_dir_path, "outer_manipuland_poses.txt"), self._outer_manipuland_poses)
-        np.savetxt(
-            os.path.join(self._time_logs_dir_path, "outer_manipuland_pose_times.txt"), self._outer_manipuland_pose_times
-        )
-        np.savetxt(os.path.join(self._time_logs_dir_path, "inner_manipuland_poses.txt"), self._inner_manipuland_poses)
-        np.savetxt(
-            os.path.join(self._time_logs_dir_path, "inner_manipuland_pose_times.txt"), self._inner_manipuland_pose_times
-        )
+        if self._outer_manipuland_poses is not None:
+            np.savetxt(
+                os.path.join(self._time_logs_dir_path, "outer_manipuland_poses.txt"), self._outer_manipuland_poses
+            )
+            np.savetxt(
+                os.path.join(self._time_logs_dir_path, "outer_manipuland_pose_times.txt"),
+                self._outer_manipuland_pose_times,
+            )
+        if self._inner_manipuland_poses is not None:
+            np.savetxt(
+                os.path.join(self._time_logs_dir_path, "inner_manipuland_poses.txt"), self._inner_manipuland_poses
+            )
+            np.savetxt(
+                os.path.join(self._time_logs_dir_path, "inner_manipuland_pose_times.txt"),
+                self._inner_manipuland_pose_times,
+            )
 
     def save_manipuland_contact_force_logs(self) -> None:
-        np.savetxt(
-            os.path.join(self._time_logs_dir_path, "outer_manipuland_contact_forces.txt"),
-            self._outer_manipuland_contact_forces,
-        )
-        np.savetxt(
-            os.path.join(self._time_logs_dir_path, "outer_manipuland_contact_force_times.txt"),
-            self._outer_manipuland_contact_force_times,
-        )
-        np.savetxt(
-            os.path.join(self._time_logs_dir_path, "inner_manipuland_contact_forces.txt"),
-            self._inner_manipuland_contact_forces,
-        )
-        np.savetxt(
-            os.path.join(self._time_logs_dir_path, "inner_manipuland_contact_force_times.txt"),
-            self._inner_manipuland_contact_force_times,
-        )
+        if self._outer_manipuland_contact_forces is not None:
+            np.savetxt(
+                os.path.join(self._time_logs_dir_path, "outer_manipuland_contact_forces.txt"),
+                self._outer_manipuland_contact_forces,
+            )
+            np.savetxt(
+                os.path.join(self._time_logs_dir_path, "outer_manipuland_contact_force_times.txt"),
+                self._outer_manipuland_contact_force_times,
+            )
+        if self._inner_manipuland_contact_forces is not None:
+            np.savetxt(
+                os.path.join(self._time_logs_dir_path, "inner_manipuland_contact_forces.txt"),
+                self._inner_manipuland_contact_forces,
+            )
+            np.savetxt(
+                os.path.join(self._time_logs_dir_path, "inner_manipuland_contact_force_times.txt"),
+                self._inner_manipuland_contact_force_times,
+            )
 
     def save_contact_result_force_logs(self, body_name: str) -> None:
         (
@@ -328,35 +338,37 @@ class DynamicLogger(DynamicLoggerBase):
             outer_contact_result_forces,
             outer_contact_result_times,
         ) = self._get_contact_result_forces(True, body_name)
-        np.save(
-            os.path.join(self._time_logs_dir_path, "outer_contact_result_centroids.npy"),
-            np.array(outer_contact_result_centroids, dtype=object),
-        )
-        np.save(
-            os.path.join(self._time_logs_dir_path, "outer_contact_result_forces.npy"),
-            np.array(outer_contact_result_forces, dtype=object),
-        )
-        np.save(
-            os.path.join(self._time_logs_dir_path, "outer_contact_result_times.npy"),
-            np.array(outer_contact_result_times),
-        )
+        if len(outer_contact_result_times) > 0:
+            np.save(
+                os.path.join(self._time_logs_dir_path, "outer_contact_result_centroids.npy"),
+                np.array(outer_contact_result_centroids, dtype=object),
+            )
+            np.save(
+                os.path.join(self._time_logs_dir_path, "outer_contact_result_forces.npy"),
+                np.array(outer_contact_result_forces, dtype=object),
+            )
+            np.save(
+                os.path.join(self._time_logs_dir_path, "outer_contact_result_times.npy"),
+                np.array(outer_contact_result_times),
+            )
         (
             inner_contact_result_centroids,
             inner_contact_result_forces,
             inner_contact_result_times,
         ) = self._get_contact_result_forces(False, body_name)
-        np.save(
-            os.path.join(self._time_logs_dir_path, "inner_contact_result_centroids.npy"),
-            np.array(inner_contact_result_centroids, dtype=object),
-        )
-        np.save(
-            os.path.join(self._time_logs_dir_path, "inner_contact_result_forces.npy"),
-            np.array(inner_contact_result_forces, dtype=object),
-        )
-        np.save(
-            os.path.join(self._time_logs_dir_path, "inner_contact_result_times.npy"),
-            np.array(inner_contact_result_times),
-        )
+        if len(inner_contact_result_times) > 0:
+            np.save(
+                os.path.join(self._time_logs_dir_path, "inner_contact_result_centroids.npy"),
+                np.array(inner_contact_result_centroids, dtype=object),
+            )
+            np.save(
+                os.path.join(self._time_logs_dir_path, "inner_contact_result_forces.npy"),
+                np.array(inner_contact_result_forces, dtype=object),
+            )
+            np.save(
+                os.path.join(self._time_logs_dir_path, "inner_contact_result_times.npy"),
+                np.array(inner_contact_result_times),
+            )
 
     def save_data(self) -> None:
         # Meta data

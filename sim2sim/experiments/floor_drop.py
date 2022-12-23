@@ -3,20 +3,17 @@ import shutil
 import pathlib
 from typing import List, Tuple
 
-import numpy as np
 from pydrake.all import (
     LoadModelDirectives,
     LoadModelDirectivesFromString,
     ProcessModelDirectives,
-    AddMultibodyPlantSceneGraph,
-    LeafSystem,
-    BasicVector,
     RigidTransform,
     DiagramBuilder,
     RollPitchYaw,
-    PidController,
     SceneGraph,
     MultibodyPlant,
+    MultibodyPlantConfig,
+    AddMultibodyPlant,
 )
 
 from sim2sim.simulation import BasicSimulator, BasicInnerOnlySimulator
@@ -26,13 +23,7 @@ from sim2sim.images import SphereImageGenerator, NoneImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
 from sim2sim.mesh_processing import IdentityMeshProcessor, QuadricDecimationMeshProcessor
 
-SCENE_DIRECTIVE = "../../models/table_pid/table_pid_scene_directive.yaml"
-
-# TODO: Allow specifying manipulant with experiment yaml file
-MANIPULAND_DIRECTIVE = "../../models/table_pid/table_pid_manipuland_directive.yaml"
-MANIPULAND_NAME = "ycb_tomato_soup_can"
-MANIPULAND_BASE_LINK_NAME = "ycb_tomato_soup_can_base_link"
-MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(-np.pi / 2.0, 0.0, 0.0), [0.0, 0.0, 0.57545])  # X_WManipuland
+SCENE_DIRECTIVE = "../../models/floor_drop/floor_drop_directive.yaml"
 
 # TODO: Add type info using base classes
 LOGGERS = {
@@ -55,43 +46,21 @@ SIMULATORS = {
 }
 
 
-class TableAngleSource(LeafSystem):
-    def __init__(self, angle: float, no_command_time: float):
-        """
-        Commands zero for `no_command_time` and then commands `angle`.
-
-        :param angle: The angle to command the table to.
-        :param no_command_time: The time for which we command zero instead of `angle`.
-        """
-        LeafSystem.__init__(self)
-
-        self._angle = angle
-        self._start_time = None
-        self._no_command_time = no_command_time
-
-        self._control_output_port = self.DeclareVectorOutputPort("table_angle", BasicVector(2), self.CalcOutput)
-
-    def CalcOutput(self, context, output):
-        if context.get_time() < self._no_command_time:
-            table_angle = 0.0
-        else:
-            table_angle = self._angle
-
-        output.SetFromVector([table_angle, 0.0])
-
-
 def create_env(
     timestep: float,
-    final_table_angle: float,
-    no_command_time: float,
+    manipuland_base_link_name: str,
+    manipuland_pose: RigidTransform,
     directive_files: List[str] = [],
     directive_strs: List[str] = [],
-    manipuland_pose: RigidTransform = MANIPULANT_DEFAULT_POSE,
 ) -> Tuple[DiagramBuilder, SceneGraph, MultibodyPlant]:
-    """Creates the table PID simulation environments without building it."""
-    # Create plant
+    """Creates the floor drop simulation environments without building it."""
     builder = DiagramBuilder()
-    plant, scene_graph = AddMultibodyPlantSceneGraph(builder, timestep)
+    multibody_plant_config = MultibodyPlantConfig(
+        time_step=timestep,
+        contact_model="hydroelastic_with_fallback",  # "point"
+        discrete_contact_solver="sap",
+    )
+    plant, scene_graph = AddMultibodyPlant(multibody_plant_config, builder)
     parser = get_parser(plant)
     for directive_path in directive_files:
         directive = LoadModelDirectives(directive_path)
@@ -100,48 +69,38 @@ def create_env(
         directive = LoadModelDirectivesFromString(directive_str)
         ProcessModelDirectives(directive, parser)
 
-    plant.SetDefaultFreeBodyPose(plant.GetBodyByName(MANIPULAND_BASE_LINK_NAME), manipuland_pose)
+    plant.SetDefaultFreeBodyPose(plant.GetBodyByName(manipuland_base_link_name), manipuland_pose)
     plant.Finalize()
-
-    # Table controller
-    pid_controller = builder.AddSystem(PidController(kp=np.array([10.0]), ki=np.array([1.0]), kd=np.array([1.0])))
-    pid_controller.set_name("pid_controller")
-
-    # Now "wire up" the controller to the plant
-    table_instance = plant.GetModelInstanceByName("table")
-    builder.Connect(plant.get_state_output_port(table_instance), pid_controller.get_input_port_estimated_state())
-    builder.Connect(pid_controller.get_output_port_control(), plant.get_actuation_input_port(table_instance))
-
-    table_angle_source = builder.AddSystem(TableAngleSource(final_table_angle, no_command_time=no_command_time))
-    table_angle_source.set_name("table_angle_source")
-    builder.Connect(table_angle_source.get_output_port(), pid_controller.get_input_port_desired_state())
 
     return builder, scene_graph, plant
 
 
-def run_table_pid(
+def run_floor_drop(
     logging_path: str,
     params: dict,
     sim_duration: float,
     timestep: float,
-    final_table_angle: float,
-    no_command_time: float,
     logging_frequency_hz: float,
+    manipuland_directive: str,
+    manipuland_base_link_name: str,
+    manipuland_default_pose: str,
 ):
     """
-    Experiment entrypoint for the table PID scene.
+    Experiment entrypoint for the floor drop scene.
 
     :param logging_path: The path to log the data to.
     :param params: The experiment yaml file dict.
     :param sim_duration: The simulation duration in seconds.
     :param timestep: The timestep to use in seconds.
-    :param final_table_angle: The final table angle in radians.
-    :param no_command_time: The time before starting the table control in seconds.
     :param logging_frequency_hz: The dynamics logging frequency.
+    :param manipuland_directive: The file path of the outer manipuland directive. The path should be relative to this
+        script.
+    :param manipuland_base_link_name: The base link name of the outer manipuland.
+    :param manipuland_default_pose: The default pose of the outer manipuland of form [roll, pitch, yaw, x, y, z].
     """
 
     scene_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
-    manipuland_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), MANIPULAND_DIRECTIVE)
+    manipuland_directive_path = os.path.join(pathlib.Path(__file__).parent.resolve(), manipuland_directive)
 
     logger_class = LOGGERS[params["logger"]["class"]]
     logger = logger_class(
@@ -156,16 +115,22 @@ def run_table_pid(
     if not os.path.exists(tmp_folder):
         os.mkdir(tmp_folder)
 
+    manipuland_default_pose_transform = RigidTransform(
+        RollPitchYaw(*manipuland_default_pose[:3]), manipuland_default_pose[3:]
+    )
     builder_outer, scene_graph_outer, outer_plant = create_env(
-        timestep,
-        final_table_angle,
-        no_command_time,
-        directive_files=[scene_directive, manipuland_directive],
+        timestep=timestep,
+        manipuland_base_link_name=manipuland_base_link_name,
+        manipuland_pose=manipuland_default_pose_transform,
+        directive_files=[scene_directive, manipuland_directive_path],
     )
 
     # Create a new version of the scene for generating camera data
     builder_camera, scene_graph_camera, _ = create_env(
-        timestep, final_table_angle, no_command_time, directive_files=[scene_directive, manipuland_directive]
+        timestep=timestep,
+        manipuland_base_link_name=manipuland_base_link_name,
+        manipuland_pose=manipuland_default_pose_transform,
+        directive_files=[scene_directive, manipuland_directive_path],
     )
     image_generator_class = IMAGE_GENERATORS[params["image_generator"]["class"]]
     image_generator = image_generator_class(
@@ -209,13 +174,12 @@ def run_table_pid(
 
     # Create a directive for processed_mesh manipuland
     processed_mesh_directive = create_processed_mesh_directive_str(
-        mass, inertia, processed_mesh_file_path, tmp_folder, "ycb_tomato_soup_can", MANIPULAND_BASE_LINK_NAME
+        mass, inertia, processed_mesh_file_path, tmp_folder, "ycb_tomato_soup_can", manipuland_base_link_name
     )
 
     builder_inner, scene_graph_inner, inner_plant = create_env(
-        timestep,
-        final_table_angle,
-        no_command_time,
+        timestep=timestep,
+        manipuland_base_link_name=manipuland_base_link_name,
         directive_files=[scene_directive],
         directive_strs=[processed_mesh_directive],
         manipuland_pose=RigidTransform(RollPitchYaw(*raw_mesh_pose[:3]), raw_mesh_pose[3:]),
