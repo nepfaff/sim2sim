@@ -1,0 +1,45 @@
+# Unique identifier for this experiment for logging
+experiment_id: "table_pid_simple"
+
+script:
+  name: "table_pid"
+  args:
+    sim_duration: 2.0
+    no_command_time: 0.1
+    timestep: 0.001
+    final_table_angle: 0.7854
+    logging_frequency_hz: 100
+
+# Component specifications
+# 'args' are constructor arguments that are not part of the base class constructors
+logger:
+  class: "DynamicLogger"
+  args:
+    label_to_mask: 4 # This label corresponds to the tomato soup can in the table_pid simulation setup
+    manipuland_name: "ycb_tomato_soup_can"
+    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
+    kProximity: false
+
+image_generator:
+  class: "SphereImageGenerator"
+  args:
+    simulate_time: 0.1 # NOTE: This should be the same or shorter as `no_command_time`
+    look_at_point: [0.0, 0.0, 0.57545]
+    z_distances: [0.0, 0.06, 0.12]
+    radii: [0.25, 0.2, 0.15]
+    num_poses: [30, 25, 15]
+
+inverse_graphics:
+  class: "IdentityInverseGraphics"
+  args:
+    mesh_path: ./data/tomato_soup_can_instant_ngp.obj
+    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.57545] # NOTE: Identical to `X_WManipuland` specified in `table_pid.py`
+
+mesh_processor:
+  class: "QuadricDecimationMeshProcessor"
+  args:
+    target_triangle_num: 10000
+
+simulator:
+  class: "BasicSimulator"
+  args:
