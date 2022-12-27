@@ -6,6 +6,15 @@ A high-level system diagram is shown below:
 
 ## Installation
 
+Execute the following commands from the repository's root.
+
+Install `git lfs`:
+
+```bash
+git lfs install
+git lfs pull
+```
+
 Install the `sim2sim` package in development mode:
 
 ```bash
