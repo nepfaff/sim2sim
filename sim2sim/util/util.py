@@ -117,7 +117,7 @@ def create_decomposition_processed_mesh_sdf_file(
                         <pose>0 0 0 0 0 0</pose>
                         <geometry>
                             <mesh>
-                                <uri>{processed_mesh_file_path}</uri>
+                                <uri>{processed_mesh_file_path.replace("processed_mesh", "raw_mesh")}</uri>
                             </mesh>
                         </geometry>
                     </visual>
@@ -164,6 +164,8 @@ def create_processed_mesh_directive_str(
     :param tmp_folder: The folder to write the sdf file to.
     :return processed_mesh_directive_str: The directive string for the processed mesh.
     """
+    # import IPython
+    # IPython.embed()
     if not (processed_mesh_file_path).endswith(".obj"):
         dir_name = "/".join(processed_mesh_file_path.split("/")[:-1])
         listed_files = [os.path.join(dir_name, f) for f in os.listdir(dir_name) if "piece" in f]

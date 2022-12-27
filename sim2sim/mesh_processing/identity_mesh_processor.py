@@ -16,4 +16,4 @@ class IdentityMeshProcessor(MeshProcessorBase):
         :param mesh: The mesh.
         :return: The input mesh.
         """
-        return mesh
+        return mesh, []

@@ -1,5 +1,5 @@
 # Unique identifier for this experiment for logging
-experiment_id: "floor_drop"
+experiment_id: "floor_drop_sphere"
 env:
   contact_model: "hydroelastic_with_fallback"
   solver: "sap"
