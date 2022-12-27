@@ -12,109 +12,85 @@ from trimesh import util, convex
 import pointnet2_ops.pointnet2_utils as pointnet2_utils
 
 
-class SphereMeshProcessor(MeshProcessorBase):
+class CoACDMeshProcessor(MeshProcessorBase):
     """Implements mesh processing through quadric decimation."""
 
-    def __init__(self, target_sphere_num: int):
+    def __init__(self, mesh_name: str, mesh_dir: str, preview_with_trimesh: bool):
         """
         :param target_sphere_num: The number of spheres that the simplified mesh should contain.
         """
         super().__init__()
 
         # change this to spit out 100 meshes
-        self._target_sphere_num = target_sphere_num
+        self.mesh_name = mesh_name
+        self.mesh_dir = mesh_dir
+        self.preview_with_trimesh = preview_with_trimesh
 
     def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> o3d.geometry.TriangleMesh:
         """
-        :param mesh: The mesh.
-        :return: The simplified mesh mesh.
+        Given a mesh, performs a convex decomposition of it with
+        coacd, saving all the parts in a subfolder named
+        `<mesh_filename>_parts`.
+
+        Args:
+        - input_mesh_path: String path to mesh file to decompose. Only
+            'obj' format is currently tested, but other formats supported
+            by trimesh might work.
+        - preview_with_trimesh: Whether to open (and block on) a window to preview
+        the decomposition.
+        - A set of control kwargs, plus any additional kwargs, are passed to the convex
+          decomposition routine 'vhacd'; you can run `testVHACD --help` to see options.
+
+        Returns:
+        - List of generated mesh file parts, in obj format.
         """
-        # IPython.embed()
-        vis = True
-        points = np.array(mesh.vertices)
-        print(
-            points[:, 0].max(),
-            points[:, 0].min(),
-            points[:, 1].max(),
-            points[:, 1].min(),
-            points[:, 2].max(),
-            points[:, 2].min(),
-        )
-        points = torch.from_numpy(points).cuda().float().contiguous()[None]
+        # Create a subdir for the convex decomp parts.
 
-        # subsampled_pts = pointnet2_utils.furthest_point_sample(points, self._target_sphere_num)
-        subsampled_pts = pointnet2_utils.gather_operation(
-            points.transpose(1, 2).contiguous(),
-            pointnet2_utils.furthest_point_sample(points[..., :3].contiguous(), self._target_sphere_num),
-        ).contiguous()
+        # TODO(liruiw) modify this to temp
+        mesh_parts_folder = self.mesh_name + "_parts"
+        out_dir = os.path.join(self.mesh_dir, mesh_parts_folder)
+        mesh_full_path = os.path.join(self.mesh_dir, self.mesh_name)
+        os.makedirs(out_dir, exist_ok=True)
 
-        avg_point_num = points.shape[1] // self._target_sphere_num
+        if self.preview_with_trimesh:
+            logging.info("Showing mesh before decomp. Close window to proceed.")
+            scene = trimesh.scene.scene.Scene()
+            scene.add_geometry(mesh)
+            scene.set_camera(angles=(1, 0, 0), distance=0.3, center=(0, 0, 0))
+            # scene.viewer.toggle_axis()
+            scene.show()
+        try:
+            convex_pieces = []
+            os.system(f"coacd -i {mesh_full_path}_corr.obj -o {out_dir}")
+            logging.info("Performing convex decomposition with CoACD.")
 
-        # limit the number of points but keep max radius
-        centers = []
-        radius = []
-        remaining_points = points.clone()
-        for idx in range(self._target_sphere_num):
-            dist = subsampled_pts[..., [idx]] - torch.cat(
-                (subsampled_pts[..., :idx], subsampled_pts[..., idx + 1 :]), dim=-1
-            )
-            dist = dist.norm(dim=1).min()
-            output = pointnet2_utils.ball_query(
-                dist,
-                avg_point_num,
-                remaining_points.contiguous(),
-                subsampled_pts[..., [idx]].transpose(1, 2).float().contiguous(),
-            )
-            output = output.detach().cpu().numpy()[0][0]
-            within_sphere_points = remaining_points[0][output].detach().cpu().numpy()
+            for file in sorted(os.listdir(out_dir)):
+                part = trimesh.load(os.path.join(out_dir, file))
+                convex_pieces += [part]
 
-            # remove these points
-            index = torch.ones(remaining_points.shape[1], dtype=bool).cuda()
-            index[output] = False
-            remaining_points = remaining_points[:, index]
+        except Exception as e:
+            logging.error("Problem performing decomposition: %s", e)
 
-            c_i, r_i, err = trimesh.nsphere.fit_nsphere(within_sphere_points)
-            centers.append(c_i)
-            radius.append(r_i)
+        if preview_with_trimesh:
+            # Display the convex decomp, giving each a random colors
+            # to make them easier to distinguish.
+            for part in convex_pieces:
+                this_color = trimesh.visual.random_color()
+                part.visual.face_colors[:] = this_color
+            scene = trimesh.scene.scene.Scene()
+            for part in convex_pieces:
+                scene.add_geometry(part)
 
-        if vis:
-            viewer = o3d.visualization.Visualizer()
-            viewer.create_window()
-            pcd = mesh.sample_points_uniformly(number_of_points=50000)
-            viewer.add_geometry(pcd)
-            for c, r in zip(centers, radius):
-                sphere = o3d.geometry.TriangleMesh.create_sphere(r)
-                sphere.paint_uniform_color((0.0, 0.0, 0.8))
-                sphere.translate(c)
-                print(sphere)
-                viewer.add_geometry(sphere)
+            logging.info("Showing mesh convex decomp into %d parts. Close window to proceed." % (len(convex_pieces)))
+            scene.set_camera(angles=(1, 0, 0), distance=0.3, center=(0, 0, 0))
+            scene.show()
 
-            opt = viewer.get_render_option()
-            opt.show_coordinate_frame = True
-            # opt.background_color = np.asarray([0.5, 0.5, 0.5])
-            viewer.run()
-            viewer.destroy_window()
-
-        # TODO(liruiw): convert this to a list of sphere geometry?
-        return [centers, radius]
-
-        # create a voronoi region
-        # simplified_mesh = mesh.simplify_quadric_decimation(1000)
-        # voronoi = scipy.spatial.Voronoi(points, furthest_site=True)
-        # radii_2 = scipy.spatial.distance.cdist(
-        #     voronoi.vertices, points,
-        #     metric='sqeuclidean').max(axis=1)
-        # npoint = torch.cuda.FloatTensor([self._target_sphere_num])
-        # trimesh.nsphere.fit_nsphere()
-        # radius_v = np.sqrt(radii_2[radii_idx]) * points_scale
-        # center_v = (voronoi.vertices[radii_idx] *
-        #         points_scale) + points_origin
-
-        # new_xyz, farthest_pt_idx = ops.sample_farthest_points(xyz[None], npoint)
-
-        # using a surrogate for maximum distance
-
-        # pick some radius for querying
-        # radius_lo = 0.2
-        # radius_hi
-        # radius = torch.rand(self._target_sphere_num).uniform_(radius_lo, radius_hi).cuda()
+        # rewrite the mesh with new names
+        os.system(f"rm {out_dir}/*")
+        out_paths = []
+        for k, part in enumerate(convex_pieces):
+            piece_name = "%s_convex_piece_%03d.obj" % (self.mesh_name, k)
+            full_path = os.path.join(out_dir, piece_name)
+            trimesh.exchange.export.export_mesh(part, full_path)
+            out_paths.append(full_path)
+        return out_paths

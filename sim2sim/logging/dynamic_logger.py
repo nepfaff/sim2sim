@@ -294,6 +294,19 @@ class DynamicLogger(DynamicLoggerBase):
             o3d.io.write_triangle_mesh(processed_mesh_file_path, self._processed_mesh)
         return raw_mesh_file_path, processed_mesh_file_path
 
+    def save_multi_mesh_data(self) -> Tuple[str, str]:
+        """
+        Saves the raw and processed meshes if they exist.
+
+        :return: A tuple of (raw_mesh_file_path, processed_mesh_file_path).
+        """
+        raw_mesh_file_path = os.path.join(self._mesh_dir_path, "raw_mesh.obj")
+        processed_mesh_file_path = os.path.join(self._mesh_dir_path, "processed_mesh")
+        if self._processed_meshes:
+            for idx, mesh in enumerate(self._processed_meshes):
+                o3d.io.write_triangle_mesh(processed_mesh_file_path + f"_piece_{idx}.obj", mesh)
+        return raw_mesh_file_path, processed_mesh_file_path
+
     def save_manipuland_pose_logs(self) -> None:
         if self._outer_manipuland_poses is not None:
             np.savetxt(
