@@ -21,7 +21,7 @@ from sim2sim.logging import DynamicLogger
 from sim2sim.util import get_parser, calc_mesh_inertia, create_processed_mesh_directive_str
 from sim2sim.images import SphereImageGenerator, NoneImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
-from sim2sim.mesh_processing import IdentityMeshProcessor, QuadricDecimationMeshProcessor
+from sim2sim.mesh_processing import IdentityMeshProcessor, QuadricDecimationMeshProcessor, SphereMeshProcessor
 
 SCENE_DIRECTIVE = "../../models/floor_drop/floor_drop_directive.yaml"
 
@@ -39,6 +39,7 @@ INVERSE_GRAPHICS = {
 MESH_PROCESSORS = {
     "IdentityMeshProcessor": IdentityMeshProcessor,
     "QuadricDecimationMeshProcessor": QuadricDecimationMeshProcessor,
+    "SphereMeshProcessor": SphereMeshProcessor,
 }
 SIMULATORS = {
     "BasicSimulator": BasicSimulator,
