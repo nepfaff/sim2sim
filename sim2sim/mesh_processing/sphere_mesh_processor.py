@@ -29,7 +29,6 @@ class SphereMeshProcessor(MeshProcessorBase):
         :param mesh: The mesh.
         :return: The simplified mesh mesh.
         """
-        # IPython.embed()
         vis = True
         points = np.array(mesh.vertices)
         print(
@@ -47,14 +46,14 @@ class SphereMeshProcessor(MeshProcessorBase):
             points.transpose(1, 2).contiguous(),
             pointnet2_utils.furthest_point_sample(points[..., :3].contiguous(), self._target_sphere_num),
         ).contiguous()
-
-        # IPython.embed()
         avg_point_num = points.shape[1] // self._target_sphere_num
 
         # limit the number of points but keep max radius
         centers = []
         radius = []
+        output_meshes = []
         remaining_points = points.clone()
+
         for idx in range(self._target_sphere_num):
             dist = subsampled_pts[..., [idx]] - torch.cat(
                 (subsampled_pts[..., :idx], subsampled_pts[..., idx + 1 :]), dim=-1
@@ -77,27 +76,27 @@ class SphereMeshProcessor(MeshProcessorBase):
             c_i, r_i, err = trimesh.nsphere.fit_nsphere(within_sphere_points)
             centers.append(c_i)
             radius.append(r_i)
+            sphere = o3d.geometry.TriangleMesh.create_sphere(r_i)
+            sphere.paint_uniform_color((0.0, 0.0, 0.8))
+            sphere.translate(c_i)
+            output_meshes.append(sphere)
 
         if vis:
             viewer = o3d.visualization.Visualizer()
             viewer.create_window()
             pcd = mesh.sample_points_uniformly(number_of_points=50000)
             viewer.add_geometry(pcd)
-            for c, r in zip(centers, radius):
-                sphere = o3d.geometry.TriangleMesh.create_sphere(r)
-                sphere.paint_uniform_color((0.0, 0.0, 0.8))
-                sphere.translate(c)
-                print(sphere)
+            for sphere in output_meshes:
                 viewer.add_geometry(sphere)
 
             opt = viewer.get_render_option()
             opt.show_coordinate_frame = True
-            # opt.background_color = np.asarray([0.5, 0.5, 0.5])
             viewer.run()
             viewer.destroy_window()
 
         # TODO(liruiw): convert this to a list of sphere geometry?
-        return [centers, radius]
+        # return [centers, radius]
+        return None, output_meshes
 
         # create a voronoi region
         # simplified_mesh = mesh.simplify_quadric_decimation(1000)

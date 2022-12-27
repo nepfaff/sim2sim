@@ -10,6 +10,30 @@ import trimesh
 import scipy.spatial
 from trimesh import util, convex
 import pointnet2_ops.pointnet2_utils as pointnet2_utils
+import logging
+import os
+
+
+def open3d_to_trimesh(src):
+    import open3d as o3d
+
+    """Convert mesh from open3d to trimesh
+    https://github.com/wkentaro/morefusion/blob/b8b892b3fbc384982a4929b1418ee29393069b11/morefusion/utils/open3d_to_trimesh.py
+    """
+    if isinstance(src, o3d.geometry.TriangleMesh):
+        vertex_colors = None
+        if src.has_vertex_colors:
+            vertex_colors = np.asarray(src.vertex_colors)
+        dst = trimesh.Trimesh(
+            vertices=np.asarray(src.vertices),
+            faces=np.asarray(src.triangles),
+            vertex_normals=np.asarray(src.vertex_normals),
+            vertex_colors=vertex_colors,
+        )
+    else:
+        raise ValueError("Unsupported type of src: {}".format(type(src)))
+
+    return dst
 
 
 class CoACDMeshProcessor(MeshProcessorBase):
@@ -49,19 +73,21 @@ class CoACDMeshProcessor(MeshProcessorBase):
         # TODO(liruiw) modify this to temp
         mesh_parts_folder = self.mesh_name + "_parts"
         out_dir = os.path.join(self.mesh_dir, mesh_parts_folder)
-        mesh_full_path = os.path.join(self.mesh_dir, self.mesh_name)
+        mesh_full_path = self.mesh_name
         os.makedirs(out_dir, exist_ok=True)
+        mesh_trimesh = open3d_to_trimesh(mesh)
 
         if self.preview_with_trimesh:
             logging.info("Showing mesh before decomp. Close window to proceed.")
             scene = trimesh.scene.scene.Scene()
-            scene.add_geometry(mesh)
+            scene.add_geometry(mesh_trimesh)
             scene.set_camera(angles=(1, 0, 0), distance=0.3, center=(0, 0, 0))
             # scene.viewer.toggle_axis()
             scene.show()
         try:
             convex_pieces = []
-            os.system(f"coacd -i {mesh_full_path}_corr.obj -o {out_dir}")
+            print(f"coacd -i {mesh_full_path} -o {out_dir}")
+            os.system(f"coacd -i {mesh_full_path} -o {out_dir}")
             logging.info("Performing convex decomposition with CoACD.")
 
             for file in sorted(os.listdir(out_dir)):
@@ -71,7 +97,7 @@ class CoACDMeshProcessor(MeshProcessorBase):
         except Exception as e:
             logging.error("Problem performing decomposition: %s", e)
 
-        if preview_with_trimesh:
+        if self.preview_with_trimesh:
             # Display the convex decomp, giving each a random colors
             # to make them easier to distinguish.
             for part in convex_pieces:
@@ -87,10 +113,8 @@ class CoACDMeshProcessor(MeshProcessorBase):
 
         # rewrite the mesh with new names
         os.system(f"rm {out_dir}/*")
-        out_paths = []
+        output_meshes = []
         for k, part in enumerate(convex_pieces):
-            piece_name = "%s_convex_piece_%03d.obj" % (self.mesh_name, k)
-            full_path = os.path.join(out_dir, piece_name)
-            trimesh.exchange.export.export_mesh(part, full_path)
-            out_paths.append(full_path)
-        return out_paths
+            open3d_part = part.as_open3d
+            output_meshes.append(open3d_part)
+        return None, output_meshes

@@ -61,6 +61,7 @@ class DynamicLoggerBase(ABC):
         self._masks: List[np.ndarray] = []
         self._raw_mesh: Optional[o3d.geometry.TriangleMesh] = None
         self._processed_mesh: Optional[o3d.geometry.TriangleMesh] = None
+        self._processed_meshes: Optional[List[o3d.geometry.TriangleMesh]] = []
         self._outer_simulation_time: Optional[float] = None
         self._inner_simulation_time: Optional[float] = None
         self._experiment_description: Optional[dict] = None
@@ -85,6 +86,7 @@ class DynamicLoggerBase(ABC):
         masks: Optional[List[np.ndarray]] = None,
         raw_mesh: Optional[o3d.geometry.TriangleMesh] = None,
         processed_mesh: Optional[o3d.geometry.TriangleMesh] = None,
+        processed_mesh_piece: Optional[List[o3d.geometry.TriangleMesh]] = None,
         outer_simulation_time: Optional[float] = None,
         inner_simulation_time: Optional[float] = None,
         experiment_description: Optional[dict] = None,
@@ -106,6 +108,8 @@ class DynamicLoggerBase(ABC):
             self._raw_mesh = raw_mesh
         if processed_mesh is not None:
             self._processed_mesh = processed_mesh
+        if processed_mesh_piece is not None:
+            self._processed_meshes.extend(processed_mesh_piece)
         if outer_simulation_time is not None:
             self._outer_simulation_time = outer_simulation_time
         if inner_simulation_time is not None:

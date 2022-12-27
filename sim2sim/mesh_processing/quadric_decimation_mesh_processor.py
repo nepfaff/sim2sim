@@ -1,6 +1,7 @@
 import open3d as o3d
 
 from .mesh_processor_base import MeshProcessorBase
+import IPython
 
 
 class QuadricDecimationMeshProcessor(MeshProcessorBase):

@@ -81,7 +81,12 @@ def create_processed_mesh_sdf_file(
 
 
 def create_decomposition_processed_mesh_sdf_file(
-    mass: float, inertia: np.ndarray, processed_mesh_file_paths: str, tmp_folder: str, manipuland_base_link_name: str
+    mass: float,
+    inertia: np.ndarray,
+    processed_mesh_file_path: str,
+    mesh_pieces: List,
+    tmp_folder: str,
+    manipuland_base_link_name: str,
 ) -> str:
     """
     Creates and saves an SDF file for the processed decomposition of a mesh.
@@ -119,7 +124,7 @@ def create_decomposition_processed_mesh_sdf_file(
     """
 
     # add the decomposed meshes
-    for k, mesh_path in enumerate(processed_mesh_file_paths):
+    for k, mesh_path in enumerate(mesh_pieces):
         procesed_mesh_sdf_str += f"""
                         <collision name="collision_{k}">
                             <pose>0 0 0 0 0 0</pose>
@@ -128,7 +133,6 @@ def create_decomposition_processed_mesh_sdf_file(
                                     <uri>{mesh_path}</uri>
                                 </mesh>
                             </geometry>
-                            <drake:declare_convex/>
                         </collision>
         """
     procesed_mesh_sdf_str += f"""
@@ -160,9 +164,16 @@ def create_processed_mesh_directive_str(
     :param tmp_folder: The folder to write the sdf file to.
     :return processed_mesh_directive_str: The directive string for the processed mesh.
     """
-    procesed_mesh_sdf_path = create_processed_mesh_sdf_file(
-        mass, inertia, processed_mesh_file_path, tmp_folder, manipuland_base_link_name
-    )
+    if not (processed_mesh_file_path).endswith(".obj"):
+        dir_name = "/".join(processed_mesh_file_path.split("/")[:-1])
+        listed_files = [os.path.join(dir_name, f) for f in os.listdir(dir_name) if "piece" in f]
+        procesed_mesh_sdf_path = create_decomposition_processed_mesh_sdf_file(
+            mass, inertia, processed_mesh_file_path + ".obj", listed_files, tmp_folder, manipuland_base_link_name
+        )
+    else:
+        procesed_mesh_sdf_path = create_processed_mesh_sdf_file(
+            mass, inertia, processed_mesh_file_path, tmp_folder, manipuland_base_link_name
+        )
     processed_mesh_directive = f"""
         directives:
         - add_model:

@@ -1,6 +1,7 @@
 """Entrypoint for running an experiment."""
 
 #!/bin/python3
+from trimesh.viewer import SceneViewer  # https://github.com/mikedh/trimesh/issues/1225
 
 import yaml
 import argparse

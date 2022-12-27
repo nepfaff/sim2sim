@@ -1,5 +1,9 @@
 # Unique identifier for this experiment for logging
 experiment_id: "floor_drop"
+env:
+  contact_model: "hydroelastic_with_fallback"
+  solver: "sap"
+  obj_name: "ycb_tomato_soup_can"
 
 script:
   name: "floor_drop"

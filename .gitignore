@@ -5,3 +5,4 @@ build/
 sim2simenv/
 .vscode/settings.json
 data/sample_data/
+tmp/
