@@ -25,6 +25,7 @@ from sim2sim.mesh_processing import (
     IdentityMeshProcessor,
     QuadricDecimationMeshProcessor,
     SphereMeshProcessor,
+    MetaBallMeshProcessor,
     ConvexDecompMeshProcessor,
     CoACDMeshProcessor,
 )
@@ -46,6 +47,7 @@ MESH_PROCESSORS = {
     "IdentityMeshProcessor": IdentityMeshProcessor,
     "QuadricDecimationMeshProcessor": QuadricDecimationMeshProcessor,
     "SphereMeshProcessor": SphereMeshProcessor,
+    "MetaBallMeshProcessor": MetaBallMeshProcessor,
     "ConvexDecompMeshProcessor": ConvexDecompMeshProcessor,
     "CoACDMeshProcessor": CoACDMeshProcessor,
 }

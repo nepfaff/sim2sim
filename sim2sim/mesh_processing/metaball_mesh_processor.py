@@ -9,11 +9,12 @@ import IPython
 import trimesh
 import scipy.spatial
 from trimesh import util, convex
-import pointnet2_ops.pointnet2_utils as pointnet2_utils
+
+import sklearn.mixture
 from .utils import open3d_to_trimesh
 
 
-class SphereMeshProcessor(MeshProcessorBase):
+class MetaBallMeshProcessor(MeshProcessorBase):
     """Implements mesh processing through quadric decimation."""
 
     def __init__(self, target_sphere_num: int):
@@ -31,51 +32,29 @@ class SphereMeshProcessor(MeshProcessorBase):
         :return: The simplified mesh mesh.
         """
         vis = True
+        std = 1
+        NUM_MIXTURE = self._target_sphere_num
         tmesh = open3d_to_trimesh(mesh)
-        points = np.array(trimesh.sample.sample_surface_even(tmesh, 10000)[0])
-        print(
-            points[:, 0].max(),
-            points[:, 0].min(),
-            points[:, 1].max(),
-            points[:, 1].min(),
-            points[:, 2].max(),
-            points[:, 2].min(),
-        )
-        points = torch.from_numpy(points).cuda().float().contiguous()[None]
+        pts = trimesh.sample.sample_surface_even(tmesh, 10000)[0]
+        gmm = sklearn.mixture.GaussianMixture(NUM_MIXTURE)
+        gmm.fit(pts)
+        weights = gmm.weights_
+        weight_log = np.log(weights)
+        mean = gmm.means_
+        prec = gmm.precisions_cholesky_
+        covariance = np.linalg.inv(prec)
 
-        # subsampled_pts = pointnet2_utils.furthest_point_sample(points, self._target_sphere_num)
-        subsampled_pts = pointnet2_utils.gather_operation(
-            points.transpose(1, 2).contiguous(),
-            pointnet2_utils.furthest_point_sample(points[..., :3].contiguous(), self._target_sphere_num),
-        ).contiguous()
-        avg_point_num = points.shape[1] // self._target_sphere_num
+        # use sphere to approximate this
+        max_radius = covariance.reshape(-1, 9).max(-1) * std
 
+        # IPython.embed()
         # limit the number of points but keep max radius
         centers = []
         radius = []
         output_meshes = []
-        remaining_points = points.clone()
 
         for idx in range(self._target_sphere_num):
-            dist = subsampled_pts[..., [idx]] - torch.cat(
-                (subsampled_pts[..., :idx], subsampled_pts[..., idx + 1 :]), dim=-1
-            )
-            dist = dist.norm(dim=1).min()
-            output = pointnet2_utils.ball_query(
-                dist,
-                avg_point_num,
-                remaining_points.contiguous(),
-                subsampled_pts[..., [idx]].transpose(1, 2).float().contiguous(),
-            )
-            output = output.detach().cpu().numpy()[0][0]
-            within_sphere_points = remaining_points[0][output].detach().cpu().numpy()
-
-            # remove these points
-            index = torch.ones(remaining_points.shape[1], dtype=bool).cuda()
-            index[output] = False
-            remaining_points = remaining_points[:, index]
-
-            c_i, r_i, err = trimesh.nsphere.fit_nsphere(within_sphere_points)
+            c_i, r_i = mean[idx], max_radius[idx]
             centers.append(c_i)
             radius.append(r_i)
             sphere = o3d.geometry.TriangleMesh.create_sphere(r_i)
