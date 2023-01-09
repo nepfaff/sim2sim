@@ -46,9 +46,6 @@ class MetaBallMeshProcessor(MeshProcessorBase):
 
         # use sphere to approximate this
         max_radius = covariance.reshape(-1, 9).max(-1) * std
-
-        # IPython.embed()
-        # limit the number of points but keep max radius
         centers = []
         radius = []
         output_meshes = []
@@ -78,24 +75,3 @@ class MetaBallMeshProcessor(MeshProcessorBase):
         # TODO(liruiw): convert this to a list of sphere geometry?
         # return [centers, radius]
         return None, output_meshes
-
-        # create a voronoi region
-        # simplified_mesh = mesh.simplify_quadric_decimation(1000)
-        # voronoi = scipy.spatial.Voronoi(points, furthest_site=True)
-        # radii_2 = scipy.spatial.distance.cdist(
-        #     voronoi.vertices, points,
-        #     metric='sqeuclidean').max(axis=1)
-        # npoint = torch.cuda.FloatTensor([self._target_sphere_num])
-        # trimesh.nsphere.fit_nsphere()
-        # radius_v = np.sqrt(radii_2[radii_idx]) * points_scale
-        # center_v = (voronoi.vertices[radii_idx] *
-        #         points_scale) + points_origin
-
-        # new_xyz, farthest_pt_idx = ops.sample_farthest_points(xyz[None], npoint)
-
-        # using a surrogate for maximum distance
-
-        # pick some radius for querying
-        # radius_lo = 0.2
-        # radius_hi
-        # radius = torch.rand(self._target_sphere_num).uniform_(radius_lo, radius_hi).cuda()

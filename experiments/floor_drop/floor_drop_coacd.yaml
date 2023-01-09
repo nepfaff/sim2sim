@@ -23,7 +23,7 @@ logger:
     label_to_mask: -1 # NOTE: Does not correspond to anything
     manipuland_name: "ycb_tomato_soup_can"
     manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
-    kProximity: false
+    kProximity: true
 
 image_generator:
   class: "NoneImageGenerator"
@@ -43,5 +43,5 @@ mesh_processor:
       preview_with_trimesh: True
 
 simulator:
-  class: "BasicInnerOnlySimulator"
+  class: "BasicSimulator"
   args:

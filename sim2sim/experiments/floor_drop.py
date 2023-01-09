@@ -171,7 +171,7 @@ def run_floor_drop(
         masks=masks,
     )
     raw_mesh, raw_mesh_pose = inverse_graphics.run()
-    print("Finished running inverse graphics.")
+    print("Finished running inverse graphics:", raw_mesh_pose, manipuland_default_pose_transform)
 
     mesh_processor_class = MESH_PROCESSORS[params["mesh_processor"]["class"]]
     mesh_processor = mesh_processor_class(
@@ -194,6 +194,7 @@ def run_floor_drop(
         mass, inertia, processed_mesh_file_path, tmp_folder, params["env"]["obj_name"], manipuland_base_link_name
     )
 
+    #
     builder_inner, scene_graph_inner, inner_plant = create_env(
         timestep=timestep,
         env_params=params["env"],

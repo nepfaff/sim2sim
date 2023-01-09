@@ -73,10 +73,12 @@ def create_processed_mesh_sdf_file(
             </model>
         </sdf>
     """
-    procesed_mesh_sdf_path = os.path.join(tmp_folder, "processed_mesh.sdf")
+    idx = processed_mesh_file_path.find("sim2sim/")
+    procesed_mesh_sdf_path = processed_mesh_file_path[idx + 8 :].replace(".obj", ".sdf")
+
     with open(procesed_mesh_sdf_path, "w") as f:
         f.write(procesed_mesh_sdf_str)
-
+    print(procesed_mesh_sdf_path)
     return procesed_mesh_sdf_path
 
 
@@ -140,7 +142,11 @@ def create_decomposition_processed_mesh_sdf_file(
             </model>
         </sdf>
     """
-    procesed_mesh_sdf_path = os.path.join(tmp_folder, "processed_mesh.sdf")
+    # hack now, don't wanna save the important sdf file to tmp
+    idx = processed_mesh_file_path.find("sim2sim/")
+    procesed_mesh_sdf_path = processed_mesh_file_path[idx + 8 :].replace(".obj", ".sdf")
+
+    # os.path.join(tmp_folder, "processed_mesh.sdf")
     with open(procesed_mesh_sdf_path, "w") as f:
         f.write(procesed_mesh_sdf_str)
 
