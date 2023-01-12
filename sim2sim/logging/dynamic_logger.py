@@ -21,6 +21,7 @@ from pydrake.all import (
     ContactResults,
 )
 from PIL import Image
+from matplotlib import pyplot as plt
 
 from sim2sim.logging import DynamicLoggerBase
 from .abstract_value_logger import AbstractValueLogger
@@ -277,8 +278,88 @@ class DynamicLogger(DynamicLoggerBase):
             experiment_description=experiment_description,
         )
 
+    def _create_time_series_plots(self) -> None:
+        # Create pose error plots
+        if self._outer_manipuland_poses is not None and self._inner_manipuland_poses is not None:
+            state_error = self._outer_manipuland_poses - self._inner_manipuland_poses
+            times = self._outer_manipuland_pose_times
+            orientation_error = state_error[:, :4]  # Quaternions
+            translation_error = state_error[:, 4:7]
+            angular_velocity_error = state_error[:, 7:10]
+            translational_velocity_error = state_error[:, 10:]
+
+            plt.plot(times, np.linalg.norm(translation_error, axis=1))
+            plt.xlabel("Time (s)")
+            plt.ylabel("Translation error magnitude (m)")
+            plt.savefig(os.path.join(self._time_logs_dir_path, "translation_error_magnitude.png"))
+            plt.close()
+
+            plt.plot(times, np.linalg.norm(orientation_error, axis=1))
+            plt.xlabel("Time (s)")
+            plt.ylabel("Orientation error magnitude (quaternions)")
+            plt.savefig(os.path.join(self._time_logs_dir_path, "orientation_error_magnitude.png"))
+            plt.close()
+
+            plt.plot(times, np.linalg.norm(translational_velocity_error, axis=1))
+            plt.xlabel("Time (s)")
+            plt.ylabel("Translational velocity error magnitude (m/s)")
+            plt.savefig(os.path.join(self._time_logs_dir_path, "translational_velocity_error_magnitude.png"))
+            plt.close()
+
+            plt.plot(times, np.linalg.norm(angular_velocity_error, axis=1))
+            plt.xlabel("Time (s)")
+            plt.ylabel("Angular velocity error magnitude (rad/s)")
+            plt.savefig(os.path.join(self._time_logs_dir_path, "angular_velocity_error_magnitude.png"))
+            plt.close()
+
+        # Create contact force error plots
+        if self._outer_manipuland_contact_forces is not None and self._inner_manipuland_contact_forces is not None:
+            contact_force_error = self._outer_manipuland_contact_forces - self._inner_manipuland_contact_forces
+            contact_force_error_angular = contact_force_error[:, :3]
+            contact_force_error_translational = contact_force_error[:, 3:]
+
+            plt.plot(times, np.linalg.norm(contact_force_error, axis=1))
+            plt.xlabel("Time (s)")
+            plt.ylabel("Generalized contact force error magnitude (N)")
+            plt.savefig(os.path.join(self._time_logs_dir_path, "generalized_contact_force_error_magnitude.png"))
+            plt.close()
+
+            plt.plot(times, np.linalg.norm(contact_force_error_angular, axis=1))
+            plt.xlabel("Time (s)")
+            plt.ylabel("Gemeralized angular contact force error magnitude (N)")
+            plt.savefig(os.path.join(self._time_logs_dir_path, "generalized_angular_contact_force_error_magnitude.png"))
+            plt.close()
+
+            plt.plot(times, np.linalg.norm(contact_force_error_translational, axis=1))
+            plt.xlabel("Time (s)")
+            plt.ylabel("Generalized translational contact force error magnitude (N)")
+            plt.savefig(
+                os.path.join(self._time_logs_dir_path, "generalized_translational_contact_force_error_magnitude.png")
+            )
+            plt.close()
+
+        # Create contact result force error plots
+        _, outer_contact_result_forces_raw, contact_result_times = self._get_contact_result_forces(
+            True, self._manipuland_base_link_name
+        )
+        _, inner_contact_result_forces_raw, _ = self._get_contact_result_forces(False, self._manipuland_base_link_name)
+        if len(outer_contact_result_forces_raw) > 0 and len(inner_contact_result_forces_raw) > 0:
+            outer_contact_result_forces = np.array(
+                [forces[0] if forces else [0.0, 0.0, 0.0] for forces in outer_contact_result_forces_raw]
+            )
+            inner_contact_result_forces = np.array(
+                [forces[0] if forces else [0.0, 0.0, 0.0] for forces in inner_contact_result_forces_raw]
+            )
+            contact_result_force_error = outer_contact_result_forces - inner_contact_result_forces
+
+            plt.plot(times, np.linalg.norm(contact_result_force_error, axis=1))
+            plt.xlabel("Time (s)")
+            plt.ylabel("Contact result spatial force error magnitude (N)")
+            plt.savefig(os.path.join(self._time_logs_dir_path, "contact_result_spatial_force_error_magnitude.png"))
+            plt.close()
+
     def postprocess_data(self) -> None:
-        raise NotImplementedError
+        self._create_time_series_plots()
 
     def save_mesh_data(self) -> Tuple[str, str]:
         """
@@ -424,3 +505,5 @@ class DynamicLogger(DynamicLoggerBase):
 
         # Mesh data
         self.save_mesh_data()
+
+        self.postprocess_data()
