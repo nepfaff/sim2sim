@@ -34,3 +34,8 @@ The experiment description file deterministically specifies an experiment.
 ```bash
 python scripts/run_experiment.py --experiment_description experiments/table_pid/table_pid_simple.yaml
 ```
+
+## To use collision-decomposition
+1. Install [pointnet-pytorch](https://github.com/liruiw/Pointnet2_PyTorch).
+2. Install [v-hacd](https://github.com/mikedh/trimesh/blob/30a423b884903905aba82408255f02dec0b33175/docker/builds/vhacd.bash) in trimesh by running the script.
+3. Install [CoACD](https://github.com/liruiw/CoACD). Copy the binaries to the system bin with the name `coacd`.

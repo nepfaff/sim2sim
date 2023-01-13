@@ -1,5 +1,5 @@
 # Unique identifier for this experiment for logging
-experiment_id: "floor_drop"
+experiment_id: "floor_drop_convex_decomp"
 env:
   contact_model: "hydroelastic_with_fallback"
   solver: "sap"
@@ -36,10 +36,11 @@ inverse_graphics:
     mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.3]
 
 mesh_processor:
-  class: "QuadricDecimationMeshProcessor"
+  class: "ConvexDecompMeshProcessor"
   args:
-    target_triangle_num: 10000
+      mesh_name: ./data/tomato_soup_can_instant_ngp.obj
+      preview_with_trimesh: True
 
 simulator:
-  class: "BasicSimulator" # BasicInnerOnlySimulator
+  class: "BasicSimulator"
   args:

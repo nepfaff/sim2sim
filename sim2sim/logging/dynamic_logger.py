@@ -260,6 +260,7 @@ class DynamicLogger(DynamicLoggerBase):
         masks: Optional[List[np.ndarray]] = None,
         raw_mesh: Optional[o3d.geometry.TriangleMesh] = None,
         processed_mesh: Optional[o3d.geometry.TriangleMesh] = None,
+        processed_mesh_piece: Optional[List[o3d.geometry.TriangleMesh]] = None,
         outer_simulation_time: Optional[float] = None,
         inner_simulation_time: Optional[float] = None,
         experiment_description: Optional[dict] = None,
@@ -273,6 +274,7 @@ class DynamicLogger(DynamicLoggerBase):
             masks=masks,
             raw_mesh=raw_mesh,
             processed_mesh=processed_mesh,
+            processed_mesh_piece=processed_mesh_piece,
             outer_simulation_time=outer_simulation_time,
             inner_simulation_time=inner_simulation_time,
             experiment_description=experiment_description,
@@ -373,6 +375,10 @@ class DynamicLogger(DynamicLoggerBase):
             o3d.io.write_triangle_mesh(raw_mesh_file_path, self._raw_mesh)
         if self._processed_mesh:
             o3d.io.write_triangle_mesh(processed_mesh_file_path, self._processed_mesh)
+        if self._processed_meshes:
+            processed_mesh_file_path = os.path.join(self._mesh_dir_path, "processed_mesh")
+            for idx, mesh in enumerate(self._processed_meshes):
+                o3d.io.write_triangle_mesh(processed_mesh_file_path + f"_piece_{idx}.obj", mesh)
         return raw_mesh_file_path, processed_mesh_file_path
 
     def save_manipuland_pose_logs(self) -> None:

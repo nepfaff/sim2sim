@@ -1,5 +1,5 @@
 # Unique identifier for this experiment for logging
-experiment_id: "floor_drop"
+experiment_id: "floor_drop_sphere"
 env:
   contact_model: "hydroelastic_with_fallback"
   solver: "sap"
@@ -36,10 +36,11 @@ inverse_graphics:
     mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.3]
 
 mesh_processor:
-  class: "QuadricDecimationMeshProcessor"
+  class: "SphereMeshProcessor"
   args:
-    target_triangle_num: 10000
+    target_sphere_num: 10
+    visualize: true
 
 simulator:
-  class: "BasicSimulator" # BasicInnerOnlySimulator
+  class: "BasicSimulator"
   args:

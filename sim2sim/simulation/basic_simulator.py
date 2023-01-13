@@ -81,3 +81,4 @@ class BasicSimulator(SimulatorBase):
             context = simulator.get_mutable_context()
             self._logger.log_manipuland_poses(context, is_outer=(i == 0))
             self._logger.log_manipuland_contact_forces(context, is_outer=(i == 0))
+            # print(f"simulation real time rate: {simulator.get_actual_realtime_rate ():.3f}")

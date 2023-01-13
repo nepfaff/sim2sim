@@ -21,7 +21,14 @@ from sim2sim.logging import DynamicLogger
 from sim2sim.util import get_parser, calc_mesh_inertia, create_processed_mesh_directive_str
 from sim2sim.images import SphereImageGenerator, NoneImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
-from sim2sim.mesh_processing import IdentityMeshProcessor, QuadricDecimationMeshProcessor
+from sim2sim.mesh_processing import (
+    IdentityMeshProcessor,
+    QuadricDecimationMeshProcessor,
+    SphereMeshProcessor,
+    MetaBallMeshProcessor,
+    ConvexDecompMeshProcessor,
+    CoACDMeshProcessor,
+)
 
 SCENE_DIRECTIVE = "../../models/floor_drop/floor_drop_directive.yaml"
 
@@ -39,6 +46,10 @@ INVERSE_GRAPHICS = {
 MESH_PROCESSORS = {
     "IdentityMeshProcessor": IdentityMeshProcessor,
     "QuadricDecimationMeshProcessor": QuadricDecimationMeshProcessor,
+    "SphereMeshProcessor": SphereMeshProcessor,
+    "MetaBallMeshProcessor": MetaBallMeshProcessor,
+    "ConvexDecompMeshProcessor": ConvexDecompMeshProcessor,
+    "CoACDMeshProcessor": CoACDMeshProcessor,
 }
 SIMULATORS = {
     "BasicSimulator": BasicSimulator,
@@ -47,6 +58,7 @@ SIMULATORS = {
 
 
 def create_env(
+    env_params: dict,
     timestep: float,
     manipuland_base_link_name: str,
     manipuland_pose: RigidTransform,
@@ -54,11 +66,12 @@ def create_env(
     directive_strs: List[str] = [],
 ) -> Tuple[DiagramBuilder, SceneGraph, MultibodyPlant]:
     """Creates the floor drop simulation environments without building it."""
+
     builder = DiagramBuilder()
     multibody_plant_config = MultibodyPlantConfig(
         time_step=timestep,
-        contact_model="hydroelastic_with_fallback",  # "point"
-        discrete_contact_solver="sap",
+        contact_model=env_params["contact_model"],
+        discrete_contact_solver=env_params["solver"],
     )
     plant, scene_graph = AddMultibodyPlant(multibody_plant_config, builder)
     parser = get_parser(plant)
@@ -119,6 +132,7 @@ def run_floor_drop(
         RollPitchYaw(*manipuland_default_pose[:3]), manipuland_default_pose[3:]
     )
     builder_outer, scene_graph_outer, outer_plant = create_env(
+        env_params=params["env"],
         timestep=timestep,
         manipuland_base_link_name=manipuland_base_link_name,
         manipuland_pose=manipuland_default_pose_transform,
@@ -128,6 +142,7 @@ def run_floor_drop(
     # Create a new version of the scene for generating camera data
     builder_camera, scene_graph_camera, _ = create_env(
         timestep=timestep,
+        env_params=params["env"],
         manipuland_base_link_name=manipuland_base_link_name,
         manipuland_pose=manipuland_default_pose_transform,
         directive_files=[scene_directive, manipuland_directive_path],
@@ -154,31 +169,34 @@ def run_floor_drop(
         masks=masks,
     )
     raw_mesh, raw_mesh_pose = inverse_graphics.run()
+    # TODO: Log 'raw_mesh_pose' and 'manipuland_default_pose_transform' as meta-data
     print("Finished running inverse graphics.")
 
     mesh_processor_class = MESH_PROCESSORS[params["mesh_processor"]["class"]]
     mesh_processor = mesh_processor_class(
         **(params["mesh_processor"]["args"] if params["mesh_processor"]["args"] is not None else {}),
     )
-    processed_mesh = mesh_processor.process_mesh(raw_mesh)
+    processed_mesh, processed_mesh_piece = mesh_processor.process_mesh(raw_mesh)
     print("Finished mesh processing.")
 
     # Compute mesh inertia and mass assuming constant density of water
-    mass, inertia = calc_mesh_inertia(processed_mesh)
+    mass, inertia = calc_mesh_inertia(raw_mesh)  # processed_mesh
     logger.log_manipuland_estimated_physics(manipuland_mass_estimated=mass, manipuland_inertia_estimated=inertia)
 
     # Save mesh data to create SDF files that can be added to a new simulation environment
-    logger.log(raw_mesh=raw_mesh, processed_mesh=processed_mesh)
+    logger.log(raw_mesh=raw_mesh, processed_mesh=processed_mesh, processed_mesh_piece=processed_mesh_piece)
     _, processed_mesh_file_path = logger.save_mesh_data()
     processed_mesh_file_path = os.path.join(pathlib.Path(__file__).parent.resolve(), "../..", processed_mesh_file_path)
 
     # Create a directive for processed_mesh manipuland
     processed_mesh_directive = create_processed_mesh_directive_str(
-        mass, inertia, processed_mesh_file_path, tmp_folder, "ycb_tomato_soup_can", manipuland_base_link_name
+        mass, inertia, processed_mesh_file_path, tmp_folder, params["env"]["obj_name"], manipuland_base_link_name
     )
 
+    #
     builder_inner, scene_graph_inner, inner_plant = create_env(
         timestep=timestep,
+        env_params=params["env"],
         manipuland_base_link_name=manipuland_base_link_name,
         directive_files=[scene_directive],
         directive_strs=[processed_mesh_directive],

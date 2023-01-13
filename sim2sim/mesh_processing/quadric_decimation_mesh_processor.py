@@ -1,6 +1,7 @@
 import open3d as o3d
 
 from .mesh_processor_base import MeshProcessorBase
+import IPython
 
 
 class QuadricDecimationMeshProcessor(MeshProcessorBase):
@@ -20,4 +21,4 @@ class QuadricDecimationMeshProcessor(MeshProcessorBase):
         :return: The simplified mesh mesh.
         """
         simplified_mesh = mesh.simplify_quadric_decimation(self._target_triangle_num)
-        return simplified_mesh
+        return simplified_mesh, []
