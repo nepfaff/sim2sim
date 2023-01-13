@@ -1,46 +1,33 @@
 import open3d as o3d
-
-from .mesh_processor_base import MeshProcessorBase
-import pytorch3d
-import pytorch3d.ops as ops
 import numpy as np
 import torch
-import IPython
 import trimesh
-import scipy.spatial
-from trimesh import util, convex
 import pointnet2_ops.pointnet2_utils as pointnet2_utils
-from .utils import open3d_to_trimesh
+
+from sim2sim.util import open3d_to_trimesh
+from .mesh_processor_base import MeshProcessorBase
 
 
 class SphereMeshProcessor(MeshProcessorBase):
-    """Implements mesh processing through quadric decimation."""
+    """Replaces a mesh with spheres using farthest point sampling."""
 
-    def __init__(self, target_sphere_num: int):
+    def __init__(self, target_sphere_num: int, visualize: bool):
         """
         :param target_sphere_num: The number of spheres that the simplified mesh should contain.
+        :param visualize: Whether to visualize the fitted spheres.
         """
         super().__init__()
 
-        # change this to spit out 100 meshes
         self._target_sphere_num = target_sphere_num
+        self._visualize = visualize
 
     def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> o3d.geometry.TriangleMesh:
         """
         :param mesh: The mesh.
         :return: The simplified mesh mesh.
         """
-        vis = True
         tmesh = open3d_to_trimesh(mesh)
         points = np.array(trimesh.sample.sample_surface_even(tmesh, 10000)[0])
-        print(
-            points[:, 0].max(),
-            points[:, 0].min(),
-            points[:, 1].max(),
-            points[:, 1].min(),
-            points[:, 2].max(),
-            points[:, 2].min(),
-        )
         points = torch.from_numpy(points).cuda().float().contiguous()[None]
 
         # subsampled_pts = pointnet2_utils.furthest_point_sample(points, self._target_sphere_num)
@@ -75,7 +62,7 @@ class SphereMeshProcessor(MeshProcessorBase):
             index[output] = False
             remaining_points = remaining_points[:, index]
 
-            c_i, r_i, err = trimesh.nsphere.fit_nsphere(within_sphere_points)
+            c_i, r_i, _ = trimesh.nsphere.fit_nsphere(within_sphere_points)
             centers.append(c_i)
             radius.append(r_i)
             sphere = o3d.geometry.TriangleMesh.create_sphere(r_i)
@@ -83,7 +70,7 @@ class SphereMeshProcessor(MeshProcessorBase):
             sphere.translate(c_i)
             output_meshes.append(sphere)
 
-        if vis:
+        if self._visualize:
             viewer = o3d.visualization.Visualizer()
             viewer.create_window()
             pcd = mesh.sample_points_uniformly(number_of_points=50000)
@@ -96,27 +83,4 @@ class SphereMeshProcessor(MeshProcessorBase):
             viewer.run()
             viewer.destroy_window()
 
-        # TODO(liruiw): convert this to a list of sphere geometry?
-        # return [centers, radius]
         return None, output_meshes
-
-        # create a voronoi region
-        # simplified_mesh = mesh.simplify_quadric_decimation(1000)
-        # voronoi = scipy.spatial.Voronoi(points, furthest_site=True)
-        # radii_2 = scipy.spatial.distance.cdist(
-        #     voronoi.vertices, points,
-        #     metric='sqeuclidean').max(axis=1)
-        # npoint = torch.cuda.FloatTensor([self._target_sphere_num])
-        # trimesh.nsphere.fit_nsphere()
-        # radius_v = np.sqrt(radii_2[radii_idx]) * points_scale
-        # center_v = (voronoi.vertices[radii_idx] *
-        #         points_scale) + points_origin
-
-        # new_xyz, farthest_pt_idx = ops.sample_farthest_points(xyz[None], npoint)
-
-        # using a surrogate for maximum distance
-
-        # pick some radius for querying
-        # radius_lo = 0.2
-        # radius_hi
-        # radius = torch.rand(self._target_sphere_num).uniform_(radius_lo, radius_hi).cuda()

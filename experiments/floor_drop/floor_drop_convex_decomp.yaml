@@ -39,7 +39,6 @@ mesh_processor:
   class: "ConvexDecompMeshProcessor"
   args:
       mesh_name: ./data/tomato_soup_can_instant_ngp.obj
-      mesh_dir: "tmp"
       preview_with_trimesh: True
 
 simulator:

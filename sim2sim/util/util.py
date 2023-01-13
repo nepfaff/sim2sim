@@ -1,7 +1,8 @@
 import os
 from typing import List
-import open3d as o3d
 
+import open3d as o3d
+import trimesh
 import numpy as np
 from pydrake.all import MultibodyPlant, Parser, RigidTransform
 from manipulation.scenarios import AddPackagePaths
@@ -170,8 +171,6 @@ def create_processed_mesh_directive_str(
     :param tmp_folder: The folder to write the sdf file to.
     :return processed_mesh_directive_str: The directive string for the processed mesh.
     """
-    # import IPython
-    # IPython.embed()
     if not (processed_mesh_file_path).endswith(".obj"):
         dir_name = "/".join(processed_mesh_file_path.split("/")[:-1])
         listed_files = [os.path.join(dir_name, f) for f in os.listdir(dir_name) if "piece" in f]
@@ -220,3 +219,24 @@ def create_masked_images(input_path: str) -> str:
         o3d.io.write_image(output_path, masked_image)
     print(f"Successfully masked images at dir: {sample_path + '/masked_images'}")
     return sample_path + "/masked_images"
+
+
+def open3d_to_trimesh(src: o3d.geometry.TriangleMesh) -> trimesh.Trimesh:
+    """
+    Convert mesh from open3d to trimesh
+    https://github.com/wkentaro/morefusion/blob/b8b892b3fbc384982a4929b1418ee29393069b11/morefusion/utils/open3d_to_trimesh.py
+    """
+    if isinstance(src, o3d.geometry.TriangleMesh):
+        vertex_colors = None
+        if src.has_vertex_colors:
+            vertex_colors = np.asarray(src.vertex_colors)
+        dst = trimesh.Trimesh(
+            vertices=np.asarray(src.vertices),
+            faces=np.asarray(src.triangles),
+            vertex_normals=np.asarray(src.vertex_normals),
+            vertex_colors=vertex_colors,
+        )
+    else:
+        raise ValueError("Unsupported type of src: {}".format(type(src)))
+
+    return dst

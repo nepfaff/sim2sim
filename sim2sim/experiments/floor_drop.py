@@ -67,11 +67,10 @@ def create_env(
 ) -> Tuple[DiagramBuilder, SceneGraph, MultibodyPlant]:
     """Creates the floor drop simulation environments without building it."""
 
-    # TODO(lirui): I think it makes sense to make the contact model and solver configurable
     builder = DiagramBuilder()
     multibody_plant_config = MultibodyPlantConfig(
         time_step=timestep,
-        contact_model=env_params["contact_model"],  # "point"
+        contact_model=env_params["contact_model"],
         discrete_contact_solver=env_params["solver"],
     )
     plant, scene_graph = AddMultibodyPlant(multibody_plant_config, builder)
@@ -81,7 +80,6 @@ def create_env(
         ProcessModelDirectives(directive, parser)
     for directive_str in directive_strs:
         directive = LoadModelDirectivesFromString(directive_str)
-        print(directive)
         ProcessModelDirectives(directive, parser)
 
     plant.SetDefaultFreeBodyPose(plant.GetBodyByName(manipuland_base_link_name), manipuland_pose)
@@ -171,7 +169,8 @@ def run_floor_drop(
         masks=masks,
     )
     raw_mesh, raw_mesh_pose = inverse_graphics.run()
-    print("Finished running inverse graphics:", raw_mesh_pose, manipuland_default_pose_transform)
+    # TODO: Log 'raw_mesh_pose' and 'manipuland_default_pose_transform' as meta-data
+    print("Finished running inverse graphics.")
 
     mesh_processor_class = MESH_PROCESSORS[params["mesh_processor"]["class"]]
     mesh_processor = mesh_processor_class(

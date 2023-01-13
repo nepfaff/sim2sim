@@ -39,6 +39,7 @@ mesh_processor:
   class: "MetaBallMeshProcessor"
   args:
     target_sphere_num: 10
+    visualize: True
 
 simulator:
   class: "BasicSimulator"

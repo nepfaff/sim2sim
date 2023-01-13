@@ -259,7 +259,7 @@ class DynamicLogger(DynamicLoggerBase):
         masks: Optional[List[np.ndarray]] = None,
         raw_mesh: Optional[o3d.geometry.TriangleMesh] = None,
         processed_mesh: Optional[o3d.geometry.TriangleMesh] = None,
-        processed_mesh_piece: Optional[o3d.geometry.TriangleMesh] = None,
+        processed_mesh_piece: Optional[List[o3d.geometry.TriangleMesh]] = None,
         outer_simulation_time: Optional[float] = None,
         inner_simulation_time: Optional[float] = None,
         experiment_description: Optional[dict] = None,

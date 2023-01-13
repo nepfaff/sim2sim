@@ -1,45 +1,35 @@
 import open3d as o3d
+import numpy as np
+import trimesh
+import sklearn.mixture
 
 from .mesh_processor_base import MeshProcessorBase
-import pytorch3d
-import pytorch3d.ops as ops
-import numpy as np
-import torch
-import IPython
-import trimesh
-import scipy.spatial
-from trimesh import util, convex
-
-import sklearn.mixture
-from .utils import open3d_to_trimesh
+from sim2sim.util import open3d_to_trimesh
 
 
 class MetaBallMeshProcessor(MeshProcessorBase):
-    """Implements mesh processing through quadric decimation."""
+    """Replaces the mesh with spheres obtained from fitting GMMs using Expectation Maximization."""
 
-    def __init__(self, target_sphere_num: int):
+    def __init__(self, target_sphere_num: int, visualize: bool):
         """
         :param target_sphere_num: The number of spheres that the simplified mesh should contain.
+        :param visualize: Whether to visualize the fitted spheres.
         """
         super().__init__()
 
-        # change this to spit out 100 meshes
         self._target_sphere_num = target_sphere_num
+        self._visualize = visualize
 
     def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> o3d.geometry.TriangleMesh:
         """
         :param mesh: The mesh.
         :return: The simplified mesh mesh.
         """
-        vis = True
         std = 1
-        NUM_MIXTURE = self._target_sphere_num
         tmesh = open3d_to_trimesh(mesh)
         pts = trimesh.sample.sample_surface_even(tmesh, 10000)[0]
-        gmm = sklearn.mixture.GaussianMixture(NUM_MIXTURE)
+        gmm = sklearn.mixture.GaussianMixture(self._target_sphere_num)
         gmm.fit(pts)
-        weights = gmm.weights_
-        weight_log = np.log(weights)
         mean = gmm.means_
         prec = gmm.precisions_cholesky_
         covariance = np.linalg.inv(prec)
@@ -59,7 +49,7 @@ class MetaBallMeshProcessor(MeshProcessorBase):
             sphere.translate(c_i)
             output_meshes.append(sphere)
 
-        if vis:
+        if self._visualize:
             viewer = o3d.visualization.Visualizer()
             viewer.create_window()
             pcd = mesh.sample_points_uniformly(number_of_points=50000)
@@ -72,6 +62,4 @@ class MetaBallMeshProcessor(MeshProcessorBase):
             viewer.run()
             viewer.destroy_window()
 
-        # TODO(liruiw): convert this to a list of sphere geometry?
-        # return [centers, radius]
         return None, output_meshes

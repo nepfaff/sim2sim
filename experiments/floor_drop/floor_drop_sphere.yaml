@@ -39,6 +39,7 @@ mesh_processor:
   class: "SphereMeshProcessor"
   args:
     target_sphere_num: 10
+    visualize: true
 
 simulator:
   class: "BasicSimulator"
