@@ -13,7 +13,7 @@ script:
     logging_frequency_hz: 1000
     manipuland_directive: "../../models/table_pid/table_pid_manipuland_directive.yaml"
     manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
-    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.3]
+    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.2]
 
 # Component specifications
 # 'args' are constructor arguments that are not part of the base class constructors

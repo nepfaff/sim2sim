@@ -24,7 +24,7 @@ def generate_camera_locations_sphere(
     center: np.ndarray, radius: float, num_phi: int, num_theta: int, half: bool = False, viz: bool = False
 ) -> np.ndarray:
     """
-    Generate camera locations on a sphere (xz-plane horizontal plane).
+    Generate camera locations on a sphere (xy horizontal plane).
 
     :param center: Location of the center of the sphere of shape (3,).
     :param radius: Radius of the sphere.
@@ -39,8 +39,8 @@ def generate_camera_locations_sphere(
         np.linspace(0.0, 2.0 * np.pi, num_theta),
     )
     x = radius * np.sin(phi) * np.cos(theta)
-    z = radius * np.sin(phi) * np.sin(theta)
-    y = radius * np.cos(phi)
+    y = radius * np.sin(phi) * np.sin(theta)
+    z = radius * np.cos(phi)
 
     camera_locations = np.vstack([x.flatten(), y.flatten(), z.flatten()]).T + center
 
