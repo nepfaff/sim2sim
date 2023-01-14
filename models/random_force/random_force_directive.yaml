@@ -1,0 +1,11 @@
+directives:
+
+# Floor
+- add_model:
+    name: floor
+    file: package://sim2sim/models/floor.sdf
+- add_weld:
+    parent: world
+    child: floor::box
+    X_PC:
+        translation: [0, 0, -0.05]

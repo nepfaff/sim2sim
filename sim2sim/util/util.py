@@ -79,7 +79,6 @@ def create_processed_mesh_sdf_file(
 
     with open(procesed_mesh_sdf_path, "w") as f:
         f.write(procesed_mesh_sdf_str)
-    print(procesed_mesh_sdf_path)
     return procesed_mesh_sdf_path
 
 

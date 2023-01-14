@@ -6,13 +6,20 @@ from trimesh.viewer import SceneViewer  # https://github.com/mikedh/trimesh/issu
 import yaml
 import argparse
 
-from sim2sim.experiments import run_table_pid, run_iiwa_manip_tomato_soup_can, run_iiwa_manip_pepper, run_floor_drop
+from sim2sim.experiments import (
+    run_table_pid,
+    run_iiwa_manip_tomato_soup_can,
+    run_iiwa_manip_pepper,
+    run_floor_drop,
+    run_random_force,
+)
 
 ENTRYPOINTS = {
     "table_pid": run_table_pid,
     "iiwa_manip_tomato_soup_can": run_iiwa_manip_tomato_soup_can,
     "iiwa_manip_pepper": run_iiwa_manip_pepper,
     "floor_drop": run_floor_drop,
+    "random_force": run_random_force,
 }
 
 
