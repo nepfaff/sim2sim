@@ -46,7 +46,7 @@ python scripts/run_experiment.py --experiment_description experiments/table_pid/
     ```
 3. Postprocess the data:
     ```bash
-    python scripts/construct_metric_learning_dataset.py --data_path logs/metric_learning_data
+    python scripts/postprocess_metric_learning_dataset.py --data_path logs/metric_learning_data
     ```
 
 ## Requirements for using mesh decomposition

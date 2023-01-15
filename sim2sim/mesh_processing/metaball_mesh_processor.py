@@ -13,17 +13,19 @@ from sim2sim.logging import DynamicLoggerBase
 class MetaBallMeshProcessor(MeshProcessorBase):
     """Replaces the mesh with spheres obtained from fitting GMMs using Expectation Maximization."""
 
-    def __init__(self, logger: DynamicLoggerBase, visualize: bool, gmm_em_params: Dict[str, Any]):
+    def __init__(self, logger: DynamicLoggerBase, visualize: bool, gmm_em_params: Dict[str, Any], threshold_std: float):
         """
         :param logger: The logger.
         :param visualize: Whether to visualize the fitted spheres.
         :param gmm_em_params: Parameters for GMM EM fitting. All must be valid arguments for
             sklearn.mixture.GaussianMixture.
+        :param threshold_std: The standard deviation to use as a threshold for converting a GMM into a mesh.
         """
         super().__init__(logger)
 
         self._visualize = visualize
         self._gmm_em_params = gmm_em_params
+        self._threshold_std = threshold_std
 
         self._logger.log(meta_data={"mesh_processing_GMM_EM": gmm_em_params})
 
@@ -32,7 +34,6 @@ class MetaBallMeshProcessor(MeshProcessorBase):
         :param mesh: The mesh.
         :return: The simplified mesh.
         """
-        std = 1
         tmesh = open3d_to_trimesh(mesh)
         pts = trimesh.sample.sample_surface_even(tmesh, 10000)[0]
         gmm = sklearn.mixture.GaussianMixture(**self._gmm_em_params)
@@ -42,7 +43,7 @@ class MetaBallMeshProcessor(MeshProcessorBase):
         covariance = np.linalg.inv(prec)
 
         # use sphere to approximate this
-        max_radius = covariance.reshape(-1, 9).max(-1) * std
+        max_radius = covariance.reshape(-1, 9).max(-1) * self._threshold_std
         centers = []
         radius = []
         output_meshes = []

@@ -8,7 +8,7 @@ env:
 script:
   name: "random_force"
   args:
-    sim_duration: 0.3
+    sim_duration: 0.5
     timestep: 0.001
     logging_frequency_hz: 1000
     manipuland_directive: "../../models/random_force/random_force_manipuland_directive.yaml"
@@ -50,6 +50,7 @@ mesh_processor:
       n_init: 1
       init_params: "kmeans"
     visualize: False
+    threshold_std: 1.5
 
 simulator:
   class: "RandomForceSimulator"

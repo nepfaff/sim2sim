@@ -38,9 +38,14 @@ inverse_graphics:
 mesh_processor:
   class: "MetaBallMeshProcessor"
   args:
-    target_sphere_num: 10
-    visualize: True
-    perturb: False
+    gmm_em_params:
+      n_components: 10
+      tol: 0.001
+      max_iter: 100
+      n_init: 1
+      init_params: "kmeans"
+    visualize: False
+    threshold_std: 1.5
 
 simulator:
   class: "BasicSimulator"
