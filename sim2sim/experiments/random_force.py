@@ -70,7 +70,7 @@ SIMULATORS = {
 }
 
 
-def add_point_finger(plant: MultibodyPlant, radius: float = 0.01, position: List[float] = [0.1, 0.1, 0.05]) -> None:
+def add_point_finger(plant: MultibodyPlant, radius: float = 0.01, position: List[float] = [0.0, 0.0, -1.0]) -> None:
     finger = AddShape(plant, Sphere(radius), "point_finger", color=[0.9, 0.5, 0.5, 1.0])
     _ = plant.AddRigidBody("false_body1", finger, SpatialInertia(0, [0, 0, 0], UnitInertia(0, 0, 0)))
     finger_x = plant.AddJoint(
@@ -208,6 +208,7 @@ def run_random_force(
     :param manipuland_base_link_name: The base link name of the outer manipuland.
     :param manipuland_default_pose: The default pose of the outer manipuland of form [roll, pitch, yaw, x, y, z].
     """
+    np.random.seed()
 
     scene_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
     manipuland_directive_path = os.path.join(pathlib.Path(__file__).parent.resolve(), manipuland_directive)

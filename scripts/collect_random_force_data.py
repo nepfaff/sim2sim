@@ -5,12 +5,12 @@ import yaml
 import argparse
 import glob
 import re
+from multiprocessing import Process
 
 import numpy as np
+from tqdm import tqdm
 
 from sim2sim.experiments import run_random_force
-
-# TODO: Implement multicore execution
 
 PERTURBATION_DIR_BASENAME = "perturb_"
 
@@ -38,7 +38,6 @@ def main():
     parser.add_argument(
         "--num_perturbations", default=1000, type=int, help="The number of different perturbations to run."
     )
-    parser.add_argument("--num_cores", default=1, type=int, help="The number of cpu cores to use.")
     args = parser.parse_args()
 
     experiment_specification = yaml.safe_load(open(args.experiment_description, "r"))
@@ -53,7 +52,7 @@ def main():
     else:
         os.mkdir(args.logging_path)
 
-    for _ in range(args.num_perturbations):
+    for _ in tqdm(range(args.num_perturbations)):
         perturb_num += 1
 
         perturb_path = os.path.join(args.logging_path, f"{PERTURBATION_DIR_BASENAME}{perturb_num:06d}")
@@ -68,12 +67,19 @@ def main():
             "init_params": str(np.random.choice(["kmeans", "k-means++", "random_from_data"])),
         }
 
+        processes = []
         for i in range(args.num_runs_per_perturbation):
-            run_random_force(
-                logging_path=os.path.join(perturb_path, f"run_{i:04d}"),
-                params=experiment_specification,
-                **experiment_specification["script"]["args"],
-            )
+            kwargs = {
+                "logging_path": os.path.join(perturb_path, f"run_{i:04d}"),
+                "params": experiment_specification,
+            }
+            kwargs.update(experiment_specification["script"]["args"])
+            p = Process(target=run_random_force, kwargs=kwargs)
+            processes.append(p)
+            p.start()
+
+        for process in processes:
+            process.join()
 
 
 if __name__ == "__main__":
