@@ -2,13 +2,10 @@ import os
 import time
 
 import numpy as np
-import open3d as o3d
-from scipy.spatial.transform import Rotation as R
 from pydrake.all import (
     DiagramBuilder,
     SceneGraph,
     Simulator,
-    RigidTransform,
 )
 
 from sim2sim.logging import DynamicLoggerBase
@@ -67,11 +64,6 @@ class RandomForceSimulator(SimulatorBase):
         self._inner_diagram = self._inner_builder.Build()
 
     def simulate(self, duration: float) -> None:
-        mesh = o3d.io.read_triangle_mesh(self._mesh_path)
-        vertices = np.asarray(mesh.vertices)
-        vertex_wrt_mesh_manipuland = vertices[np.random.choice(len(vertices))]
-        normal_wrt_mesh_manipuland = np.asarray(mesh.vertex_normals)[np.random.choice(len(vertices))]
-
         for i, (diagram, visualizer, meshcat) in enumerate(
             zip(
                 [self._inner_diagram, *([] if self._inner_only else [self._outer_diagram])],
@@ -84,68 +76,35 @@ class RandomForceSimulator(SimulatorBase):
 
             diagram.get_input_port().FixValue(context, [0.0, 0.0, 0.0])
 
-            # 1. Pick random mesh vertex
-            # Need to get triangular mesh + its pose from scene graph. Can then pick vertex + find its pose
-            # 2. Find vertex normal
-            # 3. Apply force using point finger (see manipulation 'point_finger.ipynb' example)
-            #   -start finger at normal and apply force in direction of vertex
-            #   -other option would be to sample points along half sphere for finger starting position + sample point within
-            #   mesh volume instead of vertex or use nearest mesh vertex
-
-            # Simulate for scene to settle (TODO: Make a param)
-            settling_time = 0.3
-            simulator.AdvanceTo(settling_time)
-
-            plant = diagram.GetSubsystemByName("plant")
-            plant_context = plant.GetMyContextFromRoot(context)
-            mesh_manipuland_instance = plant.GetModelInstanceByName("ycb_tomato_soup_can")  # TODO: make argument
-            mesh_manipuland_pose_vec = plant.GetPositions(plant_context, mesh_manipuland_instance)
-            mesh_manipuland_pose = RigidTransform()
-            mesh_manipuland_pose = np.eye(4)
-            mesh_manipuland_pose[:3, :3] = R.from_quat(mesh_manipuland_pose_vec[:4]).as_matrix()
-            mesh_manipuland_pose[:3, 3] = mesh_manipuland_pose_vec[4:]
-            # vertex_wrt_world = mesh_manipuland_pose[:3, :3] @ vertex_wrt_mesh_manipuland + mesh_manipuland_pose[:3, 3]
-            # normal_wrt_world = mesh_manipuland_pose[:3, :3] @ normal_wrt_mesh_manipuland + mesh_manipuland_pose[:3, 3]
-
-            print("pos2", mesh_manipuland_pose_vec[4:])
-
-            # Pick a random finger start location on a sphere around the manipuland
-            finger_start_locations = generate_camera_locations_sphere(
-                center=mesh_manipuland_pose_vec[4:] - [0.0, 0.0, mesh_manipuland_pose_vec[-1] / 2.0],
-                radius=0.3,
-                num_phi=10,
-                num_theta=30,
-                half=True,
-            )
-            finger_start_location = finger_start_locations[np.random.choice(len(finger_start_locations))]
-            plant_context = plant.GetMyContextFromRoot(context)
-            point_finger = plant.GetModelInstanceByName("point_finger")
-            plant.SetPositions(plant_context, point_finger, finger_start_location)
-
-            # viz_geoms = [mesh.transform(mesh_manipuland_pose)]
-            # for location in finger_start_locations:
-            #     viz_geoms.append(o3d.geometry.TriangleMesh.create_sphere(0.3 / 40.0).translate(location))
-            # o3d.visualization.draw_geometries(viz_geoms)
-            from pydrake.all import Sphere, RotationMatrix
-
-            for i, location in enumerate(finger_start_locations):
-                meshcat.SetObject(f"/{i}", Sphere(0.01))
-                meshcat.SetTransform(f"/{i}", RigidTransform(RotationMatrix(), location))
-
-            # test
-            # vertex_sphere = o3d.geometry.TriangleMesh.create_sphere(0.025).translate(vertex_wrt_world)
-            # normal_sphere = o3d.geometry.TriangleMesh.create_sphere(0.025).translate(normal_wrt_world)
-            # o3d.visualization.draw_geometries([mesh.transform(mesh_manipuland_pose), vertex_sphere, normal_sphere])
-            # end test
-
             # TODO: Move `StartRecording` and `StopRecording` into logger using `with` statement
             visualizer.StartRecording()
 
             start_time = time.time()
 
-            # direction = normal_wrt_world - vertex_wrt_world
-            direction = finger_start_location - mesh_manipuland_pose_vec[4:]
-            print("direction", direction)
+            # Simulate for scene to settle (TODO: Make a param)
+            settling_time = 0.2
+            simulator.AdvanceTo(settling_time)
+
+            plant = diagram.GetSubsystemByName("plant")
+            plant_context = plant.GetMyContextFromRoot(context)
+            mesh_manipuland_instance = plant.GetModelInstanceByName("ycb_tomato_soup_can")  # TODO: make argument
+            mesh_manipuland_center = plant.GetPositions(plant_context, mesh_manipuland_instance)[4:]
+
+            if i == 0:
+                # Pick a random finger start location on a half-sphere around the manipuland
+                finger_start_locations = generate_camera_locations_sphere(
+                    center=mesh_manipuland_center - [0.0, 0.0, mesh_manipuland_center[-1] / 2.0],
+                    radius=0.3,
+                    num_phi=10,
+                    num_theta=30,
+                    half=True,
+                )
+                finger_start_location = finger_start_locations[np.random.choice(len(finger_start_locations))]
+                direction = finger_start_location - mesh_manipuland_center
+
+            plant_context = plant.GetMyContextFromRoot(context)
+            point_finger = plant.GetModelInstanceByName("point_finger")
+            plant.SetPositions(plant_context, point_finger, finger_start_location)
             diagram.get_input_port().FixValue(context, 10 / np.linalg.norm(direction) * direction)
 
             simulator.AdvanceTo(settling_time + duration)

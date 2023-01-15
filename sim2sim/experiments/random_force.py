@@ -70,70 +70,70 @@ SIMULATORS = {
 }
 
 
-# def add_point_finger(plant: MultibodyPlant, radius: float = 0.01, position: List[float] = [0.1, 0.1, 0.05]) -> None:
-#     finger = AddShape(plant, Sphere(radius), "point_finger", color=[0.9, 0.5, 0.5, 1.0])
-#     _ = plant.AddRigidBody("false_body1", finger, SpatialInertia(0, [0, 0, 0], UnitInertia(0, 0, 0)))
-#     finger_x = plant.AddJoint(
-#         PrismaticJoint("finger_x", plant.world_frame(), plant.GetFrameByName("false_body1"), [1, 0, 0], -1.0, 1.0)
-#     )
-#     finger_x.set_default_translation(position[0])
-#     plant.AddJointActuator("finger_x", finger_x)
-#     _ = plant.AddRigidBody("false_body2", finger, SpatialInertia(0, [0, 0, 0], UnitInertia(0, 0, 0)))
-#     finger_y = plant.AddJoint(
-#         PrismaticJoint(
-#             "finger_y", plant.GetFrameByName("false_body1"), plant.GetFrameByName("false_body2"), [0, 1, 0], -1.0, 1.0
-#         )
-#     )
-#     finger_y.set_default_translation(position[1])
-#     plant.AddJointActuator("finger_y", finger_y)
-#     finger_z = plant.AddJoint(
-#         PrismaticJoint(
-#             "finger_z", plant.GetFrameByName("false_body2"), plant.GetFrameByName("point_finger"), [0, 0, 1], -1.0, 1.0
-#         )
-#     )
-#     finger_z.set_default_translation(position[2])
-#     plant.AddJointActuator("finger_z", finger_z)
-
-
-# class PointFingerForceControl(LeafSystem):
-#     def __init__(self, plant: MultibodyPlant, finger_mass: float = 1.0):
-#         LeafSystem.__init__(self)
-#         self._plant = plant
-#         self._finger_mass = finger_mass
-
-#         self.DeclareVectorInputPort("desired_contact_force", 3)
-#         self.DeclareVectorOutputPort("finger_actuation", 3, self.CalcOutput)
-
-#     def CalcOutput(self, context, output):
-#         g = self._plant.gravity_field().gravity_vector()
-
-#         desired_force = self.get_input_port(0).Eval(context)
-#         output.SetFromVector(-self._finger_mass * g - desired_force)
-
-
-class ExternalForceSystem(LeafSystem):
-    def __init__(self, target_body_idx):
-        LeafSystem.__init__(self)
-
-        self._target_body_index = target_body_idx
-
-        self.DeclareAbstractOutputPort(
-            "spatial_forces_vector", lambda: Value[List[ExternallyAppliedSpatialForce]](), self.DoCalcAbstractOutput
+def add_point_finger(plant: MultibodyPlant, radius: float = 0.01, position: List[float] = [0.1, 0.1, 0.05]) -> None:
+    finger = AddShape(plant, Sphere(radius), "point_finger", color=[0.9, 0.5, 0.5, 1.0])
+    _ = plant.AddRigidBody("false_body1", finger, SpatialInertia(0, [0, 0, 0], UnitInertia(0, 0, 0)))
+    finger_x = plant.AddJoint(
+        PrismaticJoint("finger_x", plant.world_frame(), plant.GetFrameByName("false_body1"), [1, 0, 0], -1.0, 1.0)
+    )
+    finger_x.set_default_translation(position[0])
+    plant.AddJointActuator("finger_x", finger_x)
+    _ = plant.AddRigidBody("false_body2", finger, SpatialInertia(0, [0, 0, 0], UnitInertia(0, 0, 0)))
+    finger_y = plant.AddJoint(
+        PrismaticJoint(
+            "finger_y", plant.GetFrameByName("false_body1"), plant.GetFrameByName("false_body2"), [0, 1, 0], -1.0, 1.0
         )
+    )
+    finger_y.set_default_translation(position[1])
+    plant.AddJointActuator("finger_y", finger_y)
+    finger_z = plant.AddJoint(
+        PrismaticJoint(
+            "finger_z", plant.GetFrameByName("false_body2"), plant.GetFrameByName("point_finger"), [0, 0, 1], -1.0, 1.0
+        )
+    )
+    finger_z.set_default_translation(position[2])
+    plant.AddJointActuator("finger_z", finger_z)
 
-        self._wrench = np.zeros(6)
-        # TODO: testing only
-        self._wrench = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
-    def DoCalcAbstractOutput(self, context, output):
-        test_force = ExternallyAppliedSpatialForce()
-        test_force.body_index = self._target_body_index
-        test_force.p_BoBq_B = np.array([0.03280, 0.0, 0.04])  # Point that the wrench is applied to
-        test_force.F_Bq_W = SpatialForce(tau=self._wrench[3:], f=self._wrench[:3])
-        output.set_value([test_force])
+class PointFingerForceControl(LeafSystem):
+    def __init__(self, plant: MultibodyPlant, finger_mass: float = 1.0):
+        LeafSystem.__init__(self)
+        self._plant = plant
+        self._finger_mass = finger_mass
 
-    def set_wrench(self, wrench: np.ndarray) -> None:
-        self._wrench = wrench
+        self.DeclareVectorInputPort("desired_contact_force", 3)
+        self.DeclareVectorOutputPort("finger_actuation", 3, self.CalcOutput)
+
+    def CalcOutput(self, context, output):
+        g = self._plant.gravity_field().gravity_vector()
+
+        desired_force = self.get_input_port(0).Eval(context)
+        output.SetFromVector(-self._finger_mass * g - desired_force)
+
+
+# class ExternalForceSystem(LeafSystem):
+#     def __init__(self, target_body_idx):
+#         LeafSystem.__init__(self)
+
+#         self._target_body_index = target_body_idx
+
+#         self.DeclareAbstractOutputPort(
+#             "spatial_forces_vector", lambda: Value[List[ExternallyAppliedSpatialForce]](), self.DoCalcAbstractOutput
+#         )
+
+#         self._wrench = np.zeros(6)
+#         # TODO: testing only
+#         self._wrench = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+#     def DoCalcAbstractOutput(self, context, output):
+#         test_force = ExternallyAppliedSpatialForce()
+#         test_force.body_index = self._target_body_index
+#         test_force.p_BoBq_B = np.array([0.03280, 0.0, 0.04])  # Point that the wrench is applied to
+#         test_force.F_Bq_W = SpatialForce(tau=self._wrench[3:], f=self._wrench[:3])
+#         output.set_value([test_force])
+
+#     def set_wrench(self, wrench: np.ndarray) -> None:
+#         self._wrench = wrench
 
 
 def create_env(
@@ -161,36 +161,26 @@ def create_env(
         directive = LoadModelDirectivesFromString(directive_str)
         ProcessModelDirectives(directive, parser)
 
-    # add_point_finger(plant)
-    # point_finger_controller = builder.AddSystem(PointFingerForceControl(plant))
+    add_point_finger(plant)
+    point_finger_controller = builder.AddSystem(PointFingerForceControl(plant))
 
     plant.SetDefaultFreeBodyPose(plant.GetBodyByName(manipuland_base_link_name), manipuland_pose)
     plant.Finalize()
 
-    # builder.Connect(point_finger_controller.get_output_port(), plant.get_actuation_input_port())
-    # builder.ExportInput(point_finger_controller.get_input_port(), "desired_contact_force")
+    builder.Connect(point_finger_controller.get_output_port(), plant.get_actuation_input_port())
+    builder.ExportInput(point_finger_controller.get_input_port(), "desired_contact_force")
 
-    # force_object = ExternallyAppliedSpatialForce()
-    # # force_object.set_name("force_object")
-    # force_object.body_index = plant.GetBodyByName(manipuland_base_link_name).index()
-    # force_object.F_Bq_W = SpatialForce(tau=np.zeros(3), f=np.array([5.0, 0.0, 0.0]))  # TODO: Test only, remove after
-    # # forces = VectorExternallyAppliedSpatialForced()
-    # # forces.append(force_object)
-    # value = AbstractValue.Make(force_object)
-    # force_system = builder.AddSystem(
-    #     ConstantValueSource(value)
-    # )  # TODO: Replace with leaf system for changing force and contact point
-
-    # builder.Connect(force_system.get_output_port(), plant.get_applied_spatial_force_input_port())
-
-    external_force_system = builder.AddSystem(
-        ExternalForceSystem(plant.GetBodyByName(manipuland_base_link_name).index())
-    )
-    external_force_system.set_name("external_force_system")
-    builder.Connect(
-        external_force_system.get_output_port(),
-        plant.get_applied_spatial_force_input_port(),
-    )
+    # TODO: Add argument for chosing between ExternalForceSystem and point finger (both need randomness)
+    # NOTE: Can apply force wrt world frame as we know the object pose. Then can apply at same world coordinate for
+    # both inner and outer (based on outer vertex)
+    # external_force_system = builder.AddSystem(
+    #     ExternalForceSystem(plant.GetBodyByName(manipuland_base_link_name).index())
+    # )
+    # external_force_system.set_name("external_force_system")
+    # builder.Connect(
+    #     external_force_system.get_output_port(),
+    #     plant.get_applied_spatial_force_input_port(),
+    # )
 
     return builder, scene_graph, plant
 

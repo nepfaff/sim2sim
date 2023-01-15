@@ -8,12 +8,12 @@ env:
 script:
   name: "random_force"
   args:
-    sim_duration: 0.5
+    sim_duration: 0.3
     timestep: 0.001
     logging_frequency_hz: 1000
     manipuland_directive: "../../models/table_pid/table_pid_manipuland_directive.yaml"
     manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
-    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.2]
+    manipuland_default_pose: [-1.5708, 0.0, 0.0, 0.0, 0.0, 0.1]
 
 # Component specifications
 # 'args' are constructor arguments that are not part of the base class constructors
@@ -33,20 +33,20 @@ inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
     mesh_path: ./data/tomato_soup_can_instant_ngp.obj
-    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.3]
+    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
 
 mesh_processor:
   class: "QuadricDecimationMeshProcessor"
   args:
     target_triangle_num: 10000
 
-# simulator:
-#   class: "RandomForceSimulator"
-#   args:
-#     # mesh_path: ./data/tomato_soup_can_instant_ngp.obj
-#     mesh_path: ./data/ycb_tomato_soup_can/ycb_tomato_soup_can.obj
-#     inner_only: True
-
 simulator:
-  class: "BasicInnerOnlySimulator"
+  class: "RandomForceSimulator"
   args:
+    mesh_path: ./data/tomato_soup_can_instant_ngp.obj
+    # mesh_path: ./data/ycb_tomato_soup_can/ycb_tomato_soup_can.obj
+    inner_only: False
+
+# simulator:
+#   class: "BasicInnerOnlySimulator"
+#   args:
