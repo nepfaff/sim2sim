@@ -14,21 +14,42 @@ class MetaBallMeshProcessor(MeshProcessorBase):
         """
         :param target_sphere_num: The number of spheres that the simplified mesh should contain.
         :param visualize: Whether to visualize the fitted spheres.
+        :param perturb: Whether to randomly perturb the GMM EM params.
         """
         super().__init__()
 
         self._target_sphere_num = target_sphere_num
         self._visualize = visualize
+        self._perturb = perturb
 
     def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> o3d.geometry.TriangleMesh:
         """
         :param mesh: The mesh.
-        :return: The simplified mesh mesh.
+        :return: The simplified mesh.
         """
+        # Pick EM params
+        tol = np.random.uniform(0.0, 0.01) if self._perturb else 0.001
+        max_iter = int(np.random.normal(100, 15)) if self._perturb else 100
+        n_init = 1 + int(np.random.choice(5)) if self._perturb else 1
+        init_params = np.random.choice(["kmeans", "k-means++", "random_from_data"]) if self._perturb else "kmeans"
+        self._logger.log(
+            meta_data={
+                "mesh_processing_GMM_EM": {
+                    "num_mixtures": self._target_sphere_num,
+                    "tol": tol,
+                    "max_iter": max_iter,
+                    "n_init": n_init,
+                    "init_params": init_params,
+                }
+            }
+        )
+
         std = 1
         tmesh = open3d_to_trimesh(mesh)
         pts = trimesh.sample.sample_surface_even(tmesh, 10000)[0]
-        gmm = sklearn.mixture.GaussianMixture(self._target_sphere_num)
+        gmm = sklearn.mixture.GaussianMixture(
+            n_components=self._target_sphere_num, tol=tol, max_iter=max_iter, n_init=n_init, init_params=init_params
+        )
         gmm.fit(pts)
         mean = gmm.means_
         prec = gmm.precisions_cholesky_

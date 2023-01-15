@@ -40,6 +40,7 @@ mesh_processor:
   args:
     target_sphere_num: 10
     visualize: True
+    perturb: False
 
 simulator:
   class: "BasicSimulator"
