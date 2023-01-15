@@ -25,6 +25,8 @@ class RandomForceSimulator(SimulatorBase):
         use_point_finger: bool,
         force_magnitude: float,
         inner_only: bool,
+        settling_time: float,
+        manipuland_name: str,
         mesh_path: Optional[str] = None,
     ):
         """
@@ -37,15 +39,19 @@ class RandomForceSimulator(SimulatorBase):
             be applied onto the object directly.
         :param force_magnitude: The magnitude of the force to apply in N.
         :param inner_only: Whether to only simulate the inner environment.
+        :param settling_time: The time in seconds to simulate initially to allow the scene to settle.
         :param mesh_path: The path to the visual mesh that is used for selecting the point to apply force to. Only
             needed if `use_point_finger` is `False`.
+        :param manipuland_name: The name of the manipuland model instance.
         """
         super().__init__(outer_builder, outer_scene_graph, inner_builder, inner_scene_graph, logger)
 
-        self._mesh_path = mesh_path  # TODO: See if still needed
         self._use_point_finger = use_point_finger
         self._force_magnitude = force_magnitude
         self._inner_only = inner_only
+        self._settling_time = settling_time
+        self._manipuland_name = manipuland_name
+        self._mesh_path = mesh_path
 
         self._finalize_and_build_diagrams()
 
@@ -88,13 +94,11 @@ class RandomForceSimulator(SimulatorBase):
 
             start_time = time.time()
 
-            # Simulate for scene to settle (TODO: Make a param)
-            settling_time = 0.2
-            simulator.AdvanceTo(settling_time)
+            simulator.AdvanceTo(self._settling_time)
 
             plant = diagram.GetSubsystemByName("plant")
             plant_context = plant.GetMyContextFromRoot(context)
-            mesh_manipuland_instance = plant.GetModelInstanceByName("ycb_tomato_soup_can")  # TODO: make argument
+            mesh_manipuland_instance = plant.GetModelInstanceByName(self._manipuland_name)
             mesh_manipuland_pose_vec = plant.GetPositions(plant_context, mesh_manipuland_instance)
             mesh_manipuland_translation = mesh_manipuland_pose_vec[4:]
             mesh_manipuland_orientation = mesh_manipuland_pose_vec[:4]
@@ -140,7 +144,7 @@ class RandomForceSimulator(SimulatorBase):
                 external_force_system.set_wrench(np.concatenate([force, torque]))
                 external_force_system.set_wrench_application_point(vertex_wrt_world)
 
-            simulator.AdvanceTo(settling_time + duration)
+            simulator.AdvanceTo(self._settling_time + duration)
 
             time_taken_to_simulate = time.time() - start_time
             if i == 0:

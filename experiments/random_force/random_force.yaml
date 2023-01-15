@@ -56,9 +56,7 @@ simulator:
   args:
     mesh_path: ./data/ycb_tomato_soup_can/ycb_tomato_soup_can.obj
     use_point_finger: True
-    force_magnitude: 5.0
+    force_magnitude: 10.0
     inner_only: False
-
-# simulator:
-#   class: "BasicInnerOnlySimulator"
-#   args:
+    settling_time: 0.2
+    manipuland_name: ycb_tomato_soup_can
