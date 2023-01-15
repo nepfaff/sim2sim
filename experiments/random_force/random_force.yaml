@@ -11,9 +11,9 @@ script:
     sim_duration: 0.3
     timestep: 0.001
     logging_frequency_hz: 1000
-    manipuland_directive: "../../models/table_pid/table_pid_manipuland_directive.yaml"
+    manipuland_directive: "../../models/random_force/random_force_manipuland_directive.yaml"
     manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
-    manipuland_default_pose: [-1.5708, 0.0, 0.0, 0.0, 0.0, 0.1]
+    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
 
 # Component specifications
 # 'args' are constructor arguments that are not part of the base class constructors
