@@ -40,6 +40,17 @@ mesh_processor:
   args:
     target_triangle_num: 10000
 
+mesh_processor:
+  class: "MetaBallMeshProcessor"
+  args:
+    gmm_em_params:
+      n_components: 10
+      tol: 0.001
+      max_iter: 100
+      n_init: 1
+      init_params: "kmeans"
+    visualize: False
+
 simulator:
   class: "RandomForceSimulator"
   args:
