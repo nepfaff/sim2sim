@@ -35,7 +35,22 @@ The experiment description file deterministically specifies an experiment.
 python scripts/run_experiment.py --experiment_description experiments/table_pid/table_pid_simple.yaml
 ```
 
-## To use collision-decomposition
+## Generating a mesh dynamic distance dataset
+
+**NOTE:** Currently only the `random_force` experiment is supported.
+
+1. Specify the desired experiment parameters in `experiments/random_force/random_force.yaml`.
+2. Generate the data using the following command (with your arguments):
+    ```bash
+    python scripts/collect_random_force_data.py --experiment_description experiments/random_force/random_force.yaml --logging_path      logs/metric_learning_data --num_runs_per_perturbation 10 --num_perturbations 1000
+    ```
+3. Postprocess the data:
+    ```bash
+    python scripts/construct_metric_learning_dataset.py --data_path logs/metric_learning_data
+    ```
+
+## Requirements for using mesh decomposition
+
 1. Install [pointnet-pytorch](https://github.com/liruiw/Pointnet2_PyTorch).
 2. Install [v-hacd](https://github.com/mikedh/trimesh/blob/30a423b884903905aba82408255f02dec0b33175/docker/builds/vhacd.bash) in trimesh by running the script.
 3. Install [CoACD](https://github.com/liruiw/CoACD). Copy the binaries to the system bin with the name `coacd`.
