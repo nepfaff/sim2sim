@@ -20,15 +20,12 @@ from pydrake.all import (
     UnitInertia,
     PrismaticJoint,
     LeafSystem,
-    ExternallyAppliedSpatialForce,
-    SpatialForce,
-    Value,
 )
 from manipulation.scenarios import AddShape
 
 from sim2sim.simulation import BasicSimulator, BasicInnerOnlySimulator, RandomForceSimulator
 from sim2sim.logging import DynamicLogger
-from sim2sim.util import get_parser, calc_mesh_inertia, create_processed_mesh_directive_str
+from sim2sim.util import get_parser, calc_mesh_inertia, create_processed_mesh_directive_str, ExternalForceSystem
 from sim2sim.images import SphereImageGenerator, NoneImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
 from sim2sim.mesh_processing import (
@@ -109,33 +106,6 @@ class PointFingerForceControl(LeafSystem):
         output.SetFromVector(-self._finger_mass * g - desired_force)
 
 
-class ExternalForceSystem(LeafSystem):
-    def __init__(self, target_body_idx):
-        LeafSystem.__init__(self)
-
-        self._target_body_index = target_body_idx
-
-        self.DeclareAbstractOutputPort(
-            "spatial_forces_vector", lambda: Value[List[ExternallyAppliedSpatialForce]](), self.DoCalcAbstractOutput
-        )
-
-        self._wrench = np.zeros(6)
-        self._wrench_application_point = np.zeros(3)
-
-    def DoCalcAbstractOutput(self, context, output):
-        test_force = ExternallyAppliedSpatialForce()
-        test_force.body_index = self._target_body_index
-        test_force.p_BoBq_B = self._wrench_application_point
-        test_force.F_Bq_W = SpatialForce(tau=self._wrench[3:], f=self._wrench[:3])
-        output.set_value([test_force])
-
-    def set_wrench(self, wrench: np.ndarray) -> None:
-        self._wrench = wrench
-
-    def set_wrench_application_point(self, point: np.ndarray) -> None:
-        self._wrench_application_point = point
-
-
 def create_env(
     env_params: dict,
     timestep: float,
@@ -170,9 +140,6 @@ def create_env(
     builder.Connect(point_finger_controller.get_output_port(), plant.get_actuation_input_port())
     builder.ExportInput(point_finger_controller.get_input_port(), "desired_contact_force")
 
-    # TODO: Add argument for chosing between ExternalForceSystem and point finger (both need randomness)
-    # NOTE: Can apply force wrt world frame as we know the object pose. Then can apply at same world coordinate for
-    # both inner and outer (based on outer vertex)
     external_force_system = builder.AddSystem(
         ExternalForceSystem(plant.GetBodyByName(manipuland_base_link_name).index())
     )

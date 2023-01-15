@@ -10,6 +10,7 @@ from scipy.spatial.transform import Rotation as R
 from sim2sim.logging import DynamicLoggerBase
 from sim2sim.simulation import SimulatorBase
 from sim2sim.images import generate_camera_locations_sphere
+from sim2sim.util import ExternalForceSystem
 
 
 class RandomForceSimulator(SimulatorBase):
@@ -138,7 +139,7 @@ class RandomForceSimulator(SimulatorBase):
                 force = self._force_magnitude / np.linalg.norm(direction) * direction
                 diagram.get_input_port().FixValue(context, force)
             else:
-                external_force_system = diagram.GetSubsystemByName("external_force_system")
+                external_force_system: ExternalForceSystem = diagram.GetSubsystemByName("external_force_system")
                 force = self._force_magnitude / np.linalg.norm(direction) * direction
                 torque = np.zeros(3)
                 external_force_system.set_wrench(np.concatenate([force, torque]))
