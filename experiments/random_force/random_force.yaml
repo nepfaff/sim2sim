@@ -54,8 +54,9 @@ mesh_processor:
 simulator:
   class: "RandomForceSimulator"
   args:
-    mesh_path: ./data/tomato_soup_can_instant_ngp.obj
-    # mesh_path: ./data/ycb_tomato_soup_can/ycb_tomato_soup_can.obj
+    mesh_path: ./data/ycb_tomato_soup_can/ycb_tomato_soup_can.obj
+    use_point_finger: True
+    force_magnitude: 5.0
     inner_only: False
 
 # simulator:

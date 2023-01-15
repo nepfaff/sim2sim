@@ -1,12 +1,11 @@
 import os
 import time
+from typing import Optional
 
 import numpy as np
-from pydrake.all import (
-    DiagramBuilder,
-    SceneGraph,
-    Simulator,
-)
+from pydrake.all import DiagramBuilder, SceneGraph, Simulator, RigidTransform
+import open3d as o3d
+from scipy.spatial.transform import Rotation as R
 
 from sim2sim.logging import DynamicLoggerBase
 from sim2sim.simulation import SimulatorBase
@@ -23,8 +22,10 @@ class RandomForceSimulator(SimulatorBase):
         inner_builder: DiagramBuilder,
         inner_scene_graph: SceneGraph,
         logger: DynamicLoggerBase,
-        mesh_path: str,
+        use_point_finger: bool,
+        force_magnitude: float,
         inner_only: bool,
+        mesh_path: Optional[str] = None,
     ):
         """
         :param outer_builder: Diagram builder for the outer simulation environment.
@@ -32,12 +33,18 @@ class RandomForceSimulator(SimulatorBase):
         :param inner_builder: Diagram builder for the inner simulation environment.
         :param inner_scene_graph: Scene graph for the inner simulation environment.
         :param logger: The logger.
-        :param mesh_path: The path to the visual mesh that is used for selecting the point to apply force to.
+        :param use_point_finger: Whether to use a point finger to apply the force. Otherwise, the external force will
+            be applied onto the object directly.
+        :param force_magnitude: The magnitude of the force to apply in N.
         :param inner_only: Whether to only simulate the inner environment.
+        :param mesh_path: The path to the visual mesh that is used for selecting the point to apply force to. Only
+            needed if `use_point_finger` is `False`.
         """
         super().__init__(outer_builder, outer_scene_graph, inner_builder, inner_scene_graph, logger)
 
-        self._mesh_path = mesh_path
+        self._mesh_path = mesh_path  # TODO: See if still needed
+        self._use_point_finger = use_point_finger
+        self._force_magnitude = force_magnitude
         self._inner_only = inner_only
 
         self._finalize_and_build_diagrams()
@@ -88,24 +95,50 @@ class RandomForceSimulator(SimulatorBase):
             plant = diagram.GetSubsystemByName("plant")
             plant_context = plant.GetMyContextFromRoot(context)
             mesh_manipuland_instance = plant.GetModelInstanceByName("ycb_tomato_soup_can")  # TODO: make argument
-            mesh_manipuland_center = plant.GetPositions(plant_context, mesh_manipuland_instance)[4:]
+            mesh_manipuland_pose_vec = plant.GetPositions(plant_context, mesh_manipuland_instance)
+            mesh_manipuland_translation = mesh_manipuland_pose_vec[4:]
+            mesh_manipuland_orientation = mesh_manipuland_pose_vec[:4]
 
             if i == 0:
-                # Pick a random finger start location on a half-sphere around the manipuland
-                finger_start_locations = generate_camera_locations_sphere(
-                    center=mesh_manipuland_center - [0.0, 0.0, mesh_manipuland_center[-1] / 2.0],
-                    radius=0.3,
-                    num_phi=10,
-                    num_theta=30,
-                    half=True,
-                )
-                finger_start_location = finger_start_locations[np.random.choice(len(finger_start_locations))]
-                direction = finger_start_location - mesh_manipuland_center
+                if self._use_point_finger:
+                    # Pick a random finger start location on a half-sphere around the manipuland
+                    finger_start_locations = generate_camera_locations_sphere(
+                        center=mesh_manipuland_translation - [0.0, 0.0, mesh_manipuland_pose_vec[-1] / 2.0],
+                        radius=0.3,
+                        num_phi=10,
+                        num_theta=30,
+                        half=True,
+                    )
+                    finger_start_location = finger_start_locations[np.random.choice(len(finger_start_locations))]
+                    direction = finger_start_location - mesh_manipuland_translation
+                else:
+                    mesh = o3d.io.read_triangle_mesh(self._mesh_path)
+                    vertices = np.asarray(mesh.vertices)
+                    vertex_wrt_mesh_manipuland = vertices[np.random.choice(len(vertices))]
+                    normal_wrt_mesh_manipuland = np.asarray(mesh.vertex_normals)[np.random.choice(len(vertices))]
 
-            plant_context = plant.GetMyContextFromRoot(context)
-            point_finger = plant.GetModelInstanceByName("point_finger")
-            plant.SetPositions(plant_context, point_finger, finger_start_location)
-            diagram.get_input_port().FixValue(context, 10 / np.linalg.norm(direction) * direction)
+                    X_WorldManipuland = RigidTransform()
+                    X_WorldManipuland = np.eye(4)
+                    X_WorldManipuland[:3, :3] = R.from_quat(mesh_manipuland_orientation).as_matrix()
+                    X_WorldManipuland[:3, 3] = mesh_manipuland_translation
+
+                    vertex_wrt_world = X_WorldManipuland[:3, :3] @ vertex_wrt_mesh_manipuland + X_WorldManipuland[:3, 3]
+                    normal_wrt_world = X_WorldManipuland[:3, :3] @ normal_wrt_mesh_manipuland + X_WorldManipuland[:3, 3]
+
+                    direction = vertex_wrt_world - normal_wrt_world
+
+            if self._use_point_finger:
+                plant_context = plant.GetMyContextFromRoot(context)
+                point_finger = plant.GetModelInstanceByName("point_finger")
+                plant.SetPositions(plant_context, point_finger, finger_start_location)
+                force = self._force_magnitude / np.linalg.norm(direction) * direction
+                diagram.get_input_port().FixValue(context, force)
+            else:
+                external_force_system = diagram.GetSubsystemByName("external_force_system")
+                force = self._force_magnitude / np.linalg.norm(direction) * direction
+                torque = np.zeros(3)
+                external_force_system.set_wrench(np.concatenate([force, torque]))
+                external_force_system.set_wrench_application_point(vertex_wrt_world)
 
             simulator.AdvanceTo(settling_time + duration)
 

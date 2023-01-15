@@ -21,9 +21,7 @@ from pydrake.all import (
     PrismaticJoint,
     LeafSystem,
     ExternallyAppliedSpatialForce,
-    AbstractValue,
     SpatialForce,
-    ConstantValueSource,
     Value,
 )
 from manipulation.scenarios import AddShape
@@ -111,29 +109,31 @@ class PointFingerForceControl(LeafSystem):
         output.SetFromVector(-self._finger_mass * g - desired_force)
 
 
-# class ExternalForceSystem(LeafSystem):
-#     def __init__(self, target_body_idx):
-#         LeafSystem.__init__(self)
+class ExternalForceSystem(LeafSystem):
+    def __init__(self, target_body_idx):
+        LeafSystem.__init__(self)
 
-#         self._target_body_index = target_body_idx
+        self._target_body_index = target_body_idx
 
-#         self.DeclareAbstractOutputPort(
-#             "spatial_forces_vector", lambda: Value[List[ExternallyAppliedSpatialForce]](), self.DoCalcAbstractOutput
-#         )
+        self.DeclareAbstractOutputPort(
+            "spatial_forces_vector", lambda: Value[List[ExternallyAppliedSpatialForce]](), self.DoCalcAbstractOutput
+        )
 
-#         self._wrench = np.zeros(6)
-#         # TODO: testing only
-#         self._wrench = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        self._wrench = np.zeros(6)
+        self._wrench_application_point = np.zeros(3)
 
-#     def DoCalcAbstractOutput(self, context, output):
-#         test_force = ExternallyAppliedSpatialForce()
-#         test_force.body_index = self._target_body_index
-#         test_force.p_BoBq_B = np.array([0.03280, 0.0, 0.04])  # Point that the wrench is applied to
-#         test_force.F_Bq_W = SpatialForce(tau=self._wrench[3:], f=self._wrench[:3])
-#         output.set_value([test_force])
+    def DoCalcAbstractOutput(self, context, output):
+        test_force = ExternallyAppliedSpatialForce()
+        test_force.body_index = self._target_body_index
+        test_force.p_BoBq_B = self._wrench_application_point
+        test_force.F_Bq_W = SpatialForce(tau=self._wrench[3:], f=self._wrench[:3])
+        output.set_value([test_force])
 
-#     def set_wrench(self, wrench: np.ndarray) -> None:
-#         self._wrench = wrench
+    def set_wrench(self, wrench: np.ndarray) -> None:
+        self._wrench = wrench
+
+    def set_wrench_application_point(self, point: np.ndarray) -> None:
+        self._wrench_application_point = point
 
 
 def create_env(
@@ -173,14 +173,14 @@ def create_env(
     # TODO: Add argument for chosing between ExternalForceSystem and point finger (both need randomness)
     # NOTE: Can apply force wrt world frame as we know the object pose. Then can apply at same world coordinate for
     # both inner and outer (based on outer vertex)
-    # external_force_system = builder.AddSystem(
-    #     ExternalForceSystem(plant.GetBodyByName(manipuland_base_link_name).index())
-    # )
-    # external_force_system.set_name("external_force_system")
-    # builder.Connect(
-    #     external_force_system.get_output_port(),
-    #     plant.get_applied_spatial_force_input_port(),
-    # )
+    external_force_system = builder.AddSystem(
+        ExternalForceSystem(plant.GetBodyByName(manipuland_base_link_name).index())
+    )
+    external_force_system.set_name("external_force_system")
+    builder.Connect(
+        external_force_system.get_output_port(),
+        plant.get_applied_spatial_force_input_port(),
+    )
 
     return builder, scene_graph, plant
 
