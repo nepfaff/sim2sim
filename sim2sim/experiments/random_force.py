@@ -271,6 +271,7 @@ def run_random_force(
 
     mesh_processor_class = MESH_PROCESSORS[params["mesh_processor"]["class"]]
     mesh_processor = mesh_processor_class(
+        logger=logger,
         **(params["mesh_processor"]["args"] if params["mesh_processor"]["args"] is not None else {}),
     )
     processed_mesh, processed_mesh_piece = mesh_processor.process_mesh(raw_mesh)

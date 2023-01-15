@@ -1,17 +1,17 @@
 import open3d as o3d
 
 from .mesh_processor_base import MeshProcessorBase
-import IPython
+from sim2sim.logging import DynamicLoggerBase
 
 
 class QuadricDecimationMeshProcessor(MeshProcessorBase):
     """Implements mesh processing through quadric decimation."""
 
-    def __init__(self, target_triangle_num: int):
+    def __init__(self, logger: DynamicLoggerBase, target_triangle_num: int):
         """
         :param target_triangle_num: The number of triangles that the simplified mesh should contain.
         """
-        super().__init__()
+        super().__init__(logger)
 
         self._target_triangle_num = target_triangle_num
 

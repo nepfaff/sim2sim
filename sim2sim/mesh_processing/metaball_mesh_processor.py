@@ -5,18 +5,20 @@ import sklearn.mixture
 
 from .mesh_processor_base import MeshProcessorBase
 from sim2sim.util import open3d_to_trimesh
+from sim2sim.logging import DynamicLoggerBase
 
 
 class MetaBallMeshProcessor(MeshProcessorBase):
     """Replaces the mesh with spheres obtained from fitting GMMs using Expectation Maximization."""
 
-    def __init__(self, target_sphere_num: int, visualize: bool):
+    def __init__(self, logger: DynamicLoggerBase, target_sphere_num: int, visualize: bool, perturb: bool):
         """
+        :param logger: The logger.
         :param target_sphere_num: The number of spheres that the simplified mesh should contain.
         :param visualize: Whether to visualize the fitted spheres.
         :param perturb: Whether to randomly perturb the GMM EM params.
         """
-        super().__init__()
+        super().__init__(logger)
 
         self._target_sphere_num = target_sphere_num
         self._visualize = visualize
