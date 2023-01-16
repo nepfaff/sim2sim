@@ -33,7 +33,7 @@ image_generator:
 inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
-    mesh_path: ./data/ycb_tomato_soup_can/ycb_tomato_soup_can_no_texture.obj
+    mesh_path: ./data/tomato_soup_can_instant_ngp.obj
     mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
 
 mesh_processor:
