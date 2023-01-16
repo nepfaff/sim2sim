@@ -1,5 +1,5 @@
 # Unique identifier for this experiment for logging
-experiment_id: "random_force"
+experiment_id: "random_force_quadric_decimation"
 env:
   contact_model: "hydroelastic_with_fallback"
   solver: "sap"
@@ -40,18 +40,6 @@ mesh_processor:
   class: "QuadricDecimationMeshProcessor"
   args:
     target_triangle_num: 10000
-
-mesh_processor:
-  class: "MetaBallMeshProcessor"
-  args:
-    gmm_em_params:
-      n_components: 10
-      tol: 0.001
-      max_iter: 100
-      n_init: 1
-      init_params: "kmeans"
-    visualize: False
-    threshold_std: 1.5
 
 simulator:
   class: "RandomForceSimulator"
