@@ -8,6 +8,7 @@ import sklearn.mixture
 from .mesh_processor_base import MeshProcessorBase
 from sim2sim.util import open3d_to_trimesh
 from sim2sim.logging import DynamicLoggerBase
+from learning.src.ellipsoid import Ellipsoid
 
 
 class MetaBallMeshProcessor(MeshProcessorBase):
@@ -40,30 +41,45 @@ class MetaBallMeshProcessor(MeshProcessorBase):
         gmm.fit(pts)
         mean = gmm.means_
         prec = gmm.precisions_cholesky_
-        covariance = np.linalg.inv(prec)
+        # import  IPython; IPython.embed()
+        radii = np.concatenate((prec[:, 0, 0], prec[:, 1, 1], prec[:, 2, 2]), axis=-1)
+        radii = 1.0 / radii
+        rotation_matrix, v, d = np.linalg.svd(prec)
 
         # use sphere to approximate this
-        max_radius = covariance.reshape(-1, 9).max(-1) * self._threshold_std
+        # max_radius = covariance.reshape(-1, 9).max(-1) * self._threshold_std
         centers = []
         radius = []
         output_meshes = []
+        print(radii, mean)
 
         for idx in range(self._gmm_em_params["n_components"]):
-            c_i, r_i = mean[idx], max_radius[idx]
+            c_i, r_i = mean[idx], radii[idx]
             centers.append(c_i)
             radius.append(r_i)
-            sphere = o3d.geometry.TriangleMesh.create_sphere(r_i)
-            sphere.paint_uniform_color((0.0, 0.0, 0.8))
-            sphere.translate(c_i)
-            output_meshes.append(sphere)
+            rot_mat = np.eye(4)
+            rot_mat[:3, :3] = rotation_matrix[idx]
+            # import IPython; IPython.embed()
+            ellipsoid = o3d.geometry.TriangleMesh.create_sphere(1)
+            ellipsoid.rotate(rotation_matrix[idx])
+            ellipsoid.translate(c_i)
+            T = np.eye(4)
+            T[:3, :3] *= r_i
+            ellipsoid.transform(T)
+            # ellipsoid = Ellipsoid(center=c_i, radius=r_i * self._threshold_std, scale=1, transform=rot_mat)
+            # ellipsoid = ellipsoid.as_open3d()
+            # o3d.geometry.TriangleMesh.create_sphere(r_i)
+            ellipsoid.paint_uniform_color((0.0, 0.0, 0.8))
+            # ellipsoid.translate(c_i)
+            output_meshes.append(ellipsoid)
 
-        if self._visualize:
+        if True:  # self._visualize:
             viewer = o3d.visualization.Visualizer()
             viewer.create_window()
             pcd = mesh.sample_points_uniformly(number_of_points=50000)
             viewer.add_geometry(pcd)
-            for sphere in output_meshes:
-                viewer.add_geometry(sphere)
+            for ellipsoid in output_meshes:
+                viewer.add_geometry(ellipsoid)
 
             opt = viewer.get_render_option()
             opt.show_coordinate_frame = True
