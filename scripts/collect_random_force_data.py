@@ -43,7 +43,7 @@ def main():
     experiment_specification = yaml.safe_load(open(args.experiment_description, "r"))
 
     # Find start perturbation number to prevent overwritting already generated data
-    perturb_num = 0
+    perturb_num = -1
     if os.path.exists(args.logging_path):
         for path in glob.iglob(f"{args.logging_path}/{PERTURBATION_DIR_BASENAME}*"):
             num = int(re.findall(r"\d+", path)[-1])

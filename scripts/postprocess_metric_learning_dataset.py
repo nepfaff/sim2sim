@@ -4,6 +4,7 @@ import argparse
 import os
 
 import numpy as np
+from matplotlib import pyplot as plt
 
 
 def main():
@@ -18,28 +19,59 @@ def main():
 
     for perturbation_entry in os.scandir(args.data_path):
         if perturbation_entry.is_dir():
-            final_outer_manipuland_poses = []
-            final_inner_manipuland_poses = []
+            outer_manipuland_states = []
+            inner_manipuland_states = []
             for run_entry in os.scandir(perturbation_entry.path):
                 if run_entry.is_dir():
-                    outer_manipuland_poses_path = os.path.join(
+                    times = np.loadtxt(os.path.join(run_entry.path, "time_logs", "outer_manipuland_pose_times.txt"))
+                    outer_manipuland_states_path = os.path.join(
                         run_entry.path, "time_logs", "outer_manipuland_poses.txt"
                     )
-                    inner_manipuland_poses_path = os.path.join(
+                    inner_manipuland_states_path = os.path.join(
                         run_entry.path, "time_logs", "inner_manipuland_poses.txt"
                     )
-                    outer_manipuland_poses = np.loadtxt(outer_manipuland_poses_path)
-                    inner_manipuland_poses = np.loadtxt(inner_manipuland_poses_path)
-                    final_outer_manipuland_poses.append(outer_manipuland_poses[-1])
-                    final_inner_manipuland_poses.append(inner_manipuland_poses[-1])
+                    outer_states = np.loadtxt(outer_manipuland_states_path)
+                    inner_states = np.loadtxt(inner_manipuland_states_path)
+                    outer_manipuland_states.append(outer_states)
+                    inner_manipuland_states.append(inner_states)
 
-            final_manipuland_pose_error = np.asarray(final_outer_manipuland_poses) - np.asarray(
-                final_inner_manipuland_poses
-            )
+            manipuland_state_error = np.asarray(outer_manipuland_states) - np.asarray(inner_manipuland_states)
+            mean_manipuland_state_error = np.mean(manipuland_state_error, axis=0)
+            mean_manipuland_orientation_error = mean_manipuland_state_error[:, :4]  # Quaternions
+            mean_manipuland_translation_error = mean_manipuland_state_error[:, 4:7]
+            mean_manipuland_angular_velocity_error = mean_manipuland_state_error[:, 7:10]
+            mean_manipuland_translational_velocity_error = mean_manipuland_state_error[:, 10:]
+
             np.savetxt(
-                os.path.join(perturbation_entry.path, "mean_final_outer_manipuland_pose_error"),
-                np.mean(final_manipuland_pose_error, axis=0),
+                os.path.join(perturbation_entry.path, "mean_final_manipuland_state_error.txt"),
+                mean_manipuland_state_error[-1],
             )
+
+            plt.plot(times, np.linalg.norm(mean_manipuland_translation_error, axis=1))
+            plt.xlabel("Time (s)")
+            plt.ylabel("Mean translation error magnitude (m)")
+            plt.savefig(os.path.join(perturbation_entry.path, "mean_manipuland_translation_error_magnitude.png"))
+            plt.close()
+
+            plt.plot(times, np.linalg.norm(mean_manipuland_orientation_error, axis=1))
+            plt.xlabel("Time (s)")
+            plt.ylabel("Mean orientation error magnitude (quaternions)")
+            plt.savefig(os.path.join(perturbation_entry.path, "mean_manipuland_orientation_error_magnitude.png"))
+            plt.close()
+
+            plt.plot(times, np.linalg.norm(mean_manipuland_translational_velocity_error, axis=1))
+            plt.xlabel("Time (s)")
+            plt.ylabel("Mean translational velocity error magnitude (m/s)")
+            plt.savefig(
+                os.path.join(perturbation_entry.path, "mean_manipuland_translational_velocity_error_magnitude.png")
+            )
+            plt.close()
+
+            plt.plot(times, np.linalg.norm(mean_manipuland_angular_velocity_error, axis=1))
+            plt.xlabel("Time (s)")
+            plt.ylabel("Mean angular velocity error magnitude (rad/s)")
+            plt.savefig(os.path.join(perturbation_entry.path, "mean_manipuland_angular_velocity_error_magnitude.png"))
+            plt.close()
 
 
 if __name__ == "__main__":
