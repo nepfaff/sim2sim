@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Union, Optional, List
+from typing import Union, Optional, List, Dict, Any
 import os
 import datetime
 
@@ -65,6 +65,7 @@ class DynamicLoggerBase(ABC):
         self._outer_simulation_time: Optional[float] = None
         self._inner_simulation_time: Optional[float] = None
         self._experiment_description: Optional[dict] = None
+        self._meta_data: Dict[str, Any] = {}
 
     def add_plants(self, outer_plant: MultibodyPlant, inner_plant: MultibodyPlant) -> None:
         """Add finalized plants."""
@@ -90,6 +91,7 @@ class DynamicLoggerBase(ABC):
         outer_simulation_time: Optional[float] = None,
         inner_simulation_time: Optional[float] = None,
         experiment_description: Optional[dict] = None,
+        meta_data: Optional[Dict[str, Any]] = None,
     ) -> None:
         """TODO"""
         if camera_poses is not None:
@@ -116,6 +118,8 @@ class DynamicLoggerBase(ABC):
             self._inner_simulation_time = inner_simulation_time
         if experiment_description is not None:
             self._experiment_description = experiment_description
+        if meta_data is not None:
+            self._meta_data.update(meta_data)
 
     @abstractmethod
     def postprocess_data(self) -> None:

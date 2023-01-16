@@ -5,18 +5,19 @@ import trimesh
 import pointnet2_ops.pointnet2_utils as pointnet2_utils
 
 from sim2sim.util import open3d_to_trimesh
+from sim2sim.logging import DynamicLoggerBase
 from .mesh_processor_base import MeshProcessorBase
 
 
 class SphereMeshProcessor(MeshProcessorBase):
     """Replaces a mesh with spheres using farthest point sampling."""
 
-    def __init__(self, target_sphere_num: int, visualize: bool):
+    def __init__(self, logger: DynamicLoggerBase, target_sphere_num: int, visualize: bool):
         """
         :param target_sphere_num: The number of spheres that the simplified mesh should contain.
         :param visualize: Whether to visualize the fitted spheres.
         """
-        super().__init__()
+        super().__init__(logger)
 
         self._target_sphere_num = target_sphere_num
         self._visualize = visualize

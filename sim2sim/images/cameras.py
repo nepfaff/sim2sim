@@ -1,6 +1,6 @@
 from typing import Tuple
-from math import sqrt
 
+import open3d as o3d
 import numpy as np
 from pytorch3d.renderer import look_at_view_transform
 from scipy.spatial.transform import Rotation as R
@@ -20,24 +20,36 @@ def generate_camera_locations_circle(center: np.ndarray, radius: float, num_poin
     return camera_locations
 
 
-def generate_camera_locations_sphere(center: np.ndarray, radius: float, num_points: int) -> np.ndarray:
+def generate_camera_locations_sphere(
+    center: np.ndarray, radius: float, num_phi: int, num_theta: int, half: bool = False, viz: bool = False
+) -> np.ndarray:
     """
-    Generate camera locations on a sphere (xz-plane horizontal plane).
+    Generate camera locations on a sphere (xy horizontal plane).
 
     :param center: Location of the center of the sphere of shape (3,).
     :param radius: Radius of the sphere.
-    :param num_points: Number of points.
+    :num_phi: Number of phi angles.
+    :num_theta: Number of theta angles.
+    :half: Whether to create a half sphere instead of a full sphere.
+    :viz: Whether to visualize the result. Useful for determining the right values for `num_phi` and `num_theta`.
     :return: Camera locations of shape (num_points, 3).
     """
-    steps_per_angle = int(sqrt(num_points))
     phi, theta = np.meshgrid(
-        np.linspace(0.0, 2.0 * np.pi, steps_per_angle), np.linspace(0.0, 2.0 * np.pi, steps_per_angle)
+        np.linspace(0.0, (0.5 if half else 2.0) * np.pi, num_phi),
+        np.linspace(0.0, 2.0 * np.pi, num_theta),
     )
     x = radius * np.sin(phi) * np.cos(theta)
-    z = radius * np.sin(phi) * np.sin(theta)
-    y = radius * np.cos(phi)
+    y = radius * np.sin(phi) * np.sin(theta)
+    z = radius * np.cos(phi)
 
     camera_locations = np.vstack([x.flatten(), y.flatten(), z.flatten()]).T + center
+
+    if viz:
+        viz_geoms = []
+        for location in camera_locations:
+            viz_geoms.append(o3d.geometry.TriangleMesh.create_sphere(radius / 40.0).translate(location))
+        o3d.visualization.draw_geometries(viz_geoms)
+
     return camera_locations
 
 

@@ -1,19 +1,19 @@
 # Unique identifier for this experiment for logging
-experiment_id: "floor_drop_metaball"
+experiment_id: "random_force"
 env:
-  contact_model: "point"
+  contact_model: "hydroelastic_with_fallback"
   solver: "sap"
   obj_name: "ycb_tomato_soup_can"
 
 script:
-  name: "floor_drop"
+  name: "random_force"
   args:
     sim_duration: 0.5
-    timestep: 0.01
+    timestep: 0.001
     logging_frequency_hz: 1000
-    manipuland_directive: "../../models/table_pid/table_pid_manipuland_directive.yaml"
+    manipuland_directive: "../../models/random_force/random_force_manipuland_directive.yaml"
     manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
-    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.3]
+    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
     save_raw_mesh: false
 
 # Component specifications
@@ -33,8 +33,8 @@ image_generator:
 inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
-    mesh_path: ./data/tomato_soup_can_instant_ngp.obj
-    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.3]
+    mesh_path: ./data/ycb_tomato_soup_can/ycb_tomato_soup_can_no_texture.obj
+    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
 
 mesh_processor:
   class: "MetaBallMeshProcessor"
@@ -49,9 +49,17 @@ mesh_processor:
     threshold_std: 1.5
 
 physical_property_estimator:
-  class: "WaterDensityPhysicalPropertyEstimator"
+  class: "GTPhysicalPropertyEstimator"
   args:
+    mass: 0.349000
+    inertia: [[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]
 
 simulator:
-  class: "BasicSimulator"
+  class: "RandomForceSimulator"
   args:
+    mesh_path: ./data/ycb_tomato_soup_can/ycb_tomato_soup_can_no_texture.obj
+    use_point_finger: True
+    force_magnitude: 10.0
+    inner_only: False
+    settling_time: 0.2
+    manipuland_name: ycb_tomato_soup_can

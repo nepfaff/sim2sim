@@ -35,7 +35,7 @@ from pydrake.all import (
     PositionConstraint,
     KinematicTrajectoryOptimization,
     OrientationConstraint,
-    # JointStiffnessController,
+    JointStiffnessController,
     PortSwitch,
     AbstractValue,
     InputPortIndex,

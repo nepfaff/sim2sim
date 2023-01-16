@@ -44,6 +44,10 @@ mesh_processor:
   args:
     target_triangle_num: 10000
 
+physical_property_estimator:
+  class: "WaterDensityPhysicalPropertyEstimator"
+  args:
+
 simulator:
   class: "BasicSimulator"
   args:

@@ -79,7 +79,6 @@ def create_processed_mesh_sdf_file(
 
     with open(procesed_mesh_sdf_path, "w") as f:
         f.write(procesed_mesh_sdf_str)
-    print(procesed_mesh_sdf_path)
     return procesed_mesh_sdf_path
 
 
@@ -116,19 +115,19 @@ def create_decomposition_processed_mesh_sdf_file(
                         </inertia>
                         <mass>{mass}</mass>
                     </inertial>
-                    <visual name="visual">
-                        <pose>0 0 0 0 0 0</pose>
-                        <geometry>
-                            <mesh>
-                                <uri>{processed_mesh_file_path.replace("processed_mesh", "raw_mesh")}</uri>
-                            </mesh>
-                        </geometry>
-                    </visual>
     """
 
     # add the decomposed meshes
     for k, mesh_path in enumerate(mesh_pieces):
         procesed_mesh_sdf_str += f"""
+                        <visual name="visual_{k}">
+                            <pose>0 0 0 0 0 0</pose>
+                            <geometry>
+                                <mesh>
+                                    <uri>{mesh_path}</uri>
+                                </mesh>
+                            </geometry>
+                        </visual>
                         <collision name="collision_{k}">
                             <pose>0 0 0 0 0 0</pose>
                             <geometry>

@@ -3,16 +3,17 @@ import open3d as o3d
 
 from .mesh_processor_base import MeshProcessorBase
 from sim2sim.util import open3d_to_trimesh
+from sim2sim.logging import DynamicLoggerBase
 
 
 class ConvexDecompMeshProcessor(MeshProcessorBase):
     """Convex decomposition using https://github.com/kmammou/v-hacd."""
 
-    def __init__(self, mesh_name: str, preview_with_trimesh: bool):
+    def __init__(self, logger: DynamicLoggerBase, mesh_name: str, preview_with_trimesh: bool):
         """
         :param target_sphere_num: The number of spheres that the simplified mesh should contain.
         """
-        super().__init__()
+        super().__init__(logger)
 
         self._mesh_name = mesh_name
         self._preview_with_trimesh = preview_with_trimesh

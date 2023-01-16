@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 
 import open3d as o3d
 
+from sim2sim.logging import DynamicLoggerBase
+
 
 class MeshProcessorBase(ABC):
     """
@@ -9,8 +11,11 @@ class MeshProcessorBase(ABC):
     simulation.
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, logger: DynamicLoggerBase):
+        """
+        :param logger: The logger.
+        """
+        self._logger = logger
 
     @abstractmethod
     def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> o3d.geometry.TriangleMesh:

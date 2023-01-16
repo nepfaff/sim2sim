@@ -1,4 +1,4 @@
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Dict, Any
 import os
 import datetime
 import yaml
@@ -264,6 +264,7 @@ class DynamicLogger(DynamicLoggerBase):
         outer_simulation_time: Optional[float] = None,
         inner_simulation_time: Optional[float] = None,
         experiment_description: Optional[dict] = None,
+        meta_data: Optional[Dict[str, Any]] = None,
     ) -> None:
         super().log(
             camera_poses=camera_poses,
@@ -278,6 +279,7 @@ class DynamicLogger(DynamicLoggerBase):
             outer_simulation_time=outer_simulation_time,
             inner_simulation_time=inner_simulation_time,
             experiment_description=experiment_description,
+            meta_data=meta_data,
         )
 
     def _create_time_series_plots(self) -> None:
@@ -467,6 +469,7 @@ class DynamicLogger(DynamicLoggerBase):
             "time_taken_to_simulate_outer_s": self._outer_simulation_time,
             "time_taken_to_simulate_inner_s": self._inner_simulation_time,
         }
+        meta_data.update(self._meta_data)
         with open(self._meta_data_file_path, "w") as f:
             yaml.dump(meta_data, f)
 

@@ -6,6 +6,7 @@ import trimesh
 
 from .mesh_processor_base import MeshProcessorBase
 from sim2sim.util import open3d_to_trimesh
+from sim2sim.logging import DynamicLoggerBase
 
 
 class CoACDMeshProcessor(MeshProcessorBase):
@@ -14,12 +15,12 @@ class CoACDMeshProcessor(MeshProcessorBase):
     Search [SIGGRAPH2022] from https://github.com/SarahWeiii/CoACD.
     """
 
-    def __init__(self, mesh_name: str, mesh_dir: str, preview_with_trimesh: bool):
+    def __init__(self, logger: DynamicLoggerBase, mesh_name: str, mesh_dir: str, preview_with_trimesh: bool):
         """
         :param target_sphere_num: The number of spheres that the simplified mesh should contain.
         :param mesh_dir: The temporary folder to write the convex mesh parts to.
         """
-        super().__init__()
+        super().__init__(logger)
 
         self._mesh_name = mesh_name
         self._mesh_dir = mesh_dir
