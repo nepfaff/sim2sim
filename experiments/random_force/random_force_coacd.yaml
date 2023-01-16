@@ -44,8 +44,10 @@ mesh_processor:
       preview_with_trimesh: false
 
 physical_property_estimator:
-  class: "WaterDensityPhysicalPropertyEstimator"
+  class: "GTPhysicalPropertyEstimator"
   args:
+    mass: 0.349000
+    inertia: [[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]
 
 simulator:
   class: "RandomForceSimulator"

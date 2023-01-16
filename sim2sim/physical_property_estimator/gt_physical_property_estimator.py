@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, List
 
 import open3d as o3d
 import numpy as np
@@ -11,7 +11,7 @@ class GTPhysicalPropertyEstimator(PhysicalPropertyEstimatorBase):
     Returns the given mass and inertia.
     """
 
-    def __init__(self, mass: float, inertia: np.ndarray):
+    def __init__(self, mass: float, inertia: List[List[float]]):
         """
         :param mass: The mass in kg.
         :param inertia: The moment of inertia of shape (3,3).
@@ -19,7 +19,7 @@ class GTPhysicalPropertyEstimator(PhysicalPropertyEstimatorBase):
         super().__init__()
 
         self._mass = mass
-        self._inertia = inertia
+        self._inertia = np.asarray(inertia)
 
     def estimate_physical_properties(self, mesh: o3d.geometry.TriangleMesh) -> Tuple[float, np.ndarray]:
         """
