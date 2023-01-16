@@ -25,36 +25,35 @@ def process_perturbation(perturbation_entry_path: str) -> None:
             inner_manipuland_states.append(inner_states)
 
     manipuland_state_error = np.asarray(outer_manipuland_states) - np.asarray(inner_manipuland_states)
-    mean_manipuland_state_error = np.mean(manipuland_state_error, axis=0)
-    mean_manipuland_orientation_error = mean_manipuland_state_error[:, :4]  # Quaternions
-    mean_manipuland_translation_error = mean_manipuland_state_error[:, 4:7]
-    mean_manipuland_angular_velocity_error = mean_manipuland_state_error[:, 7:10]
-    mean_manipuland_translational_velocity_error = mean_manipuland_state_error[:, 10:]
+    manipuland_orientation_error = manipuland_state_error[:, :, :4]  # Quaternions
+    manipuland_translation_error = manipuland_state_error[:, :, 4:7]
+    manipuland_angular_velocity_error = manipuland_state_error[:, :, 7:10]
+    manipuland_translational_velocity_error = manipuland_state_error[:, :, 10:]
 
     np.savetxt(
-        os.path.join(perturbation_entry_path, "mean_final_manipuland_state_error.txt"),
-        mean_manipuland_state_error[-1],
+        os.path.join(perturbation_entry_path, "mean_final_manipuland_state_error_magnitude.txt"),
+        [np.mean(np.linalg.norm(manipuland_state_error[:, -1], axis=1))],
     )
 
-    plt.plot(times, np.linalg.norm(mean_manipuland_translation_error, axis=1))
+    plt.plot(times, np.mean(np.linalg.norm(manipuland_translation_error, axis=2), axis=0))
     plt.xlabel("Time (s)")
     plt.ylabel("Mean translation error magnitude (m)")
     plt.savefig(os.path.join(perturbation_entry_path, "mean_manipuland_translation_error_magnitude.png"))
     plt.close()
 
-    plt.plot(times, np.linalg.norm(mean_manipuland_orientation_error, axis=1))
+    plt.plot(times, np.mean(np.linalg.norm(manipuland_orientation_error, axis=2), axis=0))
     plt.xlabel("Time (s)")
     plt.ylabel("Mean orientation error magnitude (quaternions)")
     plt.savefig(os.path.join(perturbation_entry_path, "mean_manipuland_orientation_error_magnitude.png"))
     plt.close()
 
-    plt.plot(times, np.linalg.norm(mean_manipuland_translational_velocity_error, axis=1))
+    plt.plot(times, np.mean(np.linalg.norm(manipuland_translational_velocity_error, axis=2), axis=0))
     plt.xlabel("Time (s)")
     plt.ylabel("Mean translational velocity error magnitude (m/s)")
     plt.savefig(os.path.join(perturbation_entry_path, "mean_manipuland_translational_velocity_error_magnitude.png"))
     plt.close()
 
-    plt.plot(times, np.linalg.norm(mean_manipuland_angular_velocity_error, axis=1))
+    plt.plot(times, np.mean(np.linalg.norm(manipuland_angular_velocity_error, axis=2), axis=0))
     plt.xlabel("Time (s)")
     plt.ylabel("Mean angular velocity error magnitude (rad/s)")
     plt.savefig(os.path.join(perturbation_entry_path, "mean_manipuland_angular_velocity_error_magnitude.png"))
