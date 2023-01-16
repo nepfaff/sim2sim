@@ -42,6 +42,10 @@ mesh_processor:
       mesh_name: ./data/tomato_soup_can_instant_ngp.obj
       preview_with_trimesh: True
 
+physical_property_estimator:
+  class: "WaterDensityPhysicalPropertyEstimator"
+  args:
+
 simulator:
   class: "BasicSimulator"
   args:

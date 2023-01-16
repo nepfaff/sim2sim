@@ -42,6 +42,10 @@ mesh_processor:
     target_sphere_num: 10
     visualize: true
 
+physical_property_estimator:
+  class: "WaterDensityPhysicalPropertyEstimator"
+  args:
+
 simulator:
   class: "BasicSimulator"
   args:

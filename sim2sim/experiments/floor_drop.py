@@ -18,7 +18,7 @@ from pydrake.all import (
 
 from sim2sim.simulation import BasicSimulator, BasicInnerOnlySimulator
 from sim2sim.logging import DynamicLogger
-from sim2sim.util import get_parser, calc_mesh_inertia, create_processed_mesh_directive_str
+from sim2sim.util import get_parser, create_processed_mesh_directive_str
 from sim2sim.images import SphereImageGenerator, NoneImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
 from sim2sim.mesh_processing import (
@@ -29,6 +29,7 @@ from sim2sim.mesh_processing import (
     ConvexDecompMeshProcessor,
     CoACDMeshProcessor,
 )
+from sim2sim.physical_property_estimator import WaterDensityPhysicalPropertyEstimator, GTPhysicalPropertyEstimator
 
 SCENE_DIRECTIVE = "../../models/floor_drop/floor_drop_directive.yaml"
 
@@ -50,6 +51,10 @@ MESH_PROCESSORS = {
     "MetaBallMeshProcessor": MetaBallMeshProcessor,
     "ConvexDecompMeshProcessor": ConvexDecompMeshProcessor,
     "CoACDMeshProcessor": CoACDMeshProcessor,
+}
+PHYSICAL_PROPERTY_ESTIMATOR = {
+    "WaterDensityPhysicalPropertyEstimator": WaterDensityPhysicalPropertyEstimator,
+    "GTPhysicalPropertyEstimator": GTPhysicalPropertyEstimator,
 }
 SIMULATORS = {
     "BasicSimulator": BasicSimulator,
@@ -183,7 +188,16 @@ def run_floor_drop(
     print("Finished mesh processing.")
 
     # Compute mesh inertia and mass assuming constant density of water
-    mass, inertia = calc_mesh_inertia(raw_mesh)  # processed_mesh
+    physical_property_estimator_class = PHYSICAL_PROPERTY_ESTIMATOR[params["physical_property_estimator"]["class"]]
+    physical_porperty_estimator = physical_property_estimator_class(
+        **(
+            params["physical_property_estimator"]["args"]
+            if params["physical_property_estimator"]["args"] is not None
+            else {}
+        ),
+    )
+    mass, inertia = physical_porperty_estimator.estimate_physical_properties(processed_mesh)
+    print("Finished estimating physical properties.")
     logger.log_manipuland_estimated_physics(manipuland_mass_estimated=mass, manipuland_inertia_estimated=inertia)
 
     # Save mesh data to create SDF files that can be added to a new simulation environment
@@ -198,7 +212,6 @@ def run_floor_drop(
         mass, inertia, processed_mesh_file_path, tmp_folder, params["env"]["obj_name"], manipuland_base_link_name
     )
 
-    #
     builder_inner, scene_graph_inner, inner_plant = create_env(
         timestep=timestep,
         env_params=params["env"],

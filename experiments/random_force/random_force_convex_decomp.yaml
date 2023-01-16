@@ -42,6 +42,10 @@ mesh_processor:
       mesh_name: ./data/ycb_tomato_soup_can/ycb_tomato_soup_can_no_texture.obj
       preview_with_trimesh: false
 
+physical_property_estimator:
+  class: "WaterDensityPhysicalPropertyEstimator"
+  args:
+
 simulator:
   class: "RandomForceSimulator"
   args:

@@ -43,6 +43,10 @@ mesh_processor:
       mesh_dir: "tmp"
       preview_with_trimesh: True
 
+physical_property_estimator:
+  class: "WaterDensityPhysicalPropertyEstimator"
+  args:
+
 simulator:
   class: "BasicSimulator"
   args:

@@ -48,6 +48,10 @@ mesh_processor:
     visualize: False
     threshold_std: 1.5
 
+physical_property_estimator:
+  class: "WaterDensityPhysicalPropertyEstimator"
+  args:
+
 simulator:
   class: "BasicSimulator"
   args:
