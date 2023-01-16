@@ -1,4 +1,7 @@
-"""Script for collecting random force data for metric learning."""
+"""
+Script for collecting random force data for metric learning.
+NOTE: Using textured meshes in inverse graphics/ mesh processing might cause issues with multicore execution.
+"""
 
 import os
 import yaml

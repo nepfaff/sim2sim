@@ -1,4 +1,7 @@
-"""Script for collecting multiple random force data runs for a representation."""
+"""
+Script for collecting multiple random force data runs for a representation.
+NOTE: Using textured meshes in inverse graphics/ mesh processing might cause issues with multicore execution.
+"""
 
 import os
 import yaml
