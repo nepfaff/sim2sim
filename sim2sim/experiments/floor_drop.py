@@ -97,6 +97,7 @@ def run_floor_drop(
     manipuland_directive: str,
     manipuland_base_link_name: str,
     manipuland_default_pose: str,
+    save_raw_mesh: bool,
 ):
     """
     Experiment entrypoint for the floor drop scene.
@@ -110,6 +111,7 @@ def run_floor_drop(
         script.
     :param manipuland_base_link_name: The base link name of the outer manipuland.
     :param manipuland_default_pose: The default pose of the outer manipuland of form [roll, pitch, yaw, x, y, z].
+    :param save_raw_mesh: Whether to save the raw mesh from inverse graphics.
     """
 
     scene_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
@@ -185,7 +187,9 @@ def run_floor_drop(
     logger.log_manipuland_estimated_physics(manipuland_mass_estimated=mass, manipuland_inertia_estimated=inertia)
 
     # Save mesh data to create SDF files that can be added to a new simulation environment
-    logger.log(raw_mesh=raw_mesh, processed_mesh=processed_mesh, processed_mesh_piece=processed_mesh_piece)
+    if save_raw_mesh:
+        logger.log(raw_mesh=raw_mesh)
+    logger.log(processed_mesh=processed_mesh, processed_mesh_piece=processed_mesh_piece)
     _, processed_mesh_file_path = logger.save_mesh_data()
     processed_mesh_file_path = os.path.join(pathlib.Path(__file__).parent.resolve(), "../..", processed_mesh_file_path)
 
