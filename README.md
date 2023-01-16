@@ -39,14 +39,26 @@ python scripts/run_experiment.py --experiment_description experiments/table_pid/
 
 **NOTE:** Currently only the `random_force` experiment is supported.
 
-1. Specify the desired experiment parameters in `experiments/random_force/random_force.yaml`.
+1. Specify the desired experiment parameters in `experiments/random_force/random_force_metaball.yaml`.
 2. Generate the data using the following command (with your arguments):
     ```bash
-    python scripts/collect_random_force_data.py --experiment_description experiments/random_force/random_force.yaml --logging_path      logs/metric_learning_data --num_runs_per_perturbation 10 --num_perturbations 1000
+    python scripts/collect_random_force_data.py --experiment_description experiments/random_force/random_force_metaball.yaml --logging_path      logs/metric_learning_data --num_runs_per_perturbation 10 --num_perturbations 1000
     ```
 3. Postprocess the data:
     ```bash
     python scripts/postprocess_metric_learning_dataset.py --data_path logs/metric_learning_data
+    ```
+    
+### Generating a metric for a specific representation
+
+1. Define the representation/ mesh processor in a `random_force.yaml` file.
+2. Generate the data using the following command (with your arguments):
+    ```bash
+    python scripts/collect_representation_specific_random_force_data.py --experiment_description experiments/random_force/random_force.yaml --logging_path logs/mean_random_force --num_runs 50
+    ```
+3. Postprocess the data:
+    ```bash
+    python scripts/postprocess_metric_learning_dataset.py --is_representation_specific --data_path logs/mean_random_force
     ```
 
 ## Requirements for using mesh decomposition
