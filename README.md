@@ -48,7 +48,7 @@ python scripts/run_experiment.py --experiment_description experiments/table_pid/
 1. Specify the desired experiment parameters in `experiments/random_force/random_force_metaball.yaml`.
 2. Generate the data using the following command (with your arguments):
     ```bash
-    python scripts/collect_random_force_data.py --experiment_description experiments/random_force/random_force_metaball.yaml --logging_path      logs/metric_learning_data --num_runs_per_perturbation 10 --num_perturbations 1000
+    python scripts/collect_random_force_data.py --experiment_description experiments/random_force/random_force_gmm.yaml --logging_path logs/metric_learning_data --num_runs_per_perturbation 10 --num_perturbations 1000
     ```
 3. Postprocess the data:
     ```bash

@@ -1,5 +1,5 @@
 # Unique identifier for this experiment for logging
-experiment_id: "random_force_metaball"
+experiment_id: "random_force_gmm"
 env:
   contact_model: "hydroelastic_with_fallback"
   solver: "sap"
@@ -37,7 +37,7 @@ inverse_graphics:
     mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
 
 mesh_processor:
-  class: "MetaBallMeshProcessor"
+  class: "GMMMeshProcessor"
   args:
     gmm_em_params:
       n_components: 10
@@ -45,7 +45,7 @@ mesh_processor:
       max_iter: 100
       n_init: 1
       init_params: "kmeans"
-    visualize: False
+    visualize: true
     threshold_std: 1.5
 
 physical_property_estimator:
