@@ -130,11 +130,6 @@ def run_floor_drop(
     )
     logger.log(experiment_description=params)
 
-    # Create folder for temporary files
-    tmp_folder = os.path.join(logging_path, "tmp")
-    if not os.path.exists(tmp_folder):
-        os.mkdir(tmp_folder)
-
     manipuland_default_pose_transform = RigidTransform(
         RollPitchYaw(*manipuland_default_pose[:3]), manipuland_default_pose[3:]
     )
@@ -209,7 +204,12 @@ def run_floor_drop(
 
     # Create a directive for processed_mesh manipuland
     processed_mesh_directive = create_processed_mesh_directive_str(
-        mass, inertia, processed_mesh_file_path, tmp_folder, params["env"]["obj_name"], manipuland_base_link_name
+        mass,
+        inertia,
+        processed_mesh_file_path,
+        logger._mesh_dir_path,
+        params["env"]["obj_name"],
+        manipuland_base_link_name,
     )
 
     builder_inner, scene_graph_inner, inner_plant = create_env(
@@ -238,6 +238,3 @@ def run_floor_drop(
 
     logger.save_data()
     print("Finished saving data.")
-
-    # Clean up temporary files
-    shutil.rmtree(tmp_folder)

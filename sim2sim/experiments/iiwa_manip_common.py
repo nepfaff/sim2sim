@@ -191,11 +191,6 @@ def run_iiwa_manip(
     )
     logger.log(experiment_description=params)
 
-    # Create folder for temporary files
-    tmp_folder = os.path.join(logging_path, "tmp")
-    if not os.path.exists(tmp_folder):
-        os.mkdir(tmp_folder)
-
     builder_outer, scene_graph_outer, outer_plant = create_env(
         timestep=timestep,
         manipuland_pose=manipuland_pose,
@@ -263,7 +258,7 @@ def run_iiwa_manip(
 
     # Create a directive for processed_mesh manipuland
     processed_mesh_directive = create_processed_mesh_directive_str(
-        mass, inertia, processed_mesh_file_path, tmp_folder, manipuland_name, manipuland_base_link_name
+        mass, inertia, processed_mesh_file_path, logger._mesh_dir_path, manipuland_name, manipuland_base_link_name
     )
 
     builder_inner, scene_graph_inner, inner_plant = create_env(
@@ -291,6 +286,3 @@ def run_iiwa_manip(
 
     logger.save_data()
     print("Finished saving data.")
-
-    # Clean up temporary files
-    shutil.rmtree(tmp_folder)

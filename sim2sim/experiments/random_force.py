@@ -193,11 +193,6 @@ def run_random_force(
     )
     logger.log(experiment_description=params)
 
-    # Create folder for temporary files
-    tmp_folder = os.path.join(logging_path, "tmp")
-    if not os.path.exists(tmp_folder):
-        os.mkdir(tmp_folder)
-
     manipuland_default_pose_transform = RigidTransform(
         RollPitchYaw(*manipuland_default_pose[:3]), manipuland_default_pose[3:]
     )
@@ -301,6 +296,3 @@ def run_random_force(
 
     logger.save_data()
     print("Finished saving data.")
-
-    # Clean up temporary files
-    shutil.rmtree(tmp_folder)

@@ -156,11 +156,6 @@ def run_table_pid(
     )
     logger.log(experiment_description=params)
 
-    # Create folder for temporary files
-    tmp_folder = os.path.join(logging_path, "tmp")
-    if not os.path.exists(tmp_folder):
-        os.mkdir(tmp_folder)
-
     builder_outer, scene_graph_outer, outer_plant = create_env(
         timestep,
         final_table_angle,
@@ -225,7 +220,7 @@ def run_table_pid(
 
     # Create a directive for processed_mesh manipuland
     processed_mesh_directive = create_processed_mesh_directive_str(
-        mass, inertia, processed_mesh_file_path, tmp_folder, "ycb_tomato_soup_can", MANIPULAND_BASE_LINK_NAME
+        mass, inertia, processed_mesh_file_path, logger._mesh_dir_path, "ycb_tomato_soup_can", MANIPULAND_BASE_LINK_NAME
     )
 
     builder_inner, scene_graph_inner, inner_plant = create_env(
@@ -254,6 +249,3 @@ def run_table_pid(
 
     logger.save_data()
     print("Finished saving data.")
-
-    # Clean up temporary files
-    shutil.rmtree(tmp_folder)
