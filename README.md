@@ -6,6 +6,12 @@ A high-level system diagram is shown below:
 
 ## Installation
 
+Clone the repo and its submodules:
+
+```bash
+git clone --recurse-submodules -j8 git@github.com:nepfaff/sim2sim.git
+```
+
 Execute the following commands from the repository's root.
 
 Install `git lfs`:
