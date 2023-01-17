@@ -49,9 +49,9 @@ class GMMMeshProcessor(MeshProcessorBase):
         rotation_matrix, radii_inv, _ = np.linalg.svd(prec)
         radii = np.sqrt(1.0 / (radii_inv + DIV_EPSILON))
 
-        centers = []
-        radius = []
-        output_meshes = []
+        centers: List[np.ndarray] = []
+        radius: List[np.ndarray] = []
+        ellipsoids: List[Ellipsoid] = []
 
         for idx in range(self._gmm_em_params["n_components"]):
             c_i, r_i = mean[idx], radii[idx]
@@ -60,11 +60,11 @@ class GMMMeshProcessor(MeshProcessorBase):
             rot_mat = np.eye(4)
             rot_mat[:3, :3] = rotation_matrix[idx]
             ellipsoid = Ellipsoid(center=c_i, radius=r_i * self._threshold_std, scale=1, transform=rot_mat)
-            output_meshes.append(ellipsoid)
+            ellipsoids.append(ellipsoid)
 
         if self._visualize:
             scene = trimesh.scene.scene.Scene()
-            for ellipsoid in output_meshes:
+            for ellipsoid in ellipsoids:
                 scene.add_geometry(ellipsoid)
             open3d_pcd = mesh.sample_points_uniformly(number_of_points=10000)
             trimesh_pcd = trimesh.points.PointCloud(
@@ -74,4 +74,14 @@ class GMMMeshProcessor(MeshProcessorBase):
             scene.add_geometry(trimesh_pcd)
             scene.show()
 
-        return None, output_meshes
+        analytical_ellipsoids = []
+        for ellipsoid in ellipsoids:
+            analytical_ellipsoids.append(
+                {
+                    "name": "ellipsoid",
+                    "radii": np.asarray(ellipsoid.radius),
+                    "transform": np.asarray(ellipsoid.transform),
+                }
+            )
+
+        return True, None, [], analytical_ellipsoids
