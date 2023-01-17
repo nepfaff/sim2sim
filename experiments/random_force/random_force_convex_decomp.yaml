@@ -33,13 +33,13 @@ image_generator:
 inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
-    mesh_path: ./data/ycb_tomato_soup_can/ycb_tomato_soup_can_no_texture.obj
+    mesh_path: ./data/tomato_soup_can_instant_ngp.obj
     mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
 
 mesh_processor:
   class: "ConvexDecompMeshProcessor"
   args:
-      mesh_name: ./data/ycb_tomato_soup_can/ycb_tomato_soup_can_no_texture.obj
+      mesh_name: ./data/tomato_soup_can_instant_ngp.obj
       preview_with_trimesh: false
 
 physical_property_estimator:
@@ -54,6 +54,5 @@ simulator:
     mesh_path: ./data/ycb_tomato_soup_can/ycb_tomato_soup_can_no_texture.obj
     use_point_finger: True
     force_magnitude: 10.0
-    inner_only: False
     settling_time: 0.2
     manipuland_name: ycb_tomato_soup_can

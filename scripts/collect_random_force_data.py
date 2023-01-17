@@ -16,6 +16,7 @@ from tqdm import tqdm
 from sim2sim.experiments import run_random_force
 
 PERTURBATION_DIR_BASENAME = "perturb_"
+START_RANDOM_SEED = 100
 
 
 def main():
@@ -40,6 +41,11 @@ def main():
     )
     parser.add_argument(
         "--num_perturbations", default=1000, type=int, help="The number of different perturbations to run."
+    )
+    parser.add_argument(
+        "--use_random_seed",
+        action="store_true",
+        help="Whether to use a random seed for repeatability.",
     )
     args = parser.parse_args()
 
@@ -70,8 +76,12 @@ def main():
             "init_params": str(np.random.choice(["kmeans", "k-means++", "random_from_data"])),
         }
 
+        random_seed = START_RANDOM_SEED
         processes = []
         for i in range(args.num_runs_per_perturbation):
+            if args.use_random_seed:
+                experiment_specification["simulator"]["args"]["random_seed"] = random_seed
+                random_seed += 1
             kwargs = {
                 "logging_path": os.path.join(perturb_path, f"run_{i:04d}"),
                 "params": experiment_specification,

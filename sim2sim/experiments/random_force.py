@@ -182,8 +182,6 @@ def run_random_force(
     :param manipuland_default_pose: The default pose of the outer manipuland of form [roll, pitch, yaw, x, y, z].
     :param save_raw_mesh: Whether to save the raw mesh from inverse graphics.
     """
-    np.random.seed()
-
     scene_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
     manipuland_directive_path = os.path.join(pathlib.Path(__file__).parent.resolve(), manipuland_directive)
 
