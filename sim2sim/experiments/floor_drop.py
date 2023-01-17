@@ -27,6 +27,7 @@ from sim2sim.mesh_processing import (
     GMMMeshProcessor,
     ConvexDecompMeshProcessor,
     CoACDMeshProcessor,
+    FuzzyMetaballMeshProcessor,
 )
 from sim2sim.physical_property_estimator import WaterDensityPhysicalPropertyEstimator, GTPhysicalPropertyEstimator
 
@@ -50,6 +51,7 @@ MESH_PROCESSORS = {
     "GMMMeshProcessor": GMMMeshProcessor,
     "ConvexDecompMeshProcessor": ConvexDecompMeshProcessor,
     "CoACDMeshProcessor": CoACDMeshProcessor,
+    "FuzzyMetaballMeshProcessor": FuzzyMetaballMeshProcessor,
 }
 PHYSICAL_PROPERTY_ESTIMATOR = {
     "WaterDensityPhysicalPropertyEstimator": WaterDensityPhysicalPropertyEstimator,
