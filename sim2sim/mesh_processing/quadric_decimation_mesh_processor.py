@@ -1,3 +1,5 @@
+from typing import Tuple, List, Union, Any, Dict
+
 import open3d as o3d
 
 from .mesh_processor_base import MeshProcessorBase
@@ -15,10 +17,13 @@ class QuadricDecimationMeshProcessor(MeshProcessorBase):
 
         self._target_triangle_num = target_triangle_num
 
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> o3d.geometry.TriangleMesh:
-        """
-        :param mesh: The mesh.
-        :return: The simplified mesh mesh.
-        """
+    def process_mesh(
+        self, mesh: o3d.geometry.TriangleMesh
+    ) -> Tuple[
+        bool,
+        Union[o3d.geometry.TriangleMesh, None],
+        List[o3d.geometry.TriangleMesh],
+        Union[List[Dict[str, Any]], None],
+    ]:
         simplified_mesh = mesh.simplify_quadric_decimation(self._target_triangle_num)
-        return simplified_mesh, []
+        return False, simplified_mesh, [], None

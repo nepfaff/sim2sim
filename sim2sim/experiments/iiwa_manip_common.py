@@ -240,7 +240,7 @@ def run_iiwa_manip(
         **(params["mesh_processor"]["args"] if params["mesh_processor"]["args"] is not None else {}),
     )
     # TODO: Also support mesh pieces output
-    processed_mesh, _ = mesh_processor.process_mesh(raw_mesh)
+    is_primitive, processed_mesh, processed_mesh_piece, primitive_info = mesh_processor.process_mesh(raw_mesh)
     print("Finished mesh processing.")
 
     # Compute mesh inertia and mass assuming constant density of water

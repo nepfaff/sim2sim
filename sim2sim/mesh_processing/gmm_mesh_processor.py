@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Tuple, List, Union, Any, Dict
 
 import open3d as o3d
 import numpy as np
@@ -32,11 +32,14 @@ class GMMMeshProcessor(MeshProcessorBase):
 
         self._logger.log(meta_data={"mesh_processing_GMM_EM": gmm_em_params})
 
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> o3d.geometry.TriangleMesh:
-        """
-        :param mesh: The mesh.
-        :return: The simplified mesh.
-        """
+    def process_mesh(
+        self, mesh: o3d.geometry.TriangleMesh
+    ) -> Tuple[
+        bool,
+        Union[o3d.geometry.TriangleMesh, None],
+        List[o3d.geometry.TriangleMesh],
+        Union[List[Dict[str, Any]], None],
+    ]:
         tmesh = open3d_to_trimesh(mesh)
         pts = trimesh.sample.sample_surface_even(tmesh, 10000)[0]
         gmm = sklearn.mixture.GaussianMixture(**self._gmm_em_params)

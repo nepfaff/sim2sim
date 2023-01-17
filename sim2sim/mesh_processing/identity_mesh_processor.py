@@ -1,3 +1,5 @@
+from typing import Tuple, List, Union, Any, Dict
+
 import open3d as o3d
 
 from sim2sim.logging import DynamicLoggerBase
@@ -10,11 +12,12 @@ class IdentityMeshProcessor(MeshProcessorBase):
     def __init__(self, logger: DynamicLoggerBase):
         super().__init__(logger)
 
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> o3d.geometry.TriangleMesh:
-        """
-        Implements an identity function.
-
-        :param mesh: The mesh.
-        :return: The input mesh.
-        """
-        return mesh, []
+    def process_mesh(
+        self, mesh: o3d.geometry.TriangleMesh
+    ) -> Tuple[
+        bool,
+        Union[o3d.geometry.TriangleMesh, None],
+        List[o3d.geometry.TriangleMesh],
+        Union[List[Dict[str, Any]], None],
+    ]:
+        return False, mesh, [], None

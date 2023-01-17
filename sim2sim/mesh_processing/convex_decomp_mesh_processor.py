@@ -1,3 +1,5 @@
+from typing import Tuple, List, Union, Any, Dict
+
 import trimesh
 import open3d as o3d
 
@@ -18,11 +20,14 @@ class ConvexDecompMeshProcessor(MeshProcessorBase):
         self._mesh_name = mesh_name
         self._preview_with_trimesh = preview_with_trimesh
 
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> o3d.geometry.TriangleMesh:
-        """
-        :param mesh: The mesh.
-        :return: The simplified mesh mesh.
-        """
+    def process_mesh(
+        self, mesh: o3d.geometry.TriangleMesh
+    ) -> Tuple[
+        bool,
+        Union[o3d.geometry.TriangleMesh, None],
+        List[o3d.geometry.TriangleMesh],
+        Union[List[Dict[str, Any]], None],
+    ]:
         mesh_trimesh = open3d_to_trimesh(mesh)
 
         if self._preview_with_trimesh:
@@ -57,4 +62,4 @@ class ConvexDecompMeshProcessor(MeshProcessorBase):
             open3d_part = part.as_open3d
             output_meshes.append(open3d_part)
 
-        return None, output_meshes
+        return False, None, output_meshes, None

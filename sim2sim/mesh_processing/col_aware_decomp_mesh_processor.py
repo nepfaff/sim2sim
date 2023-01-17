@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Tuple, List, Union, Any, Dict
 
 import open3d as o3d
 import trimesh
@@ -26,7 +27,14 @@ class CoACDMeshProcessor(MeshProcessorBase):
         self._mesh_dir = mesh_dir
         self._preview_with_trimesh = preview_with_trimesh
 
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> o3d.geometry.TriangleMesh:
+    def process_mesh(
+        self, mesh: o3d.geometry.TriangleMesh
+    ) -> Tuple[
+        bool,
+        Union[o3d.geometry.TriangleMesh, None],
+        List[o3d.geometry.TriangleMesh],
+        Union[List[Dict[str, Any]], None],
+    ]:
         """
         Given a mesh, performs a convex decomposition of it with
         coacd, saving all the parts in a subfolder named
@@ -84,10 +92,9 @@ class CoACDMeshProcessor(MeshProcessorBase):
             scene.set_camera(angles=(1, 0, 0), distance=0.3, center=(0, 0, 0))
             scene.show()
 
-        # rewrite the mesh with new names
         os.system(f"rm {out_dir}/*")
         output_meshes = []
         for part in convex_pieces:
             open3d_part = part.as_open3d
             output_meshes.append(open3d_part)
-        return None, output_meshes
+        return False, None, output_meshes, None
