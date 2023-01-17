@@ -25,10 +25,10 @@ class RandomForceSimulator(SimulatorBase):
         logger: DynamicLoggerBase,
         use_point_finger: bool,
         force_magnitude: float,
-        inner_only: bool,
         settling_time: float,
         manipuland_name: str,
         mesh_path: Optional[str] = None,
+        random_seed: int = None,
     ):
         """
         :param outer_builder: Diagram builder for the outer simulation environment.
@@ -39,31 +39,31 @@ class RandomForceSimulator(SimulatorBase):
         :param use_point_finger: Whether to use a point finger to apply the force. Otherwise, the external force will
             be applied onto the object directly.
         :param force_magnitude: The magnitude of the force to apply in N.
-        :param inner_only: Whether to only simulate the inner environment.
         :param settling_time: The time in seconds to simulate initially to allow the scene to settle.
+        :param manipuland_name: The name of the manipuland model instance.
         :param mesh_path: The path to the visual mesh that is used for selecting the point to apply force to. Only
             needed if `use_point_finger` is `False`.
-        :param manipuland_name: The name of the manipuland model instance.
+        :param random_seed: The random seed to use. It will be random, if None.
         """
         super().__init__(outer_builder, outer_scene_graph, inner_builder, inner_scene_graph, logger)
 
         self._use_point_finger = use_point_finger
         self._force_magnitude = force_magnitude
-        self._inner_only = inner_only
         self._settling_time = settling_time
         self._manipuland_name = manipuland_name
         self._mesh_path = mesh_path
+
+        self._random_generator = np.random.default_rng() if random_seed is None else np.random.default_rng(random_seed)
 
         self._finalize_and_build_diagrams()
 
     def _finalize_and_build_diagrams(self) -> None:
         """Adds visualization systems to the outer and inner diagrams and builds them."""
-        if not self._inner_only:
-            self._outer_visualizer, self._outer_meshcat = self._logger.add_visualizers(
-                self._outer_builder,
-                self._outer_scene_graph,
-                is_outer=True,
-            )
+        self._outer_visualizer, self._outer_meshcat = self._logger.add_visualizers(
+            self._outer_builder,
+            self._outer_scene_graph,
+            is_outer=True,
+        )
         self._inner_visualizer, self._inner_meshcat = self._logger.add_visualizers(
             self._inner_builder,
             self._inner_scene_graph,
@@ -80,9 +80,9 @@ class RandomForceSimulator(SimulatorBase):
     def simulate(self, duration: float) -> None:
         for i, (diagram, visualizer, meshcat) in enumerate(
             zip(
-                [self._inner_diagram, *([] if self._inner_only else [self._outer_diagram])],
-                [self._inner_visualizer, *([] if self._inner_only else [self._outer_visualizer])],
-                [self._inner_meshcat, *([] if self._inner_only else [self._outer_meshcat])],
+                [self._outer_diagram, self._inner_diagram],
+                [self._outer_visualizer, self._inner_visualizer],
+                [self._outer_meshcat, self._inner_meshcat],
             )
         ):
             simulator = Simulator(diagram)
@@ -114,13 +114,16 @@ class RandomForceSimulator(SimulatorBase):
                         num_theta=30,
                         half=True,
                     )
-                    finger_start_location = finger_start_locations[np.random.choice(len(finger_start_locations))]
+                    finger_start_location = finger_start_locations[
+                        self._random_generator.choice(len(finger_start_locations))
+                    ]
                     direction = finger_start_location - mesh_manipuland_translation
                 else:
                     mesh = o3d.io.read_triangle_mesh(self._mesh_path)
                     vertices = np.asarray(mesh.vertices)
-                    vertex_wrt_mesh_manipuland = vertices[np.random.choice(len(vertices))]
-                    normal_wrt_mesh_manipuland = np.asarray(mesh.vertex_normals)[np.random.choice(len(vertices))]
+                    random_idx = self._random_generator.choice(len(vertices))
+                    vertex_wrt_mesh_manipuland = vertices[random_idx]
+                    normal_wrt_mesh_manipuland = np.asarray(mesh.vertex_normals)[random_idx]
 
                     X_WorldManipuland = RigidTransform()
                     X_WorldManipuland = np.eye(4)
@@ -149,18 +152,18 @@ class RandomForceSimulator(SimulatorBase):
 
             time_taken_to_simulate = time.time() - start_time
             if i == 0:
-                self._logger.log(inner_simulation_time=time_taken_to_simulate)
-            else:
                 self._logger.log(outer_simulation_time=time_taken_to_simulate)
+            else:
+                self._logger.log(inner_simulation_time=time_taken_to_simulate)
 
             visualizer.StopRecording()
             visualizer.PublishRecording()
 
             # TODO: Move this to the logger
             html = meshcat.StaticHtml()
-            with open(os.path.join(self._logger._logging_path, f"{'outer' if i else 'inner'}.html"), "w") as f:
+            with open(os.path.join(self._logger._logging_path, f"{'inner' if i == 1 else 'outer'}.html"), "w") as f:
                 f.write(html)
 
             context = simulator.get_mutable_context()
-            self._logger.log_manipuland_poses(context, is_outer=(i == 1))
-            self._logger.log_manipuland_contact_forces(context, is_outer=(i == 1))
+            self._logger.log_manipuland_poses(context, is_outer=(i == 0))
+            self._logger.log_manipuland_contact_forces(context, is_outer=(i == 0))

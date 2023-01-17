@@ -54,6 +54,5 @@ simulator:
     mesh_path: ./data/ycb_tomato_soup_can/ycb_tomato_soup_can_no_texture.obj
     use_point_finger: True
     force_magnitude: 10.0
-    inner_only: False
     settling_time: 0.2
     manipuland_name: ycb_tomato_soup_can

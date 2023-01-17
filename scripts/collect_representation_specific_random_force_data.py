@@ -10,6 +10,8 @@ from multiprocessing import Process
 
 from sim2sim.experiments import run_random_force
 
+START_RANDOM_SEED = 100
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -31,6 +33,11 @@ def main():
         type=int,
         help="How many random force experiments to run.",
     )
+    parser.add_argument(
+        "--use_random_seed",
+        action="store_true",
+        help="Whether to use a random seed for repeatability.",
+    )
     args = parser.parse_args()
 
     experiment_specification = yaml.safe_load(open(args.experiment_description, "r"))
@@ -38,8 +45,12 @@ def main():
     if not os.path.exists(args.logging_path):
         os.mkdir(args.logging_path)
 
+    random_seed = START_RANDOM_SEED
+    processes = []
     for i in range(args.num_runs):
-        processes = []
+        if args.use_random_seed:
+            experiment_specification["simulator"]["args"]["random_seed"] = random_seed
+            random_seed += 1
         kwargs = {
             "logging_path": os.path.join(args.logging_path, f"run_{i:04d}"),
             "params": experiment_specification,
