@@ -21,7 +21,7 @@ from pydrake.all import (
 
 from sim2sim.simulation import BasicSimulator, BasicInnerOnlySimulator
 from sim2sim.logging import DynamicLogger
-from sim2sim.util import get_parser, create_processed_mesh_directive_str
+from sim2sim.util import get_parser, create_processed_mesh_directive_str, create_processed_mesh_primitive_directive_str
 from sim2sim.images import SphereImageGenerator, NoneImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
 from sim2sim.mesh_processing import IdentityMeshProcessor, QuadricDecimationMeshProcessor
@@ -219,9 +219,24 @@ def run_table_pid(
     processed_mesh_file_path = os.path.join(pathlib.Path(__file__).parent.resolve(), "../..", processed_mesh_file_path)
 
     # Create a directive for processed_mesh manipuland
-    processed_mesh_directive = create_processed_mesh_directive_str(
-        mass, inertia, processed_mesh_file_path, logger._mesh_dir_path, "ycb_tomato_soup_can", MANIPULAND_BASE_LINK_NAME
-    )
+    if is_primitive:
+        processed_mesh_directive = create_processed_mesh_primitive_directive_str(
+            primitive_info,
+            mass,
+            inertia,
+            logger._mesh_dir_path,
+            params["env"]["obj_name"],
+            MANIPULAND_BASE_LINK_NAME,
+        )
+    else:
+        processed_mesh_directive = create_processed_mesh_directive_str(
+            mass,
+            inertia,
+            processed_mesh_file_path,
+            logger._mesh_dir_path,
+            params["env"]["obj_name"],
+            MANIPULAND_BASE_LINK_NAME,
+        )
 
     builder_inner, scene_graph_inner, inner_plant = create_env(
         timestep,

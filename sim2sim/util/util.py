@@ -1,9 +1,10 @@
 import os
-from typing import List
+from typing import List, Dict, Any
 
 import open3d as o3d
 import trimesh
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 from pydrake.all import MultibodyPlant, Parser, RigidTransform
 from manipulation.scenarios import AddPackagePaths
 from manipulation.meshcat_utils import AddMeshcatTriad
@@ -87,7 +88,7 @@ def create_decomposition_processed_mesh_sdf_file(
     inertia: np.ndarray,
     processed_mesh_file_path: str,
     mesh_pieces: List,
-    tmp_folder: str,
+    sdf_folder: str,
     manipuland_base_link_name: str,
 ) -> str:
     """
@@ -96,8 +97,7 @@ def create_decomposition_processed_mesh_sdf_file(
     :param mass: The object mass in kg.
     :param inertia: The moment of inertia matrix of shape (3,3).
     :param processed_mesh_file_path: The path to the processed mesh obj file.
-    :param tmp_folder: The folder to write the sdf file to.
-    :return procesed_mesh_sdf_path: The path to the SDF file.
+    :param sdf_folder: The folder to write the sdf file to.
     """
     procesed_mesh_sdf_str = f"""
         <?xml version="1.0"?>
@@ -142,11 +142,8 @@ def create_decomposition_processed_mesh_sdf_file(
             </model>
         </sdf>
     """
-    # hack now, don't wanna save the important sdf file to tmp
-    idx = processed_mesh_file_path.find("sim2sim/")
-    procesed_mesh_sdf_path = processed_mesh_file_path[idx + 8 :].replace(".obj", ".sdf")
 
-    # os.path.join(tmp_folder, "processed_mesh.sdf")
+    procesed_mesh_sdf_path = os.path.join(sdf_folder, "processed_mesh.sdf")
     with open(procesed_mesh_sdf_path, "w") as f:
         f.write(procesed_mesh_sdf_str)
 
@@ -157,7 +154,7 @@ def create_processed_mesh_directive_str(
     mass: float,
     inertia: np.ndarray,
     processed_mesh_file_path: str,
-    tmp_folder: str,
+    sdf_folder: str,
     model_name: str,
     manipuland_base_link_name: str,
 ) -> str:
@@ -167,19 +164,136 @@ def create_processed_mesh_directive_str(
     :param mass: The object mass in kg.
     :param inertia: The moment of inertia matrix of shape (3,3).
     :param processed_mesh_file_path: The path to the processed mesh obj file.
-    :param tmp_folder: The folder to write the sdf file to.
-    :return processed_mesh_directive_str: The directive string for the processed mesh.
+    :param sdf_folder: The folder to write the sdf file to.
+    :param model_name: The name of the directive model.
     """
     if not (processed_mesh_file_path).endswith(".obj"):
         dir_name = "/".join(processed_mesh_file_path.split("/")[:-1])
         listed_files = [os.path.join(dir_name, f) for f in os.listdir(dir_name) if "piece" in f]
         procesed_mesh_sdf_path = create_decomposition_processed_mesh_sdf_file(
-            mass, inertia, processed_mesh_file_path + ".obj", listed_files, tmp_folder, manipuland_base_link_name
+            mass, inertia, processed_mesh_file_path + ".obj", listed_files, sdf_folder, manipuland_base_link_name
         )
     else:
         procesed_mesh_sdf_path = create_processed_mesh_sdf_file(
-            mass, inertia, processed_mesh_file_path, tmp_folder, manipuland_base_link_name
+            mass, inertia, processed_mesh_file_path, sdf_folder, manipuland_base_link_name
         )
+    processed_mesh_directive = f"""
+        directives:
+        - add_model:
+            name: {model_name}
+            file: package://sim2sim/{procesed_mesh_sdf_path}
+    """
+    return processed_mesh_directive
+
+
+def create_processed_mesh_primitive_sdf_file(
+    primitive_info: List[Dict[str, Any]],
+    mass: float,
+    inertia: np.ndarray,
+    sdf_folder: str,
+    manipuland_base_link_name: str,
+) -> str:
+    """
+    Creates and saves an SDF file for a processed mesh consisting of primitive geometries.
+
+    :param primitive_info: A list of dicts containing primitive params. Each dict must contain "name" which can for
+        example be sphere, ellipsoid, box, etc. and "transform" which is a homogenous transformation matrix. The other
+        params are primitive dependent but must be sufficient to construct that primitive.
+    :param mass: The object mass in kg.
+    :param inertia: The moment of inertia matrix of shape (3,3).
+    :param sdf_folder: The folder to write the sdf file to.
+    """
+    procesed_mesh_sdf_str = f"""
+        <?xml version="1.0"?>
+        <sdf version="1.7">
+            <model name="processed_manipuland_mesh">
+                <link name="{manipuland_base_link_name}">
+                    <inertial>
+                        <inertia>
+                            <ixx>{inertia[0,0]}</ixx>
+                            <ixy>{inertia[0,1]}</ixy>
+                            <ixz>{inertia[0,2]}</ixz>
+                            <iyy>{inertia[1,1]}</iyy>
+                            <iyz>{inertia[1,2]}</iyz>
+                            <izz>{inertia[2,2]}</izz>
+                        </inertia>
+                        <mass>{mass}</mass>
+                    </inertial>
+    """
+
+    # Add the primitives
+    for i, info in enumerate(primitive_info):
+        transform = info["transform"]
+        translation = transform[:3, 3]
+        rotation = R.from_matrix(transform[:3, :3]).as_euler("XYZ")
+
+        if info["name"] == "ellipsoid":
+            radii = info["radii"]
+            geometry = f"""
+                <ellipsoid>
+                    <radii>{radii[0]} {radii[1]} {radii[2]}</radii>
+                </ellipsoid>
+            """
+        elif info["name"] == "sphere":
+            radius = info["radius"]
+            geometry = f"""
+                <sphere>
+                    <radius>{radius}</radius>
+                </sphere>
+            """
+        else:
+            raise RuntimeError(f"Unsupported primitive type: {info['name']}")
+
+        procesed_mesh_sdf_str += f"""
+            <visual name="visual_{i}">
+                <pose>{translation[0]} {translation[1]} {translation[2]} {rotation[0]} {rotation[1]} {rotation[2]}</pose>
+                <geometry>
+                    {geometry}
+                </geometry>
+            </visual>
+            <collision name="collision_{i}">
+                <pose>{translation[0]} {translation[1]} {translation[2]} {rotation[0]} {rotation[1]} {rotation[2]}</pose>
+                <geometry>
+                    {geometry}
+                </geometry>
+            </collision>
+        """
+
+    procesed_mesh_sdf_str += f"""
+                </link>
+            </model>
+        </sdf>
+    """
+
+    procesed_mesh_sdf_path = os.path.join(sdf_folder, "processed_mesh.sdf")
+    with open(procesed_mesh_sdf_path, "w") as f:
+        f.write(procesed_mesh_sdf_str)
+
+    return procesed_mesh_sdf_path
+
+
+def create_processed_mesh_primitive_directive_str(
+    primitive_info: List[Dict[str, Any]],
+    mass: float,
+    inertia: np.ndarray,
+    sdf_folder: str,
+    model_name: str,
+    manipuland_base_link_name: str,
+) -> str:
+    """
+    Creates a directive for the processed mesh that contains primitive geometries.
+
+    :param primitive_info: A list of dicts containing primitive params. Each dict must contain "name" which can for
+        example be sphere, ellipsoid, box, etc. The other params are primitive dependent but must be sufficient to
+        construct that primitive.
+    :param mass: The object mass in kg.
+    :param inertia: The moment of inertia matrix of shape (3,3).
+    :param sdf_folder: The folder to write the sdf file to.
+    :param model_name: The name of the directive model.
+    """
+    procesed_mesh_sdf_path = create_processed_mesh_primitive_sdf_file(
+        primitive_info, mass, inertia, sdf_folder, manipuland_base_link_name
+    )
     processed_mesh_directive = f"""
         directives:
         - add_model:

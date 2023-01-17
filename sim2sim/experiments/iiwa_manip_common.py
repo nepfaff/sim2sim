@@ -22,6 +22,7 @@ from sim2sim.logging import DynamicLogger
 from sim2sim.util import (
     get_parser,
     create_processed_mesh_directive_str,
+    create_processed_mesh_primitive_directive_str,
     add_iiwa_system,
     add_cameras,
     add_wsg_system,
@@ -257,9 +258,24 @@ def run_iiwa_manip(
     processed_mesh_file_path = os.path.join(pathlib.Path(__file__).parent.resolve(), "../..", processed_mesh_file_path)
 
     # Create a directive for processed_mesh manipuland
-    processed_mesh_directive = create_processed_mesh_directive_str(
-        mass, inertia, processed_mesh_file_path, logger._mesh_dir_path, manipuland_name, manipuland_base_link_name
-    )
+    if is_primitive:
+        processed_mesh_directive = create_processed_mesh_primitive_directive_str(
+            primitive_info,
+            mass,
+            inertia,
+            logger._mesh_dir_path,
+            params["env"]["obj_name"],
+            manipuland_base_link_name,
+        )
+    else:
+        processed_mesh_directive = create_processed_mesh_directive_str(
+            mass,
+            inertia,
+            processed_mesh_file_path,
+            logger._mesh_dir_path,
+            params["env"]["obj_name"],
+            manipuland_base_link_name,
+        )
 
     builder_inner, scene_graph_inner, inner_plant = create_env(
         timestep=timestep,

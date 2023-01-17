@@ -34,7 +34,8 @@ class MeshProcessorBase(ABC):
             - mesh, mesh_parts: Either a single mesh or a list of mesh parts that form the mesh. TODO: Replace this with
                 a single list parameter.
             - primitive_info: A list of dicts containing primitive params. Each dict must contain "name" which can for
-                example be sphere, ellipsoid, box, etc. The other params are primitive dependent but must be sufficient
-                to construct that primitive. TODO: Create an enum type for "name".
+                example be sphere, ellipsoid, box, etc. and "transform" which is a homogenous transformation matrix. The
+                other params are primitive dependent but must be sufficient to construct that primitive. TODO: Create an
+                enum type for "name".
         """
         raise NotImplementedError
