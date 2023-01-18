@@ -40,7 +40,7 @@ mesh_processor:
   class: "FuzzyMetaballMeshProcessor"
   args:
     visualize: true
-    mesh_path: ./data/ycb_tomato_soup_can/ycb_tomato_soup_can.obj
+    mesh_path: ./data/tomato_soup_can_instant_ngp.obj
     num_iter: 2000
     gmm_init: false
     remove_outliers: true
