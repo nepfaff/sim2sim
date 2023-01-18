@@ -8,7 +8,7 @@ import sklearn.mixture
 from .mesh_processor_base import MeshProcessorBase
 from sim2sim.util import open3d_to_trimesh
 from sim2sim.logging import DynamicLoggerBase
-from learning.src.ellipsoid import Ellipsoid
+from learning_real2sim.src.ellipsoid import Ellipsoid
 
 DIV_EPSILON = 1e-9
 
