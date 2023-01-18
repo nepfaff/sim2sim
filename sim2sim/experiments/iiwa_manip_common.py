@@ -22,6 +22,7 @@ from sim2sim.logging import DynamicLogger
 from sim2sim.util import (
     get_parser,
     create_processed_mesh_directive_str,
+    create_processed_mesh_primitive_directive_str,
     add_iiwa_system,
     add_cameras,
     add_wsg_system,
@@ -191,11 +192,6 @@ def run_iiwa_manip(
     )
     logger.log(experiment_description=params)
 
-    # Create folder for temporary files
-    tmp_folder = os.path.join(logging_path, "tmp")
-    if not os.path.exists(tmp_folder):
-        os.mkdir(tmp_folder)
-
     builder_outer, scene_graph_outer, outer_plant = create_env(
         timestep=timestep,
         manipuland_pose=manipuland_pose,
@@ -240,7 +236,7 @@ def run_iiwa_manip(
         **(params["mesh_processor"]["args"] if params["mesh_processor"]["args"] is not None else {}),
     )
     # TODO: Also support mesh pieces output
-    processed_mesh, _ = mesh_processor.process_mesh(raw_mesh)
+    is_primitive, processed_mesh, processed_mesh_piece, primitive_info = mesh_processor.process_mesh(raw_mesh)
     print("Finished mesh processing.")
 
     # Compute mesh inertia and mass assuming constant density of water
@@ -262,9 +258,24 @@ def run_iiwa_manip(
     processed_mesh_file_path = os.path.join(pathlib.Path(__file__).parent.resolve(), "../..", processed_mesh_file_path)
 
     # Create a directive for processed_mesh manipuland
-    processed_mesh_directive = create_processed_mesh_directive_str(
-        mass, inertia, processed_mesh_file_path, tmp_folder, manipuland_name, manipuland_base_link_name
-    )
+    if is_primitive:
+        processed_mesh_directive = create_processed_mesh_primitive_directive_str(
+            primitive_info,
+            mass,
+            inertia,
+            logger._mesh_dir_path,
+            params["env"]["obj_name"],
+            manipuland_base_link_name,
+        )
+    else:
+        processed_mesh_directive = create_processed_mesh_directive_str(
+            mass,
+            inertia,
+            processed_mesh_file_path,
+            logger._mesh_dir_path,
+            params["env"]["obj_name"],
+            manipuland_base_link_name,
+        )
 
     builder_inner, scene_graph_inner, inner_plant = create_env(
         timestep=timestep,
@@ -291,6 +302,3 @@ def run_iiwa_manip(
 
     logger.save_data()
     print("Finished saving data.")
-
-    # Clean up temporary files
-    shutil.rmtree(tmp_folder)

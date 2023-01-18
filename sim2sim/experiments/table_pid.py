@@ -21,7 +21,7 @@ from pydrake.all import (
 
 from sim2sim.simulation import BasicSimulator, BasicInnerOnlySimulator
 from sim2sim.logging import DynamicLogger
-from sim2sim.util import get_parser, create_processed_mesh_directive_str
+from sim2sim.util import get_parser, create_processed_mesh_directive_str, create_processed_mesh_primitive_directive_str
 from sim2sim.images import SphereImageGenerator, NoneImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
 from sim2sim.mesh_processing import IdentityMeshProcessor, QuadricDecimationMeshProcessor
@@ -156,11 +156,6 @@ def run_table_pid(
     )
     logger.log(experiment_description=params)
 
-    # Create folder for temporary files
-    tmp_folder = os.path.join(logging_path, "tmp")
-    if not os.path.exists(tmp_folder):
-        os.mkdir(tmp_folder)
-
     builder_outer, scene_graph_outer, outer_plant = create_env(
         timestep,
         final_table_angle,
@@ -202,7 +197,7 @@ def run_table_pid(
         **(params["mesh_processor"]["args"] if params["mesh_processor"]["args"] is not None else {}),
     )
     # TODO: Also support mesh pieces output
-    processed_mesh, _ = mesh_processor.process_mesh(raw_mesh)
+    is_primitive, processed_mesh, processed_mesh_piece, primitive_info = mesh_processor.process_mesh(raw_mesh)
     print("Finished mesh processing.")
 
     # Compute mesh inertia and mass assuming constant density of water
@@ -224,9 +219,24 @@ def run_table_pid(
     processed_mesh_file_path = os.path.join(pathlib.Path(__file__).parent.resolve(), "../..", processed_mesh_file_path)
 
     # Create a directive for processed_mesh manipuland
-    processed_mesh_directive = create_processed_mesh_directive_str(
-        mass, inertia, processed_mesh_file_path, tmp_folder, "ycb_tomato_soup_can", MANIPULAND_BASE_LINK_NAME
-    )
+    if is_primitive:
+        processed_mesh_directive = create_processed_mesh_primitive_directive_str(
+            primitive_info,
+            mass,
+            inertia,
+            logger._mesh_dir_path,
+            params["env"]["obj_name"],
+            MANIPULAND_BASE_LINK_NAME,
+        )
+    else:
+        processed_mesh_directive = create_processed_mesh_directive_str(
+            mass,
+            inertia,
+            processed_mesh_file_path,
+            logger._mesh_dir_path,
+            params["env"]["obj_name"],
+            MANIPULAND_BASE_LINK_NAME,
+        )
 
     builder_inner, scene_graph_inner, inner_plant = create_env(
         timestep,
@@ -254,6 +264,3 @@ def run_table_pid(
 
     logger.save_data()
     print("Finished saving data.")
-
-    # Clean up temporary files
-    shutil.rmtree(tmp_folder)

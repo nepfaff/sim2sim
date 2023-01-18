@@ -6,6 +6,12 @@ A high-level system diagram is shown below:
 
 ## Installation
 
+Clone the repo and its submodules:
+
+```bash
+git clone --recurse-submodules -j8 git@github.com:nepfaff/sim2sim.git
+```
+
 Execute the following commands from the repository's root.
 
 Install `git lfs`:
@@ -42,7 +48,7 @@ python scripts/run_experiment.py --experiment_description experiments/table_pid/
 1. Specify the desired experiment parameters in `experiments/random_force/random_force_metaball.yaml`.
 2. Generate the data using the following command (with your arguments):
     ```bash
-    python scripts/collect_random_force_data.py --experiment_description experiments/random_force/random_force_metaball.yaml --logging_path      logs/metric_learning_data --num_runs_per_perturbation 10 --num_perturbations 1000
+    python scripts/collect_random_force_data.py --experiment_description experiments/random_force/random_force_gmm.yaml --logging_path logs/metric_learning_data --num_runs_per_perturbation 10 --num_perturbations 1000
     ```
 3. Postprocess the data:
     ```bash
@@ -66,3 +72,7 @@ python scripts/run_experiment.py --experiment_description experiments/table_pid/
 1. Install [pointnet-pytorch](https://github.com/liruiw/Pointnet2_PyTorch).
 2. Install [v-hacd](https://github.com/mikedh/trimesh/blob/30a423b884903905aba82408255f02dec0b33175/docker/builds/vhacd.bash) in trimesh by running the script.
 3. Install [CoACD](https://github.com/liruiw/CoACD). Copy the binaries to the system bin with the name `coacd`.
+
+## Error: "Meshes does not have textures"
+
+This requires modifying the pytorch3d python files as suggested [here](https://github.com/facebookresearch/pytorch3d/issues/333#issuecomment-678129430) (remember to do it for all the shaders, the line numbers are no longer accurate).

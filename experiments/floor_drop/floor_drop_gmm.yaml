@@ -1,5 +1,5 @@
 # Unique identifier for this experiment for logging
-experiment_id: "floor_drop_metaball"
+experiment_id: "floor_drop_gmm"
 env:
   contact_model: "point"
   solver: "sap"
@@ -37,7 +37,7 @@ inverse_graphics:
     mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.3]
 
 mesh_processor:
-  class: "MetaBallMeshProcessor"
+  class: "GMMMeshProcessor"
   args:
     gmm_em_params:
       n_components: 10
@@ -49,8 +49,10 @@ mesh_processor:
     threshold_std: 1.5
 
 physical_property_estimator:
-  class: "WaterDensityPhysicalPropertyEstimator"
+  class: "GTPhysicalPropertyEstimator"
   args:
+    mass: 0.349000
+    inertia: [[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]
 
 simulator:
   class: "BasicSimulator"

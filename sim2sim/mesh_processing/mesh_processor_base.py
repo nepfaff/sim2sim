@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Tuple, List, Union, Any, Dict
 
 import open3d as o3d
 
@@ -18,9 +19,23 @@ class MeshProcessorBase(ABC):
         self._logger = logger
 
     @abstractmethod
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> o3d.geometry.TriangleMesh:
+    def process_mesh(
+        self, mesh: o3d.geometry.TriangleMesh
+    ) -> Tuple[
+        bool,
+        Union[o3d.geometry.TriangleMesh, None],
+        List[o3d.geometry.TriangleMesh],
+        Union[List[Dict[str, Any]], None],
+    ]:
         """
         :param mesh: The mesh to process.
-        :return: The processed mesh.
+        :return: A tuple of (is_primitive, mesh, mesh_parts, primitive_info):
+            - is_primitive: Whether it is a mesh or primitives.
+            - mesh, mesh_parts: Either a single mesh or a list of mesh parts that form the mesh. TODO: Replace this with
+                a single list parameter.
+            - primitive_info: A list of dicts containing primitive params. Each dict must contain "name" which can for
+                example be sphere, ellipsoid, box, etc. and "transform" which is a homogenous transformation matrix. The
+                other params are primitive dependent but must be sufficient to construct that primitive. TODO: Create an
+                enum type for "name".
         """
         raise NotImplementedError

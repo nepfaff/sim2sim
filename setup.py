@@ -17,5 +17,6 @@ setup(
         "pytorch3d",
         "open3d",
         "scipy",
+        "pyrender",
     ],
 )

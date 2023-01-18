@@ -1,5 +1,5 @@
 # Unique identifier for this experiment for logging
-experiment_id: "random_force_metaball"
+experiment_id: "random_force_fuzzy_metaball"
 env:
   contact_model: "hydroelastic_with_fallback"
   solver: "sap"
@@ -37,16 +37,14 @@ inverse_graphics:
     mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
 
 mesh_processor:
-  class: "MetaBallMeshProcessor"
+  class: "FuzzyMetaballMeshProcessor"
   args:
-    gmm_em_params:
-      n_components: 10
-      tol: 0.001
-      max_iter: 100
-      n_init: 1
-      init_params: "kmeans"
-    visualize: False
-    threshold_std: 1.5
+    visualize: true
+    mesh_path: ./data/tomato_soup_can_instant_ngp.obj
+    num_iter: 2000
+    gmm_init: false
+    remove_outliers: true
+    normalize_mesh: true
 
 physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
