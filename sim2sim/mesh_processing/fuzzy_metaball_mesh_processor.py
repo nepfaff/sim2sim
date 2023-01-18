@@ -22,6 +22,7 @@ class FuzzyMetaballMeshProcessor(MeshProcessorBase):
         num_iter: int,
         gmm_init: bool,
         remove_outliers: bool,
+        normalize_mesh: bool,
     ):
         """
         :param logger: The logger.
@@ -31,6 +32,7 @@ class FuzzyMetaballMeshProcessor(MeshProcessorBase):
         :param num_iter: The number of fuzzy metaball gradient descent iterations.
         :param gmm_init: Whether to initialize the metaballs using GMM EM or random.
         :param remove_outliers: Whether to remove metaball ellipsoid outliers.
+        :param normalize_mesh: Whether to normalize the mesh before optimization.
         """
         super().__init__(logger)
 
@@ -39,6 +41,7 @@ class FuzzyMetaballMeshProcessor(MeshProcessorBase):
         self._num_iter = num_iter
         self._gmm_init = gmm_init
         self._remove_outliers = remove_outliers
+        self._normalize_mesh = normalize_mesh
 
     def process_mesh(
         self, mesh: o3d.geometry.TriangleMesh
@@ -49,7 +52,7 @@ class FuzzyMetaballMeshProcessor(MeshProcessorBase):
         Union[List[Dict[str, Any]], None],
     ]:
         meta_ball = MetaBall.generate_metaballs_from_mesh(
-            self._mesh_path, iter_num=self._num_iter, gmm_init=self._gmm_init
+            self._mesh_path, iter_num=self._num_iter, gmm_init=self._gmm_init, normalized=self._normalize_mesh
         )
 
         if self._visualize:

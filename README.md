@@ -72,3 +72,7 @@ python scripts/run_experiment.py --experiment_description experiments/table_pid/
 1. Install [pointnet-pytorch](https://github.com/liruiw/Pointnet2_PyTorch).
 2. Install [v-hacd](https://github.com/mikedh/trimesh/blob/30a423b884903905aba82408255f02dec0b33175/docker/builds/vhacd.bash) in trimesh by running the script.
 3. Install [CoACD](https://github.com/liruiw/CoACD). Copy the binaries to the system bin with the name `coacd`.
+
+## Error: "Meshes does not have textures"
+
+This requires modifying the pytorch3d python files as suggested [here](https://github.com/facebookresearch/pytorch3d/issues/333#issuecomment-678129430) (remember to do it for all the shaders, the line numbers are no longer accurate).

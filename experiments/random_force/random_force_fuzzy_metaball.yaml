@@ -41,9 +41,10 @@ mesh_processor:
   args:
     visualize: true
     mesh_path: ./data/ycb_tomato_soup_can/ycb_tomato_soup_can.obj
-    num_iter: 5000
+    num_iter: 2000
     gmm_init: false
     remove_outliers: true
+    normalize_mesh: true
 
 physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
