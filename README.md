@@ -6,13 +6,7 @@ A high-level system diagram is shown below:
 
 ## Installation
 
-Clone the repo and its submodules:
-
-```bash
-git clone --recurse-submodules -j8 git@github.com:nepfaff/sim2sim.git
-```
-
-Execute the following commands from the repository's root.
+Clone the repo and execute the following commands from the repository's root.
 
 Install `git lfs`:
 
@@ -31,6 +25,9 @@ Install `pre-commit` for automatic black formatting:
 ```bash
 pre-commit install
 ```
+
+Install the [learning_real2sim](https://github.com/liruiw/learning_real2sim) repo in development mode based on the
+instructions in its `README`.
 
 ## Running an experiment
 
