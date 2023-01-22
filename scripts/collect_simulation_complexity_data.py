@@ -8,11 +8,7 @@ this number of total runs.
 import os
 import yaml
 import argparse
-import glob
-import re
-from multiprocessing import Process
 
-import numpy as np
 from tqdm import tqdm
 
 from sim2sim.experiments import run_random_force
@@ -42,7 +38,7 @@ def main():
         help="How many random force experiments to run per perturbation.",
     )
     parser.add_argument(
-        "--num_perturbations", default=100, type=int, help="The number of different perturbations (GMM nums) to run."
+        "--num_perturbations", default=40, type=int, help="The number of different perturbations (GMM nums) to run."
     )
     args = parser.parse_args()
 
