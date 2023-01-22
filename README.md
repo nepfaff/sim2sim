@@ -66,6 +66,18 @@ python scripts/run_experiment.py --experiment_description experiments/table_pid/
     ```bash
     python scripts/postprocess_metric_learning_dataset.py --is_representation_specific --data_path logs/mean_random_force
     ```
+    
+## Generating simulator timing scale data with number of ellipsoids
+
+1. Comment out all meshcat specific stuff in `simulation/random_force_simulator.py` (Drake crashes if more than 100 meshcats are spawned and it is not possible to clean them up without terminating the top-level script).
+2. Collect the data:
+    ```bash
+    python scripts/collect_simulation_complexity_data.py --logging_path logs/simulation_complexity --experiment_description experiments/random_force/random_force_gmm.yaml
+    ```
+3. Create the plot in `logs/simulation_complexity':
+    ```bash
+    python scripts/postprocess_simulation_complexity_data.py --data_path logs/simulation_complexity/
+    ```
 
 ## Requirements for using mesh decomposition
 
