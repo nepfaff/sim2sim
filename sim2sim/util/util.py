@@ -303,37 +303,6 @@ def create_processed_mesh_primitive_directive_str(
     return processed_mesh_directive
 
 
-def create_masked_images(input_path: str) -> str:
-    """
-    Creates a sequence of masked image of interest.
-
-    :param input_path: The folder directory for both RGB and binary mask folder.
-    :return output path of the masked images.
-    """
-    sample_path = input_path.rsplit("/", 1)[0]
-    lst = os.listdir(sample_path + "/images/")
-    num_files = len(lst)
-
-    for i in range(num_files):
-        if i < 10:
-            j = "0" + str(i)
-        else:
-            j = i
-        image_path = sample_path + f"/images/image00{j}.png"
-        mask_path = sample_path + f"/binary_masks/mask00{j}.png"
-        colourRaw = np.asarray(o3d.io.read_image(image_path))
-        maskImg = np.asarray(o3d.io.read_image(mask_path))
-        if np.max(maskImg) > 0:
-            maskImg = np.where(maskImg > 0, 1, maskImg)
-        mask_3d = np.stack((maskImg, maskImg, maskImg), axis=2)
-        input_rgb = colourRaw * mask_3d
-        masked_image = o3d.geometry.Image(input_rgb)
-        output_path = sample_path + f"/masked_images/image00{j}.png"
-        o3d.io.write_image(output_path, masked_image)
-    print(f"Successfully masked images at dir: {sample_path + '/masked_images'}")
-    return sample_path + "/masked_images"
-
-
 def open3d_to_trimesh(src: o3d.geometry.TriangleMesh) -> trimesh.Trimesh:
     """
     Convert mesh from open3d to trimesh
