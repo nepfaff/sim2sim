@@ -216,11 +216,26 @@ class DynamicLogger(DynamicLoggerBase):
 
         inspector = self._outer_scene_graph.model_inspector() if is_outer else self._inner_scene_graph.model_inspector()
 
-        contact_result_centroids = []
-        contact_result_forces = []
+        point_contact_contact_result_forces = []
+        hydroelastic_contact_result_centroids = []
+        hydroelastic_contact_result_forces = []
         for contact_result in contact_results:
-            contact_result_centroid = []
-            contact_result_force = []
+            point_contact_contact_result_force = []
+            for i in range(contact_result.num_point_pair_contacts()):
+                contact_info_i = contact_result.point_pair_contact_info(i)
+                body_ia_index = contact_info_i.bodyA_index()
+                body_ib_index = contact_info_i.bodyB_index()
+                if (
+                    body_of_interest == plant.get_body(body_ib_index).name()
+                    or body_of_interest == plant.get_body(body_ia_index).name()
+                ):
+                    contact_force = contact_info_i.contact_force()
+                    point_contact_contact_result_force.append(contact_force)
+
+            point_contact_contact_result_forces.append(point_contact_contact_result_force)
+
+            hydroelastic_contact_result_centroid = []
+            hydroelastic_contact_result_force = []
             for i in range(contact_result.num_hydroelastic_contacts()):
                 contact_info_i = contact_result.hydroelastic_contact_info(i)
                 contact_surface = contact_info_i.contact_surface()
@@ -238,15 +253,16 @@ class DynamicLogger(DynamicLoggerBase):
                     contact_force = contact_spatial_force.translational()
                     # contact_torque = contact_spatial_force.rotational()
 
-                    contact_result_centroid.append(contact_centroid)
-                    contact_result_force.append(contact_force)
+                    hydroelastic_contact_result_centroid.append(contact_centroid)
+                    hydroelastic_contact_result_force.append(contact_force)
 
-            contact_result_centroids.append(contact_result_centroid)
-            contact_result_forces.append(contact_result_force)
+            hydroelastic_contact_result_centroids.append(hydroelastic_contact_result_centroid)
+            hydroelastic_contact_result_forces.append(hydroelastic_contact_result_force)
 
         return (
-            contact_result_centroids,
-            contact_result_forces,
+            point_contact_contact_result_forces,
+            hydroelastic_contact_result_centroids,
+            hydroelastic_contact_result_forces,
             times,
         )
 
@@ -343,10 +359,12 @@ class DynamicLogger(DynamicLoggerBase):
             plt.close()
 
         # Create contact result force error plots
-        _, outer_contact_result_forces_raw, contact_result_times = self._get_contact_result_forces(
+        _, _, outer_contact_result_forces_raw, contact_result_times = self._get_contact_result_forces(
             True, self._manipuland_base_link_name
         )
-        _, inner_contact_result_forces_raw, _ = self._get_contact_result_forces(False, self._manipuland_base_link_name)
+        _, _, inner_contact_result_forces_raw, _ = self._get_contact_result_forces(
+            False, self._manipuland_base_link_name
+        )
         if len(outer_contact_result_forces_raw) > 0 and len(inner_contact_result_forces_raw) > 0:
             outer_contact_result_forces = np.array(
                 [forces[0] if forces else [0.0, 0.0, 0.0] for forces in outer_contact_result_forces_raw]
@@ -423,17 +441,22 @@ class DynamicLogger(DynamicLoggerBase):
 
     def save_contact_result_force_logs(self, body_name: str) -> None:
         (
+            outer_point_contact_contact_result_forces,
             outer_contact_result_centroids,
             outer_contact_result_forces,
             outer_contact_result_times,
         ) = self._get_contact_result_forces(True, body_name)
         if len(outer_contact_result_times) > 0:
             np.save(
-                os.path.join(self._time_logs_dir_path, "outer_contact_result_centroids.npy"),
+                os.path.join(self._time_logs_dir_path, "outer_point_contact_result_forces.npy"),
+                np.array(outer_point_contact_contact_result_forces, dtype=object),
+            )
+            np.save(
+                os.path.join(self._time_logs_dir_path, "outer_hydroelastic_contact_result_centroids.npy"),
                 np.array(outer_contact_result_centroids, dtype=object),
             )
             np.save(
-                os.path.join(self._time_logs_dir_path, "outer_contact_result_forces.npy"),
+                os.path.join(self._time_logs_dir_path, "outer_hydroelastic_contact_result_forces.npy"),
                 np.array(outer_contact_result_forces, dtype=object),
             )
             np.save(
@@ -441,17 +464,22 @@ class DynamicLogger(DynamicLoggerBase):
                 np.array(outer_contact_result_times),
             )
         (
+            inner_point_contact_contact_result_forces,
             inner_contact_result_centroids,
             inner_contact_result_forces,
             inner_contact_result_times,
         ) = self._get_contact_result_forces(False, body_name)
         if len(inner_contact_result_times) > 0:
             np.save(
-                os.path.join(self._time_logs_dir_path, "inner_contact_result_centroids.npy"),
+                os.path.join(self._time_logs_dir_path, "inner_point_contact_result_forces.npy"),
+                np.array(inner_point_contact_contact_result_forces, dtype=object),
+            )
+            np.save(
+                os.path.join(self._time_logs_dir_path, "inner_hydroelastic_contact_result_centroids.npy"),
                 np.array(inner_contact_result_centroids, dtype=object),
             )
             np.save(
-                os.path.join(self._time_logs_dir_path, "inner_contact_result_forces.npy"),
+                os.path.join(self._time_logs_dir_path, "inner_hydroelastic_contact_result_forces.npy"),
                 np.array(inner_contact_result_forces, dtype=object),
             )
             np.save(
