@@ -22,6 +22,7 @@ def main():
     mean_times = []
     mean_total_num_hydroelastic_contacts = []
     mean_total_num_point_contacts = []
+    mean_final_pose_error_magnitudes = []
     for perturbation_entry in os.scandir(args.data_path):
         if not perturbation_entry.is_dir():
             continue
@@ -29,17 +30,22 @@ def main():
         times = []
         total_num_hydroelastic_contacts = []
         total_num_point_contacts = []
+        final_pose_error_magnitudes = []
         for run_entry in os.scandir(perturbation_entry.path):
             if not run_entry.is_dir():
                 continue
 
+            time_logs_dir = os.path.join(run_entry.path, "time_logs")
+
+            # Ellipsoid number and simulation time
             meta_data_path = os.path.join(run_entry.path, "meta_data.yaml")
             meta_data = yaml.safe_load(open(meta_data_path, "r"))
             times.append(meta_data["time_taken_to_simulate_inner_s"])
             gmm_num = meta_data["mesh_processing_GMM_EM"]["n_components"]
 
+            # Number of contacts throughout simulation
             inner_hydroelastic_contact_results_path = os.path.join(
-                run_entry.path, "time_logs", "inner_hydroelastic_contact_result_centroids.npy"
+                time_logs_dir, "inner_hydroelastic_contact_result_centroids.npy"
             )
             inner_hydroelastic_contact_result_force_centroids_raw = np.load(
                 inner_hydroelastic_contact_results_path, allow_pickle=True
@@ -49,17 +55,22 @@ def main():
             ]
             total_num_hydroelastic_contacts.append(sum(num_hydroelastic_contacts))
 
-            inner_point_contact_results_path = os.path.join(
-                run_entry.path, "time_logs", "inner_point_contact_result_forces.npy"
-            )
+            inner_point_contact_results_path = os.path.join(time_logs_dir, "inner_point_contact_result_forces.npy")
             inner_point_contact_result_forces_raw = np.load(inner_point_contact_results_path, allow_pickle=True)
             num_point_contacts = [len(centroids) for centroids in inner_point_contact_result_forces_raw]
             total_num_point_contacts.append(sum(num_point_contacts))
+
+            # Final pose error
+            outer_states = np.loadtxt(os.path.join(time_logs_dir, "outer_manipuland_poses.txt"))
+            inner_states = np.loadtxt(os.path.join(time_logs_dir, "inner_manipuland_poses.txt"))
+            final_pose_error_magnitude = np.linalg.norm(outer_states[-1, :7] - inner_states[-1, :7])
+            final_pose_error_magnitudes.append(final_pose_error_magnitude)
 
         gmm_nums.append(gmm_num)
         mean_times.append(np.mean(times))
         mean_total_num_hydroelastic_contacts.append(np.mean(total_num_hydroelastic_contacts))
         mean_total_num_point_contacts.append(np.mean(total_num_point_contacts))
+        mean_final_pose_error_magnitudes.append(np.mean(final_pose_error_magnitudes))
 
     plt.plot(gmm_nums, mean_times, linestyle="", marker="o")
     plt.title("GMM EM with Random Force Experiment")
@@ -80,6 +91,13 @@ def main():
     plt.xlabel("Number of ellipsoids")
     plt.ylabel("Total number of point contacts")
     plt.savefig(os.path.join(args.data_path, "total_num_point_contacts_per_ellipsoid_num.png"))
+    plt.close()
+
+    plt.plot(gmm_nums, mean_final_pose_error_magnitudes, linestyle="", marker="o")
+    plt.title("GMM EM with Random Force Experiment")
+    plt.xlabel("Number of ellipsoids")
+    plt.ylabel("Mean final pose error magnitude of 10 runs")
+    plt.savefig(os.path.join(args.data_path, "mean_final_pose_error_magnitude_per_ellipsoid_num.png"))
     plt.close()
 
 
