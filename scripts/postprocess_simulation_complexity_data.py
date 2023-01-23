@@ -20,11 +20,15 @@ def main():
 
     gmm_nums = []
     mean_times = []
+    mean_max_num_hydroelastic_contacts = []
+    mean_max_num_point_contacts = []
     for perturbation_entry in os.scandir(args.data_path):
         if not perturbation_entry.is_dir():
             continue
 
         times = []
+        max_num_hydroelastic_contacts = []
+        max_num_point_contacts = []
         for run_entry in os.scandir(perturbation_entry.path):
             if not run_entry.is_dir():
                 continue
@@ -34,14 +38,48 @@ def main():
             times.append(meta_data["time_taken_to_simulate_inner_s"])
             gmm_num = meta_data["mesh_processing_GMM_EM"]["n_components"]
 
+            inner_hydroelastic_contact_results_path = os.path.join(
+                run_entry.path, "time_logs", "inner_hydroelastic_contact_result_centroids.npy"
+            )
+            inner_hydroelastic_contact_result_force_centroids_raw = np.load(
+                inner_hydroelastic_contact_results_path, allow_pickle=True
+            )
+            num_hydroelastic_contacts = [
+                len(centroids) for centroids in inner_hydroelastic_contact_result_force_centroids_raw
+            ]
+            max_num_hydroelastic_contacts.append(max(num_hydroelastic_contacts))
+
+            inner_point_contact_results_path = os.path.join(
+                run_entry.path, "time_logs", "inner_point_contact_result_forces.npy"
+            )
+            inner_point_contact_result_forces_raw = np.load(inner_point_contact_results_path, allow_pickle=True)
+            num_point_contacts = [len(centroids) for centroids in inner_point_contact_result_forces_raw]
+            max_num_point_contacts.append(max(num_point_contacts))
+
         gmm_nums.append(gmm_num)
         mean_times.append(np.mean(times))
+        mean_max_num_hydroelastic_contacts.append(np.mean(max_num_hydroelastic_contacts))
+        mean_max_num_point_contacts.append(np.mean(max_num_point_contacts))
 
     plt.plot(gmm_nums, mean_times, linestyle="", marker="o")
     plt.title("GMM EM with Random Force Experiment")
     plt.xlabel("Number of ellipsoids")
     plt.ylabel("Mean simulation time of 10 runs (s)")
     plt.savefig(os.path.join(args.data_path, "simulation_time_per_ellipsoid_num.png"))
+    plt.close()
+
+    plt.plot(gmm_nums, mean_max_num_hydroelastic_contacts, linestyle="", marker="o")
+    plt.title("GMM EM with Random Force Experiment")
+    plt.xlabel("Number of ellipsoids")
+    plt.ylabel("Maximum number of hydroelastic contacts")
+    plt.savefig(os.path.join(args.data_path, "max_num_hydroelastic_contacts_per_ellipsoid_num.png"))
+    plt.close()
+
+    plt.plot(gmm_nums, mean_max_num_point_contacts, linestyle="", marker="o")
+    plt.title("GMM EM with Random Force Experiment")
+    plt.xlabel("Number of ellipsoids")
+    plt.ylabel("Maximum number of point contacts")
+    plt.savefig(os.path.join(args.data_path, "max_num_point_contacts_per_ellipsoid_num.png"))
     plt.close()
 
 
