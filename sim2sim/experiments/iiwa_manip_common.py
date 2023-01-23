@@ -166,6 +166,7 @@ def run_iiwa_manip(
     manipuland_pose: RigidTransform,
     manipuland_base_link_name: str,
     manipuland_name: str,
+    hydroelastic_manipuland: bool,
 ):
     """
     Common run method for the iiwa manip scenes.
@@ -180,6 +181,7 @@ def run_iiwa_manip(
     :param manipuland_pose: The initial manipuland pose.
     :param manipuland_base_link_name: The manipuland base link name.
     :param manipuland_name: The name of the manipuland in the manipuland directive.
+    :param hydroelastic_manipuland: Whether to use hydroelastic or point contact for the inner manipuland.
     """
 
     scene_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
@@ -266,6 +268,7 @@ def run_iiwa_manip(
             logger._mesh_dir_path,
             params["env"]["obj_name"],
             manipuland_base_link_name,
+            hydroelastic=hydroelastic_manipuland,
         )
     else:
         processed_mesh_directive = create_processed_mesh_directive_str(
@@ -275,6 +278,7 @@ def run_iiwa_manip(
             logger._mesh_dir_path,
             params["env"]["obj_name"],
             manipuland_base_link_name,
+            hydroelastic=hydroelastic_manipuland,
         )
 
     builder_inner, scene_graph_inner, inner_plant = create_env(

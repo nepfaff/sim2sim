@@ -104,6 +104,7 @@ def run_floor_drop(
     manipuland_base_link_name: str,
     manipuland_default_pose: str,
     save_raw_mesh: bool,
+    hydroelastic_manipuland: bool,
 ):
     """
     Experiment entrypoint for the floor drop scene.
@@ -118,6 +119,7 @@ def run_floor_drop(
     :param manipuland_base_link_name: The base link name of the outer manipuland.
     :param manipuland_default_pose: The default pose of the outer manipuland of form [roll, pitch, yaw, x, y, z].
     :param save_raw_mesh: Whether to save the raw mesh from inverse graphics.
+    :param hydroelastic_manipuland: Whether to use hydroelastic or point contact for the inner manipuland.
     """
 
     scene_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
@@ -212,6 +214,7 @@ def run_floor_drop(
             logger._mesh_dir_path,
             params["env"]["obj_name"],
             manipuland_base_link_name,
+            hydroelastic=hydroelastic_manipuland,
         )
     else:
         processed_mesh_directive = create_processed_mesh_directive_str(
@@ -221,6 +224,7 @@ def run_floor_drop(
             logger._mesh_dir_path,
             params["env"]["obj_name"],
             manipuland_base_link_name,
+            hydroelastic=hydroelastic_manipuland,
         )
 
     builder_inner, scene_graph_inner, inner_plant = create_env(

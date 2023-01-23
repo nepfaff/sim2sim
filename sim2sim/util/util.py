@@ -24,7 +24,12 @@ def visualize_poses(poses: List[RigidTransform], meshcat) -> None:
 
 
 def create_processed_mesh_sdf_file(
-    mass: float, inertia: np.ndarray, processed_mesh_file_path: str, tmp_folder: str, manipuland_base_link_name: str
+    mass: float,
+    inertia: np.ndarray,
+    processed_mesh_file_path: str,
+    tmp_folder: str,
+    manipuland_base_link_name: str,
+    hydroelastic: bool,
 ) -> str:
     """
     Creates and saves an SDF file for the processed mesh.
@@ -33,6 +38,7 @@ def create_processed_mesh_sdf_file(
     :param inertia: The moment of inertia matrix of shape (3,3).
     :param processed_mesh_file_path: The path to the processed mesh obj file.
     :param tmp_folder: The folder to write the sdf file to.
+    :param hydroelastic: Whether to make the body rigid hydroelastic.
     :return procesed_mesh_sdf_path: The path to the SDF file.
     """
     procesed_mesh_sdf_str = f"""
@@ -67,14 +73,22 @@ def create_processed_mesh_sdf_file(
                                 <uri>{processed_mesh_file_path}</uri>
                             </mesh>
                         </geometry>
-                        <drake:proximity_properties>
-                            <drake:rigid_hydroelastic/>
-                        </drake:proximity_properties>
-                    </collision>
-                </link>
-            </model>
-        </sdf>
     """
+
+    if hydroelastic:
+        procesed_mesh_sdf_str += """
+                <drake:proximity_properties>
+                    <drake:rigid_hydroelastic/>
+                </drake:proximity_properties>
+            """
+
+    procesed_mesh_sdf_str += """
+                </collision>
+                    </link>
+                </model>
+            </sdf>
+        """
+
     idx = processed_mesh_file_path.find("sim2sim/")
     procesed_mesh_sdf_path = processed_mesh_file_path[idx + 8 :].replace(".obj", ".sdf")
 
@@ -90,6 +104,7 @@ def create_decomposition_processed_mesh_sdf_file(
     mesh_pieces: List,
     sdf_folder: str,
     manipuland_base_link_name: str,
+    hydroelastic: bool,
 ) -> str:
     """
     Creates and saves an SDF file for the processed decomposition of a mesh.
@@ -98,6 +113,7 @@ def create_decomposition_processed_mesh_sdf_file(
     :param inertia: The moment of inertia matrix of shape (3,3).
     :param processed_mesh_file_path: The path to the processed mesh obj file.
     :param sdf_folder: The folder to write the sdf file to.
+    :param hydroelastic: Whether to make the body rigid hydroelastic.
     """
     procesed_mesh_sdf_str = f"""
         <?xml version="1.0"?>
@@ -135,13 +151,24 @@ def create_decomposition_processed_mesh_sdf_file(
                                     <uri>{mesh_path}</uri>
                                 </mesh>
                             </geometry>
-                        </collision>
         """
-    procesed_mesh_sdf_str += f"""
-                </link>
-            </model>
-        </sdf>
-    """
+
+        if hydroelastic:
+            procesed_mesh_sdf_str += """
+                    <drake:proximity_properties>
+                        <drake:rigid_hydroelastic/>
+                    </drake:proximity_properties>
+                """
+
+        procesed_mesh_sdf_str += """
+                </collision>
+            """
+
+    procesed_mesh_sdf_str += """
+                    </link>
+                </model>
+            </sdf>
+        """
 
     procesed_mesh_sdf_path = os.path.join(sdf_folder, "processed_mesh.sdf")
     with open(procesed_mesh_sdf_path, "w") as f:
@@ -157,6 +184,7 @@ def create_processed_mesh_directive_str(
     sdf_folder: str,
     model_name: str,
     manipuland_base_link_name: str,
+    hydroelastic: bool,
 ) -> str:
     """
     Creates a directive for the processed mesh.
@@ -166,6 +194,7 @@ def create_processed_mesh_directive_str(
     :param processed_mesh_file_path: The path to the processed mesh obj file.
     :param sdf_folder: The folder to write the sdf file to.
     :param model_name: The name of the directive model.
+    :param hydroelastic: Whether to make the body rigid hydroelastic.
     """
     if not (processed_mesh_file_path).endswith(".obj"):
         dir_name = "/".join(processed_mesh_file_path.split("/")[:-1])
@@ -175,7 +204,7 @@ def create_processed_mesh_directive_str(
         )
     else:
         procesed_mesh_sdf_path = create_processed_mesh_sdf_file(
-            mass, inertia, processed_mesh_file_path, sdf_folder, manipuland_base_link_name
+            mass, inertia, processed_mesh_file_path, sdf_folder, manipuland_base_link_name, hydroelastic
         )
     processed_mesh_directive = f"""
         directives:
@@ -192,6 +221,7 @@ def create_processed_mesh_primitive_sdf_file(
     inertia: np.ndarray,
     sdf_folder: str,
     manipuland_base_link_name: str,
+    hydroelastic: bool,
 ) -> str:
     """
     Creates and saves an SDF file for a processed mesh consisting of primitive geometries.
@@ -202,6 +232,7 @@ def create_processed_mesh_primitive_sdf_file(
     :param mass: The object mass in kg.
     :param inertia: The moment of inertia matrix of shape (3,3).
     :param sdf_folder: The folder to write the sdf file to.
+    :param hydroelastic: Whether to make the body rigid hydroelastic.
     """
     procesed_mesh_sdf_str = f"""
         <?xml version="1.0"?>
@@ -256,14 +287,25 @@ def create_processed_mesh_primitive_sdf_file(
                 <geometry>
                     {geometry}
                 </geometry>
-            </collision>
         """
 
-    procesed_mesh_sdf_str += f"""
-                </link>
-            </model>
-        </sdf>
-    """
+        if hydroelastic:
+            procesed_mesh_sdf_str += """
+                    <drake:proximity_properties>
+                        <drake:rigid_hydroelastic/>
+                        <drake:mesh_resolution_hint>0.01</drake:mesh_resolution_hint>
+                    </drake:proximity_properties>
+                """
+
+        procesed_mesh_sdf_str += """
+                </collision>
+            """
+
+    procesed_mesh_sdf_str += """
+                    </link>
+                </model>
+            </sdf>
+        """
 
     procesed_mesh_sdf_path = os.path.join(sdf_folder, "processed_mesh.sdf")
     with open(procesed_mesh_sdf_path, "w") as f:
@@ -279,6 +321,7 @@ def create_processed_mesh_primitive_directive_str(
     sdf_folder: str,
     model_name: str,
     manipuland_base_link_name: str,
+    hydroelastic: str,
 ) -> str:
     """
     Creates a directive for the processed mesh that contains primitive geometries.
@@ -290,9 +333,10 @@ def create_processed_mesh_primitive_directive_str(
     :param inertia: The moment of inertia matrix of shape (3,3).
     :param sdf_folder: The folder to write the sdf file to.
     :param model_name: The name of the directive model.
+    :param hydroelastic: Whether to make the body rigid hydroelastic.
     """
     procesed_mesh_sdf_path = create_processed_mesh_primitive_sdf_file(
-        primitive_info, mass, inertia, sdf_folder, manipuland_base_link_name
+        primitive_info, mass, inertia, sdf_folder, manipuland_base_link_name, hydroelastic
     )
     processed_mesh_directive = f"""
         directives:

@@ -17,6 +17,7 @@ logger:
     manipuland_name: "pepper"
     manipuland_base_link_name: "pepper_base_link"
     kProximity: false
+    hydroelastic_manipuland: true
 
 # image_generator:
 #   class: "SphereImageGenerator"

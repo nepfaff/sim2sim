@@ -132,6 +132,7 @@ def run_table_pid(
     final_table_angle: float,
     no_command_time: float,
     logging_frequency_hz: float,
+    hydroelastic_manipuland: bool,
 ):
     """
     Experiment entrypoint for the table PID scene.
@@ -143,6 +144,7 @@ def run_table_pid(
     :param final_table_angle: The final table angle in radians.
     :param no_command_time: The time before starting the table control in seconds.
     :param logging_frequency_hz: The dynamics logging frequency.
+    :param hydroelastic_manipuland: Whether to use hydroelastic or point contact for the inner manipuland.
     """
 
     scene_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
@@ -227,6 +229,7 @@ def run_table_pid(
             logger._mesh_dir_path,
             params["env"]["obj_name"],
             MANIPULAND_BASE_LINK_NAME,
+            hydroelastic=hydroelastic_manipuland,
         )
     else:
         processed_mesh_directive = create_processed_mesh_directive_str(
@@ -236,6 +239,7 @@ def run_table_pid(
             logger._mesh_dir_path,
             params["env"]["obj_name"],
             MANIPULAND_BASE_LINK_NAME,
+            hydroelastic=hydroelastic_manipuland,
         )
 
     builder_inner, scene_graph_inner, inner_plant = create_env(
