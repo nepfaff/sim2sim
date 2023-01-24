@@ -38,8 +38,8 @@ def average_displacement_error_translation_only(
 
 
 def _fde(outer_traj: np.ndarray, inner_traj: np.ndarray) -> float:
-    error = outer_traj - inner_traj
-    fde = np.linalg.norm(error[-1])
+    error = outer_traj[-1] - inner_traj[-1]
+    fde = np.linalg.norm(error)
     return fde
 
 
