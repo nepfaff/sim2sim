@@ -7,6 +7,8 @@ import yaml
 import numpy as np
 from matplotlib import pyplot as plt
 
+from sim2sim.util import final_displacement_error
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -63,8 +65,7 @@ def main():
             # Final pose error
             outer_states = np.loadtxt(os.path.join(time_logs_dir, "outer_manipuland_poses.txt"))
             inner_states = np.loadtxt(os.path.join(time_logs_dir, "inner_manipuland_poses.txt"))
-            final_pose_error_magnitude = np.linalg.norm(outer_states[-1, :7] - inner_states[-1, :7])
-            final_pose_error_magnitudes.append(final_pose_error_magnitude)
+            final_pose_error_magnitudes.append(final_displacement_error(outer_states, inner_states))
 
         gmm_nums.append(gmm_num)
         mean_times.append(np.mean(times))
