@@ -81,6 +81,8 @@ def trajectory_IoU(
     considered). It is computed using a Monte Carlo approach.
     See https://towardsdatascience.com/why-ade-and-fde-might-not-be-the-best-metrics-to-score-motion-prediction-model-performance-and-what-1980366d37be.
 
+    TODO: Look into downsampling trajectory points to speed up computation
+
     :param outer_state_trajectory: The trajectory of outer manipuland states of shape (N,13) where N is the number of
         trajectory points. Each point has the form [q1, q2, q3, q4, tx, ty, tz, wx, wy, wz, vx, vy, tz], where q are
         quaternions, t are translations, w are angular velocities, and v are translational velocities.
