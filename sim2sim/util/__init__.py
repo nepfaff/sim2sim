@@ -23,4 +23,5 @@ from .metrics import (
     average_displacement_error_translation_only,
     final_displacement_error,
     final_displacement_error_translation_only,
+    trajectory_IoU,
 )
