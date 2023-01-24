@@ -113,10 +113,10 @@ def trajectory_IoU(
             within_outer = within_margin(outer_point, sample)
             within_inner = within_margin(inner_point, sample)
             if within_outer or within_inner:
-                intersection += 1
+                union += 1
 
                 if within_outer and within_inner:
-                    union += 1
+                    intersection += 1
 
     iou = intersection / union
     return iou
