@@ -99,16 +99,15 @@ def trajectory_IoU(
 
     intersection = 0
     union = 0
-    for outer_point, inner_point in zip(outer_state_trajectory[:, :7], inner_state_trajectory[:, :7]):
-        outer_point_expanded = outer_point[np.newaxis, :]
-        inner_point_expanded = inner_point[np.newaxis, :]
-        aabb = np.min(outer_point_expanded - margin, inner_point_expanded - margin, axis=0), np.max(
-            outer_point_expanded + margin, inner_point_expanded + margin, axis=0
-        )  # minx, miny, minz, maxx, maxy, maxz
+    for outer_point, inner_point in zip(outer_state_trajectory[:, 4:7], inner_state_trajectory[:, 4:7]):
+        aabb = np.min([outer_point - margin, inner_point - margin], axis=0), np.max(
+            [outer_point + margin, inner_point + margin], axis=0
+        )  # [minx, miny, minz], [maxx, maxy, maxz]
+        aabb = np.concatenate(aabb)
 
         for _ in range(num_samples):
             # Take sample within aabb
-            sample = aabb[:3] + np.random.rand() * (aabb[3:] - aabb[:3])
+            sample = aabb[:3] + np.random.rand(3) * (aabb[3:] - aabb[:3])
 
             # Check whether within margin of inner and/or outer trajectory point
             within_outer = within_margin(outer_point, sample)
