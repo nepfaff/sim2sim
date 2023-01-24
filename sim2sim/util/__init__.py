@@ -18,3 +18,9 @@ from .iiwa import (
     IIWAControlModeSource,
 )
 from .systems import ExternalForceSystem
+from .metrics import (
+    average_displacement_error,
+    average_displacement_error_translation_only,
+    final_displacement_error,
+    final_displacement_error_translation_only,
+)
