@@ -41,12 +41,12 @@ mesh_processor:
   class: "GMMMeshProcessor"
   args:
     gmm_em_params:
-      n_components: 10
+      n_components: 50
       tol: 0.001
       max_iter: 100
       n_init: 1
       init_params: "kmeans"
-    visualize: true
+    visualize: false
     threshold_std: 1.5
 
 physical_property_estimator:

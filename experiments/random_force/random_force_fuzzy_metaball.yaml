@@ -40,9 +40,9 @@ inverse_graphics:
 mesh_processor:
   class: "FuzzyMetaballMeshProcessor"
   args:
-    visualize: true
+    visualize: false
     mesh_path: ./data/tomato_soup_can_instant_ngp.obj
-    num_iter: 2000
+    num_iter: 1000
     gmm_init: false
     remove_outliers: true
     normalize_mesh: true
