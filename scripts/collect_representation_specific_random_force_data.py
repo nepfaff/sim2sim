@@ -38,6 +38,11 @@ def main():
         action="store_true",
         help="Whether to use a random seed for repeatability.",
     )
+    parser.add_argument(
+        "--single_core",
+        action="store_true",
+        help="Whether to use a single core.",
+    )
     args = parser.parse_args()
 
     experiment_specification = yaml.safe_load(open(args.experiment_description, "r"))
@@ -51,17 +56,26 @@ def main():
         if args.use_random_seed:
             experiment_specification["simulator"]["args"]["random_seed"] = random_seed
             random_seed += 1
-        kwargs = {
-            "logging_path": os.path.join(args.logging_path, f"run_{i:04d}"),
-            "params": experiment_specification,
-        }
-        kwargs.update(experiment_specification["script"]["args"])
-        p = Process(target=run_random_force, kwargs=kwargs)
-        processes.append(p)
-        p.start()
 
-    for process in processes:
-        process.join()
+        if args.single_core:
+            run_random_force(
+                logging_path=os.path.join(args.logging_path, f"run_{i:04d}"),
+                params=experiment_specification,
+                **experiment_specification["script"]["args"],
+            )
+        else:
+            kwargs = {
+                "logging_path": os.path.join(args.logging_path, f"run_{i:04d}"),
+                "params": experiment_specification,
+            }
+            kwargs.update(experiment_specification["script"]["args"])
+            p = Process(target=run_random_force, kwargs=kwargs)
+            processes.append(p)
+            p.start()
+
+    if not args.single_core:
+        for process in processes:
+            process.join()
 
 
 if __name__ == "__main__":
