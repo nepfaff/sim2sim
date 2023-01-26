@@ -200,7 +200,13 @@ def create_processed_mesh_directive_str(
         dir_name = "/".join(processed_mesh_file_path.split("/")[:-1])
         listed_files = [os.path.join(dir_name, f) for f in os.listdir(dir_name) if "piece" in f]
         procesed_mesh_sdf_path = create_decomposition_processed_mesh_sdf_file(
-            mass, inertia, processed_mesh_file_path + ".obj", listed_files, sdf_folder, manipuland_base_link_name
+            mass,
+            inertia,
+            processed_mesh_file_path + ".obj",
+            listed_files,
+            sdf_folder,
+            manipuland_base_link_name,
+            hydroelastic,
         )
     else:
         procesed_mesh_sdf_path = create_processed_mesh_sdf_file(
