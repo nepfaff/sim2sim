@@ -80,17 +80,24 @@ class SpherePushingSimulator(SimulatorBase):
 
             simulator.AdvanceTo(self._settling_time)
 
-            # TODO: Save the actions from the outer sim and replay for the inner sim
-            plant = diagram.GetSubsystemByName("plant")
-            plant_context = plant.GetMyContextFromRoot(context)
-            total_time = self._settling_time + duration
-            for sim_time in np.linspace(self._settling_time, total_time, int(duration / self._controll_period)):
-                mesh_manipuland_instance = plant.GetModelInstanceByName(self._manipuland_name)
-                mesh_manipuland_translation = plant.GetPositions(plant_context, mesh_manipuland_instance)[4:]
+            if i == 0:
+                plant = diagram.GetSubsystemByName("plant")
+                plant_context = plant.GetMyContextFromRoot(context)
+                total_time = self._settling_time + duration
+                sim_times = np.linspace(self._settling_time, total_time, int(duration / self._controll_period))
+                action_log = []
+                for sim_time in sim_times:
+                    mesh_manipuland_instance = plant.GetModelInstanceByName(self._manipuland_name)
+                    mesh_manipuland_translation = plant.GetPositions(plant_context, mesh_manipuland_instance)[4:]
 
-                sphere_state_source.set_desired_position(mesh_manipuland_translation)
+                    sphere_state_source.set_desired_position(mesh_manipuland_translation)
+                    action_log.append(mesh_manipuland_translation)
 
-                simulator.AdvanceTo(sim_time)
+                    simulator.AdvanceTo(sim_time)
+            else:
+                for sim_time, action in zip(sim_times, action_log):
+                    sphere_state_source.set_desired_position(action)
+                    simulator.AdvanceTo(sim_time)
 
             time_taken_to_simulate = time.time() - start_time
             if i == 0:
