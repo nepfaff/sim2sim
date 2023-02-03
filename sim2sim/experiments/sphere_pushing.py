@@ -42,7 +42,6 @@ from sim2sim.mesh_processing import (
 )
 from sim2sim.physical_property_estimator import WaterDensityPhysicalPropertyEstimator, GTPhysicalPropertyEstimator
 
-SPHERE_STARTING_POSITION = [0.3, 0.0, 0.1]
 SCENE_DIRECTIVE = "../../models/random_force/random_force_directive.yaml"
 
 # TODO: Add type info using base classes
@@ -106,6 +105,7 @@ def create_env(
     timestep: float,
     manipuland_base_link_name: str,
     manipuland_pose: RigidTransform,
+    sphere_starting_position: List[float],
     directive_files: List[str] = [],
     directive_strs: List[str] = [],
 ) -> Tuple[DiagramBuilder, SceneGraph, MultibodyPlant]:
@@ -126,10 +126,10 @@ def create_env(
         directive = LoadModelDirectivesFromString(directive_str)
         ProcessModelDirectives(directive, parser)
 
-    add_sphere(plant, position=SPHERE_STARTING_POSITION)
+    add_sphere(plant, position=sphere_starting_position)
 
     # Sphere state source
-    sphere_state_source = builder.AddSystem(SphereStateSource(SPHERE_STARTING_POSITION))
+    sphere_state_source = builder.AddSystem(SphereStateSource(sphere_starting_position))
     sphere_state_source.set_name("sphere_state_source")
 
     # Sphere controller
@@ -178,6 +178,7 @@ def run_sphere_pushing(
     manipuland_default_pose: str,
     save_raw_mesh: bool,
     hydroelastic_manipuland: bool,
+    sphere_starting_position: List[float],
 ):
     """
     Experiment entrypoint for the sphere pushing scene.
@@ -193,6 +194,7 @@ def run_sphere_pushing(
     :param manipuland_default_pose: The default pose of the outer manipuland of form [roll, pitch, yaw, x, y, z].
     :param save_raw_mesh: Whether to save the raw mesh from inverse graphics.
     :param hydroelastic_manipuland: Whether to use hydroelastic or point contact for the inner manipuland.
+    :param sphere_starting_position: The starting position [x, y, z] of the sphere.
     """
     scene_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
     manipuland_directive_path = os.path.join(pathlib.Path(__file__).parent.resolve(), manipuland_directive)
@@ -213,6 +215,7 @@ def run_sphere_pushing(
         timestep=timestep,
         manipuland_base_link_name=manipuland_base_link_name,
         manipuland_pose=manipuland_default_pose_transform,
+        sphere_starting_position=sphere_starting_position,
         directive_files=[scene_directive, manipuland_directive_path],
     )
 
@@ -222,6 +225,7 @@ def run_sphere_pushing(
         env_params=params["env"],
         manipuland_base_link_name=manipuland_base_link_name,
         manipuland_pose=manipuland_default_pose_transform,
+        sphere_starting_position=sphere_starting_position,
         directive_files=[scene_directive, manipuland_directive_path],
     )
     image_generator_class = IMAGE_GENERATORS[params["image_generator"]["class"]]
@@ -303,6 +307,7 @@ def run_sphere_pushing(
         timestep=timestep,
         env_params=params["env"],
         manipuland_base_link_name=manipuland_base_link_name,
+        sphere_starting_position=sphere_starting_position,
         directive_files=[scene_directive],
         directive_strs=[processed_mesh_directive],
         manipuland_pose=RigidTransform(RollPitchYaw(*raw_mesh_pose[:3]), raw_mesh_pose[3:]),
