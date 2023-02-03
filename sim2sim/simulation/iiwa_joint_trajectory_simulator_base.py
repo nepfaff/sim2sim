@@ -24,6 +24,7 @@ class IIWAJointTrajectorySimulatorBase(SimulatorBase):
         inner_builder: DiagramBuilder,
         inner_scene_graph: SceneGraph,
         logger: DynamicLoggerBase,
+        is_hydroelastic: bool,
         mesh_pose: List[float],
     ):
         """
@@ -32,10 +33,11 @@ class IIWAJointTrajectorySimulatorBase(SimulatorBase):
         :param inner_builder: Diagram builder for the inner simulation environment.
         :param inner_scene_graph: Scene graph for the inner simulation environment.
         :param logger: The logger.
+        :param is_hydroelastic: Whether hydroelastic or point contact is used.
         :param mesh_pose: The manipuland mesh pose of form [roll, pitch, yaw, x, y, z] where angles are in radians.
         """
 
-        super().__init__(outer_builder, outer_scene_graph, inner_builder, inner_scene_graph, logger)
+        super().__init__(outer_builder, outer_scene_graph, inner_builder, inner_scene_graph, logger, is_hydroelastic)
         self._finalize_and_build_diagrams()
 
         self._mesh_pose = np.array(mesh_pose)
@@ -46,11 +48,13 @@ class IIWAJointTrajectorySimulatorBase(SimulatorBase):
         self._outer_visualizer, self._outer_meshcat = self._logger.add_visualizers(
             self._outer_builder,
             self._outer_scene_graph,
+            self._is_hydroelastic,
             is_outer=True,
         )
         self._inner_visualizer, self._inner_meshcat = self._logger.add_visualizers(
             self._inner_builder,
             self._inner_scene_graph,
+            self._is_hydroelastic,
             is_outer=False,
         )
 

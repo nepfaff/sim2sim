@@ -261,6 +261,7 @@ def run_table_pid(
         inner_builder=builder_inner,
         inner_scene_graph=scene_graph_inner,
         logger=logger,
+        is_hydroelastic=hydroelastic_manipuland,
         **(params["simulator"]["args"] if params["simulator"]["args"] is not None else {}),
     )
     simulator.simulate(sim_duration)

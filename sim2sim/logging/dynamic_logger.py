@@ -23,6 +23,7 @@ from PIL import Image
 from matplotlib import pyplot as plt
 
 from sim2sim.logging import DynamicLoggerBase
+from sim2sim.util import get_hydroelastic_contact_viz_params, get_point_contact_contact_viz_params
 from .abstract_value_logger import AbstractValueLogger
 
 
@@ -95,33 +96,36 @@ class DynamicLogger(DynamicLoggerBase):
         return visualizer, meshcat
 
     @staticmethod
-    def _add_contact_visualizer(builder: DiagramBuilder, meshcat: Meshcat, plant: MultibodyPlant) -> None:
+    def _add_contact_visualizer(
+        builder: DiagramBuilder, meshcat: Meshcat, plant: MultibodyPlant, is_hydroelastic: bool
+    ) -> None:
         """
         Adds a contact visualizer to `builder`.
 
         :param builder: The diagram builder to add the visualizer to.
         :param meshcat: The meshcat that we want to add the contact visualizer to.
         :param plant: The plant for which we want to visualize contact forces.
+        :param is_hydroelastic: Whether to use the hydroelastic or point contact configs.
         """
-        cparams = ContactVisualizerParams()
-        cparams.force_threshold = 1e-2
-        cparams.newtons_per_meter = 1e6
-        cparams.newton_meters_per_meter = 1e1
-        cparams.radius = 0.002
+        cparams = get_hydroelastic_contact_viz_params() if is_hydroelastic else get_point_contact_contact_viz_params()
         _ = ContactVisualizer.AddToBuilder(builder, plant, meshcat, cparams)
 
     def add_visualizers(
-        self, builder: DiagramBuilder, scene_graph: SceneGraph, is_outer: bool
+        self, builder: DiagramBuilder, scene_graph: SceneGraph, is_hydroelastic: bool, is_outer: bool
     ) -> Tuple[MeshcatVisualizer, Meshcat]:
         """
         Add visualizers.
         :param builder: The diagram builder to add the visualizer to.
         :param scene_graph: The scene graph of the scene to visualize.
+        :param is_hydroelastic: Whether to use the hydroelastic or point contact visualizer configs.
+        :param is_outer: Whether it is the outer or inner simulation.
         :return: A tuple of (visualizer, meshcat).
         """
         visualizer, meshcat = self.add_meshcat_visualizer(builder, scene_graph, self._kProximity)
         if self._inner_plant is not None and self._outer_plant is not None:
-            self._add_contact_visualizer(builder, meshcat, self._outer_plant if is_outer else self._inner_plant)
+            self._add_contact_visualizer(
+                builder, meshcat, self._outer_plant if is_outer else self._inner_plant, is_hydroelastic
+            )
         return visualizer, meshcat
 
     def add_manipuland_pose_logging(self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder) -> None:

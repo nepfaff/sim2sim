@@ -246,6 +246,7 @@ def run_floor_drop(
         inner_builder=builder_inner,
         inner_scene_graph=scene_graph_inner,
         logger=logger,
+        is_hydroelastic=params["env"]["contact_model"] != "point",
         **(params["simulator"]["args"] if params["simulator"]["args"] is not None else {}),
     )
     simulator.simulate(sim_duration)

@@ -21,8 +21,9 @@ class BasicInnerOnlySimulator(SimulatorBase):
         inner_builder: DiagramBuilder,
         inner_scene_graph: SceneGraph,
         logger: DynamicLoggerBase,
+        is_hydroelastic: bool,
     ):
-        super().__init__(outer_builder, outer_scene_graph, inner_builder, inner_scene_graph, logger)
+        super().__init__(outer_builder, outer_scene_graph, inner_builder, inner_scene_graph, logger, is_hydroelastic)
         self._finalize_and_build_diagram()
 
     def _finalize_and_build_diagram(self) -> None:
@@ -31,6 +32,7 @@ class BasicInnerOnlySimulator(SimulatorBase):
         self._inner_visualizer, self._inner_meshcat = self._logger.add_visualizers(
             self._inner_builder,
             self._inner_scene_graph,
+            self._is_hydroelastic,
             is_outer=False,
         )
 

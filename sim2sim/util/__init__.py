@@ -4,6 +4,8 @@ from .util import (
     create_processed_mesh_directive_str,
     open3d_to_trimesh,
     create_processed_mesh_primitive_directive_str,
+    get_hydroelastic_contact_viz_params,
+    get_point_contact_contact_viz_params,
 )
 from .physics import calc_mesh_inertia
 from .iiwa import (

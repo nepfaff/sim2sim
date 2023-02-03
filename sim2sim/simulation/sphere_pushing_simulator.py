@@ -19,6 +19,7 @@ class SpherePushingSimulator(SimulatorBase):
         inner_builder: DiagramBuilder,
         inner_scene_graph: SceneGraph,
         logger: DynamicLoggerBase,
+        is_hydroelastic: bool,
         settling_time: float,
         manipuland_name: str,
         controll_period: float,
@@ -29,11 +30,12 @@ class SpherePushingSimulator(SimulatorBase):
         :param inner_builder: Diagram builder for the inner simulation environment.
         :param inner_scene_graph: Scene graph for the inner simulation environment.
         :param logger: The logger.
+        :param is_hydroelastic: Whether hydroelastic or point contact is used.
         :param settling_time: The time in seconds to simulate initially to allow the scene to settle.
         :param manipuland_name: The name of the manipuland model instance.
         :param controll_period: Period at which to update the control command.
         """
-        super().__init__(outer_builder, outer_scene_graph, inner_builder, inner_scene_graph, logger)
+        super().__init__(outer_builder, outer_scene_graph, inner_builder, inner_scene_graph, logger, is_hydroelastic)
 
         self._settling_time = settling_time
         self._manipuland_name = manipuland_name
@@ -46,11 +48,13 @@ class SpherePushingSimulator(SimulatorBase):
         self._outer_visualizer, self._outer_meshcat = self._logger.add_visualizers(
             self._outer_builder,
             self._outer_scene_graph,
+            self._is_hydroelastic,
             is_outer=True,
         )
         self._inner_visualizer, self._inner_meshcat = self._logger.add_visualizers(
             self._inner_builder,
             self._inner_scene_graph,
+            self._is_hydroelastic,
             is_outer=False,
         )
 

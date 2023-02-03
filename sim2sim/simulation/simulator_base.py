@@ -15,6 +15,7 @@ class SimulatorBase(ABC):
         inner_builder: DiagramBuilder,
         inner_scene_graph: SceneGraph,
         logger: DynamicLoggerBase,
+        is_hydroelastic: bool,
     ):
         """
         :param outer_builder: Diagram builder for the outer simulation environment.
@@ -22,12 +23,14 @@ class SimulatorBase(ABC):
         :param inner_builder: Diagram builder for the inner simulation environment.
         :param inner_scene_graph: Scene graph for the inner simulation environment.
         :param logger: The logger.
+        :param is_hydroelastic: Whether hydroelastic or point contact is used.
         """
         self._outer_builder = outer_builder
         self._outer_scene_graph = outer_scene_graph
         self._inner_builder = inner_builder
         self._inner_scene_graph = inner_scene_graph
         self._logger = logger
+        self._is_hydroelastic = is_hydroelastic
 
     @abstractmethod
     def simulate(self, duration: float) -> None:

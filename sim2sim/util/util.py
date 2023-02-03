@@ -5,7 +5,7 @@ import open3d as o3d
 import trimesh
 import numpy as np
 from scipy.spatial.transform import Rotation as R
-from pydrake.all import MultibodyPlant, Parser, RigidTransform
+from pydrake.all import MultibodyPlant, Parser, RigidTransform, ContactVisualizerParams
 from manipulation.scenarios import AddPackagePaths
 from manipulation.meshcat_utils import AddMeshcatTriad
 
@@ -372,3 +372,23 @@ def open3d_to_trimesh(src: o3d.geometry.TriangleMesh) -> trimesh.Trimesh:
         raise ValueError("Unsupported type of src: {}".format(type(src)))
 
     return dst
+
+
+def get_hydroelastic_contact_viz_params() -> ContactVisualizerParams:
+    """Contact visualizer params tuned for hydroelastic contact."""
+    cparams = ContactVisualizerParams()
+    cparams.force_threshold = 1e-2
+    cparams.newtons_per_meter = 1e6
+    cparams.newton_meters_per_meter = 1e1
+    cparams.radius = 0.002
+    return cparams
+
+
+def get_point_contact_contact_viz_params() -> ContactVisualizerParams:
+    """Contact visualizer params tuned for point contact."""
+    cparams = ContactVisualizerParams()
+    cparams.force_threshold = 1e-3
+    cparams.newtons_per_meter = 1e2  # NOTE: Lower = larger force vectors
+    cparams.newton_meters_per_meter = 1.0
+    cparams.radius = 0.002
+    return cparams
