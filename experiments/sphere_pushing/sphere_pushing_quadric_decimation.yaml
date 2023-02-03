@@ -1,0 +1,56 @@
+# Unique identifier for this experiment for logging
+experiment_id: "sphere_pushing_quadric_decimation"
+env:
+  contact_model: "point"
+  solver: "sap"
+  obj_name: "ycb_tomato_soup_can"
+
+script:
+  name: "sphere_pushing"
+  args:
+    sim_duration: 1.0
+    timestep: 0.001
+    logging_frequency_hz: 1000
+    manipuland_directive: "../../models/random_force/random_force_manipuland_directive.yaml"
+    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
+    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
+    save_raw_mesh: false
+    hydroelastic_manipuland: false
+
+# Component specifications
+# 'args' are constructor arguments that are not part of the base class constructors
+logger:
+  class: "DynamicLogger"
+  args:
+    label_to_mask: -1 # NOTE: Does not correspond to anything
+    manipuland_name: "ycb_tomato_soup_can"
+    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
+    kProximity: true
+
+image_generator:
+  class: "NoneImageGenerator"
+  args:
+
+inverse_graphics:
+  class: "IdentityInverseGraphics"
+  args:
+    mesh_path: ./data/tomato_soup_can_instant_ngp.obj
+    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
+
+mesh_processor:
+  class: "QuadricDecimationMeshProcessor"
+  args:
+    target_triangle_num: 10000
+
+physical_property_estimator:
+  class: "GTPhysicalPropertyEstimator"
+  args:
+    mass: 0.349000
+    inertia: [[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]
+
+simulator:
+  class: "SpherePushingSimulator"
+  args:
+    settling_time: 0.2
+    manipuland_name: ycb_tomato_soup_can
+    controll_period: 0.01

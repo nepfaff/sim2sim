@@ -31,3 +31,36 @@ class ExternalForceSystem(LeafSystem):
 
     def set_wrench_application_point(self, point: np.ndarray) -> None:
         self._wrench_application_point = point
+
+
+class SphereStateSource(LeafSystem):
+    """
+    A system for commanding desired sphere states (q, q_dot).
+    """
+
+    def __init__(self, sphere_starting_position: List[float]):
+        """
+        :param sphere_starting_position: The sphere starting position [x, y, z].
+        """
+        LeafSystem.__init__(self)
+
+        self.DeclareVectorOutputPort("sphere_actuation", 6, self.CalcOutput)  # q, v
+
+        self._desired_state = [*sphere_starting_position, 0.0, 0.0, 0.0]
+
+    def CalcOutput(self, context, output):
+        output.SetFromVector(self._desired_state)
+
+    def set_desired_state(self, desired_state: List[float]) -> None:
+        """
+        :param desired_state: The desired sphere state [x, y, z, x_dot, y_dot, z_dot].
+        """
+        self._desired_state = desired_state
+
+    def set_desired_position(self, desired_position: List[float]) -> None:
+        """
+        NOTE: Desired velocities will be set to zero.
+
+        :param desired position: The desired sphere position [x, y, z].
+        """
+        self._desired_state = [*desired_position, 0.0, 0.0, 0.0]

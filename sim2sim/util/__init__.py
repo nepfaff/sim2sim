@@ -17,7 +17,7 @@ from .iiwa import (
     prune_infeasible_eef_poses,
     IIWAControlModeSource,
 )
-from .systems import ExternalForceSystem
+from .systems import ExternalForceSystem, SphereStateSource
 from .metrics import (
     average_displacement_error,
     average_displacement_error_translation_only,
