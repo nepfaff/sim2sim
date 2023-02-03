@@ -17,6 +17,10 @@ script:
     save_raw_mesh: false
     hydroelastic_manipuland: false
     sphere_starting_position: [0.3, 0.0, 0.1]
+    sphere_pid_gains:
+      kp: 100.0
+      ki: 1.0
+      kd: 20.0
 
 # Component specifications
 # 'args' are constructor arguments that are not part of the base class constructors

@@ -1,6 +1,6 @@
 import os
 import pathlib
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 from pydrake.all import (
     LoadModelDirectives,
@@ -105,6 +105,7 @@ def create_env(
     manipuland_base_link_name: str,
     manipuland_pose: RigidTransform,
     sphere_starting_position: List[float],
+    sphere_pid_gains: Dict[str, float],
     directive_files: List[str] = [],
     directive_strs: List[str] = [],
 ) -> Tuple[DiagramBuilder, SceneGraph, MultibodyPlant]:
@@ -139,9 +140,9 @@ def create_env(
     sphere_inverse_dynamics_controller = builder.AddSystem(
         InverseDynamicsController(
             sphere_controller_plant,
-            kp=[100.0] * 3,
-            ki=[1.0] * 3,
-            kd=[20.0] * 3,
+            kp=[sphere_pid_gains["kp"]] * 3,
+            ki=[sphere_pid_gains["ki"]] * 3,
+            kd=[sphere_pid_gains["kd"]] * 3,
             has_reference_acceleration=False,
         )
     )
@@ -178,6 +179,7 @@ def run_sphere_pushing(
     save_raw_mesh: bool,
     hydroelastic_manipuland: bool,
     sphere_starting_position: List[float],
+    sphere_pid_gains: Dict[str, float],
 ):
     """
     Experiment entrypoint for the sphere pushing scene.
@@ -194,6 +196,7 @@ def run_sphere_pushing(
     :param save_raw_mesh: Whether to save the raw mesh from inverse graphics.
     :param hydroelastic_manipuland: Whether to use hydroelastic or point contact for the inner manipuland.
     :param sphere_starting_position: The starting position [x, y, z] of the sphere.
+    :param sphere_pid_gains: The PID gains of the inverse dynamics controller. Must contain keys "kp", "ki", and "kd".
     """
     scene_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
     manipuland_directive_path = os.path.join(pathlib.Path(__file__).parent.resolve(), manipuland_directive)
@@ -215,6 +218,7 @@ def run_sphere_pushing(
         manipuland_base_link_name=manipuland_base_link_name,
         manipuland_pose=manipuland_default_pose_transform,
         sphere_starting_position=sphere_starting_position,
+        sphere_pid_gains=sphere_pid_gains,
         directive_files=[scene_directive, manipuland_directive_path],
     )
 
@@ -225,6 +229,7 @@ def run_sphere_pushing(
         manipuland_base_link_name=manipuland_base_link_name,
         manipuland_pose=manipuland_default_pose_transform,
         sphere_starting_position=sphere_starting_position,
+        sphere_pid_gains=sphere_pid_gains,
         directive_files=[scene_directive, manipuland_directive_path],
     )
     image_generator_class = IMAGE_GENERATORS[params["image_generator"]["class"]]
@@ -307,6 +312,7 @@ def run_sphere_pushing(
         env_params=params["env"],
         manipuland_base_link_name=manipuland_base_link_name,
         sphere_starting_position=sphere_starting_position,
+        sphere_pid_gains=sphere_pid_gains,
         directive_files=[scene_directive],
         directive_strs=[processed_mesh_directive],
         manipuland_pose=RigidTransform(RollPitchYaw(*raw_mesh_pose[:3]), raw_mesh_pose[3:]),
