@@ -54,4 +54,5 @@ simulator:
   args:
     settling_time: 0.2
     manipuland_name: ycb_tomato_soup_can
+    closed_loop_control: True
     controll_period: 0.01
