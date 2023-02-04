@@ -13,7 +13,6 @@ from pydrake.all import (
     MeshcatVisualizerParams,
     Role,
     MeshcatVisualizer,
-    ContactVisualizerParams,
     ContactVisualizer,
     MultibodyPlant,
     LogVectorOutput,
@@ -229,7 +228,7 @@ class DynamicLogger(DynamicLoggerBase):
         hydroelastic_contact_result_centroids = []
         hydroelastic_contact_result_forces = []
         for contact_result in contact_results:
-            point_contact_contact_result_contact_points = []
+            point_contact_contact_result_contact_point = []
             point_contact_contact_result_force = []
             for i in range(contact_result.num_point_pair_contacts()):
                 contact_info_i = contact_result.point_pair_contact_info(i)
@@ -240,12 +239,12 @@ class DynamicLogger(DynamicLoggerBase):
                     or body_of_interest == plant.get_body(body_ia_index).name()
                 ):
                     contact_point = contact_info_i.contact_point()
-                    point_contact_contact_result_contact_points.append(contact_point)
+                    point_contact_contact_result_contact_point.append(contact_point)
 
                     contact_force = contact_info_i.contact_force()
                     point_contact_contact_result_force.append(contact_force)
 
-            point_contact_contact_result_contact_points.append(point_contact_contact_result_contact_points)
+            point_contact_contact_result_contact_points.append(point_contact_contact_result_contact_point)
             point_contact_contact_result_forces.append(point_contact_contact_result_force)
 
             hydroelastic_contact_result_centroid = []
