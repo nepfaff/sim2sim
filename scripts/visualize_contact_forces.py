@@ -265,6 +265,7 @@ def main():
     _ = MeshcatVisualizer.AddToBuilder(builder, scene_graph.get_query_output_port(), meshcat, meshcat_params)
 
     if args.hydroelastic:
+        # TODO: Also visualize contact torques (see C++ visualizer)
         for i, (force, centroid) in enumerate(zip(outer_hydroelastic_contact_force, outer_hydroelastic_centroid)):
             if np.linalg.norm(force) > 0.0:
                 add_hydroelastic_arrow(
