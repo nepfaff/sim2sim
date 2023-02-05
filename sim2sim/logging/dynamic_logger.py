@@ -132,12 +132,12 @@ class DynamicLogger(DynamicLoggerBase):
         self._outer_manipuland_pose_logger = LogVectorOutput(
             self._outer_plant.get_state_output_port(self._outer_plant.GetModelInstanceByName(self._manipuland_name)),
             outer_builder,
-            1 / self._logging_frequency_hz,
+            1.0 / self._logging_frequency_hz,
         )
         self._inner_manipuland_pose_logger = LogVectorOutput(
             self._inner_plant.get_state_output_port(self._inner_plant.GetModelInstanceByName(self._manipuland_name)),
             inner_builder,
-            1 / self._logging_frequency_hz,
+            1.0 / self._logging_frequency_hz,
         )
 
     def add_contact_result_logging(self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder) -> None:

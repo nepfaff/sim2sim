@@ -12,7 +12,7 @@ class AbstractValueLogger(LeafSystem):
         """
         super().__init__()
 
-        self.DeclarePeriodicPublishEvent(period_sec=1 / logging_frequency_hz, offset_sec=0.0, publish=self.DoPublish)
+        self.DeclarePeriodicPublishEvent(period_sec=1.0 / logging_frequency_hz, offset_sec=0.0, publish=self.DoPublish)
 
         self.contact_results_input_port = self.DeclareAbstractInputPort("value", AbstractValue.Make(model_value))
 

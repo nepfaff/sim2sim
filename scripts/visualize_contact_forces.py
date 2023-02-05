@@ -308,10 +308,12 @@ def main():
     meshcat = StartMeshcat()
     meshcat_params = MeshcatVisualizerParams()
     meshcat_params.role = Role.kProximity
-    visualizer = MeshcatVisualizer.AddToBuilder(builder, scene_graph.get_query_output_port(), meshcat, meshcat_params)
+    _ = MeshcatVisualizer.AddToBuilder(builder, scene_graph.get_query_output_port(), meshcat, meshcat_params)
 
     if args.hydroelastic:
-        # TODO: Also visualize contact torques (see C++ visualizer)
+        # NOTE: The hydroelastic forces seem very different to the ones in the recorded HTMLs of the simulation.
+        # Further investigation is needed to determine why this is the case. For now, it is better to use this visualizer
+        # for point contact visualizations.
         for i, (force, torque, centroid) in enumerate(
             zip(outer_hydroelastic_contact_force, outer_hydroelastic_contact_torque, outer_hydroelastic_centroid)
         ):
@@ -372,18 +374,12 @@ def main():
     plant.Finalize()
     diagram = builder.Build()
 
-    # if args.save_html:
-    # visualizer.StartRecording()
-
     # Need to simulate for visualization to work
     simulator = Simulator(diagram)
     simulator.AdvanceTo(0.0)
     print("Finished loading visualization")
 
     if args.save_html:
-        # visualizer.StopRecording()
-        # visualizer.PublishRecording()
-
         html = meshcat.StaticHtml()
         html_path = os.path.join(args.data, "contact_force_visualizer.html")
         with open(html_path, "w") as f:
