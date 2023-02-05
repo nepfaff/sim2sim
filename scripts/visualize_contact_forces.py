@@ -135,6 +135,7 @@ def add_hydroelastic_arrow(
     torque: np.ndarray,
     centroid: np.ndarray,
     newtons_per_meter: float,
+    newton_meters_per_meter: float,
     radius: float = 0.001,
     force_rgba=Rgba(1.0, 0.0, 0.0, 1.0),
     torque_rgba=Rgba(0.0, 0.0, 1.0, 1.0),
@@ -142,11 +143,11 @@ def add_hydroelastic_arrow(
     """A hydroelastic arrow represents a single force from the centroid (not equal and opposite)."""
 
     # Create force arrow
-    height = np.linalg.norm(force) / newtons_per_meter
-    cylinder = Cylinder(radius, height)
+    force_height = np.linalg.norm(force) / newtons_per_meter
+    force_cylinder = Cylinder(radius, force_height)
     meshcat.SetObject(
         path=path + "/force/cylinder",
-        shape=cylinder,
+        shape=force_cylinder,
         rgba=force_rgba,
     )
     arrowhead_height = arrowhead_width = radius * 2.0
@@ -158,9 +159,11 @@ def add_hydroelastic_arrow(
     )
 
     # Create torque arrow
+    torque_height = np.linalg.norm(torque) / newton_meters_per_meter
+    torque_cylinder = Cylinder(radius, torque_height)
     meshcat.SetObject(
         path=path + "/torque/cylinder",
-        shape=cylinder,
+        shape=torque_cylinder,
         rgba=torque_rgba,
     )
     meshcat.SetObject(
@@ -174,10 +177,11 @@ def add_hydroelastic_arrow(
         path + "/force", RigidTransform(RotationMatrix.MakeFromOneVector(force, 2), centroid)
     )  # Arrow starts along z-axis (axis 2)
     meshcat.SetTransform(
-        path + "/force/cylinder", RigidTransform([0.0, 0.0, height / 2.0])
+        path + "/force/cylinder", RigidTransform([0.0, 0.0, force_height / 2.0])
     )  # Arrow starts at centroid and goes into single direction
     meshcat.SetTransform(
-        path + "/force/head", RigidTransform(RotationMatrix.MakeXRotation(np.pi), [0.0, 0.0, height + arrowhead_height])
+        path + "/force/head",
+        RigidTransform(RotationMatrix.MakeXRotation(np.pi), [0.0, 0.0, force_height + arrowhead_height]),
     )
 
     # Transform torque arrow
@@ -185,11 +189,11 @@ def add_hydroelastic_arrow(
         path + "/torque", RigidTransform(RotationMatrix.MakeFromOneVector(torque, 2), centroid)
     )  # Arrow starts along z-axis (axis 2)
     meshcat.SetTransform(
-        path + "/torque/cylinder", RigidTransform([0.0, 0.0, height / 2.0])
+        path + "/torque/cylinder", RigidTransform([0.0, 0.0, torque_height / 2.0])
     )  # Arrow starts at centroid and goes into single direction
     meshcat.SetTransform(
         path + "/torque/head",
-        RigidTransform(RotationMatrix.MakeXRotation(np.pi), [0.0, 0.0, height + arrowhead_height]),
+        RigidTransform(RotationMatrix.MakeXRotation(np.pi), [0.0, 0.0, torque_height + arrowhead_height]),
     )
 
 
@@ -220,10 +224,16 @@ def main():
         "--newtons_per_meter",
         default=1e2,
         type=float,
-        help="How many meters the force arrows should be long for each Newton of force.",
+        help="HSets the length scale of the force vectors.",
     )
+    arg_parser.add_argument(
+        "--newton_meters_per_meter",
+        default=1.0,
+        type=float,
+        help="Sets the length scale of the torque/ moment vectors.",
+    )
+    arg_parser.add_argument("--save_html", action="store_true", help="Whether to save the meshcat HTML.")
     args = arg_parser.parse_args()
-    # TODO: Optionally saving html
 
     assert args.manipuland in ["outer", "inner", "both", "none"]
 
@@ -298,7 +308,7 @@ def main():
     meshcat = StartMeshcat()
     meshcat_params = MeshcatVisualizerParams()
     meshcat_params.role = Role.kProximity
-    _ = MeshcatVisualizer.AddToBuilder(builder, scene_graph.get_query_output_port(), meshcat, meshcat_params)
+    visualizer = MeshcatVisualizer.AddToBuilder(builder, scene_graph.get_query_output_port(), meshcat, meshcat_params)
 
     if args.hydroelastic:
         # TODO: Also visualize contact torques (see C++ visualizer)
@@ -313,6 +323,7 @@ def main():
                     torque=torque,
                     centroid=centroid,
                     newtons_per_meter=args.newtons_per_meter,
+                    newton_meters_per_meter=args.newton_meters_per_meter,
                     force_rgba=Rgba(0.0, 1.0, 0.0, 1.0),
                     torque_rgba=Rgba(0.0, 1.0, 1.0, 1.0),  # blue
                 )
@@ -328,6 +339,7 @@ def main():
                     torque=torque,
                     centroid=centroid,
                     newtons_per_meter=args.newtons_per_meter,
+                    newton_meters_per_meter=args.newton_meters_per_meter,
                     force_rgba=Rgba(1.0, 0.0, 0.0, 1.0),
                     torque_rgba=Rgba(1.0, 0.5, 0.0, 1.0),  # orange
                 )
@@ -360,10 +372,23 @@ def main():
     plant.Finalize()
     diagram = builder.Build()
 
+    # if args.save_html:
+    # visualizer.StartRecording()
+
     # Need to simulate for visualization to work
     simulator = Simulator(diagram)
     simulator.AdvanceTo(0.0)
     print("Finished loading visualization")
+
+    if args.save_html:
+        # visualizer.StopRecording()
+        # visualizer.PublishRecording()
+
+        html = meshcat.StaticHtml()
+        html_path = os.path.join(args.data, "contact_force_visualizer.html")
+        with open(html_path, "w") as f:
+            f.write(html)
+        print(f"Saved meshcat HTML to {html_path}")
 
     # Sleep to give user enough time to click on meshcat link
     time.sleep(5.0)
