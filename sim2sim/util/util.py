@@ -5,7 +5,7 @@ import open3d as o3d
 import trimesh
 import numpy as np
 from scipy.spatial.transform import Rotation as R
-from pydrake.all import MultibodyPlant, Parser, RigidTransform, ContactVisualizerParams
+from pydrake.all import MultibodyPlant, Parser, RigidTransform, ContactVisualizerParams, ProximityProperties
 from manipulation.scenarios import AddPackagePaths
 from manipulation.meshcat_utils import AddMeshcatTriad
 
@@ -392,3 +392,17 @@ def get_point_contact_contact_viz_params() -> ContactVisualizerParams:
     cparams.newton_meters_per_meter = 1.0
     cparams.radius = 0.002
     return cparams
+
+
+def copy_object_proximity_properties(
+    const_proximity_properties: ProximityProperties, new_proximity_properties: ProximityProperties
+) -> None:
+    """Copies properties from `const_proximity_properties` to `new_proximity_properties`."""
+    for group_name in const_proximity_properties.GetGroupNames():
+        properties = const_proximity_properties.GetPropertiesInGroup(group_name)
+        for name in properties:
+            if new_proximity_properties.HasProperty(group_name, name):
+                continue
+            new_proximity_properties.AddProperty(
+                group_name, name, const_proximity_properties.GetProperty(group_name, name)
+            )

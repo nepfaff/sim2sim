@@ -18,16 +18,20 @@ from pydrake.all import (
     UnitInertia,
     PrismaticJoint,
     InverseDynamicsController,
+    AddCompliantHydroelasticProperties,
+    ProximityProperties,
+    RoleAssign,
 )
 from manipulation.scenarios import AddShape
 
-from sim2sim.simulation import BasicSimulator, BasicInnerOnlySimulator, SpherePushingSimulator
+from sim2sim.simulation import BasicSimulator, SpherePushingSimulator
 from sim2sim.logging import DynamicLogger
 from sim2sim.util import (
     get_parser,
     create_processed_mesh_directive_str,
     create_processed_mesh_primitive_directive_str,
     SphereStateSource,
+    copy_object_proximity_properties,
 )
 from sim2sim.images import SphereImageGenerator, NoneImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
@@ -106,6 +110,7 @@ def create_env(
     manipuland_pose: RigidTransform,
     sphere_starting_position: List[float],
     sphere_pid_gains: Dict[str, float],
+    hydroelastic_manipuland: bool,
     directive_files: List[str] = [],
     directive_strs: List[str] = [],
 ) -> Tuple[DiagramBuilder, SceneGraph, MultibodyPlant]:
@@ -127,6 +132,20 @@ def create_env(
         ProcessModelDirectives(directive, parser)
 
     add_sphere(plant, position=sphere_starting_position)
+    # TODO: Figure out why this way of adding hydroelastic programatically is so slow and speed it up
+    if hydroelastic_manipuland:
+        # Make sphere complient hydroelastic
+        sphere = plant.GetBodyByName("sphere")
+        new_proximity_properties = ProximityProperties()
+        AddCompliantHydroelasticProperties(
+            resolution_hint=0.001, hydroelastic_modulus=1e8, properties=new_proximity_properties
+        )
+        geometry_ids = plant.GetCollisionGeometriesForBody(sphere)
+        for geometry_id in geometry_ids:
+            inspector = scene_graph.model_inspector()
+            const_proximity_properties = inspector.GetProximityProperties(geometry_id)
+            copy_object_proximity_properties(const_proximity_properties, new_proximity_properties)
+            scene_graph.AssignRole(plant.get_source_id(), geometry_id, new_proximity_properties, RoleAssign.kReplace)
 
     # Sphere state source
     sphere_state_source = builder.AddSystem(SphereStateSource(sphere_starting_position))
@@ -219,6 +238,7 @@ def run_sphere_pushing(
         manipuland_pose=manipuland_default_pose_transform,
         sphere_starting_position=sphere_starting_position,
         sphere_pid_gains=sphere_pid_gains,
+        hydroelastic_manipuland=hydroelastic_manipuland,
         directive_files=[scene_directive, manipuland_directive_path],
     )
 
@@ -230,6 +250,7 @@ def run_sphere_pushing(
         manipuland_pose=manipuland_default_pose_transform,
         sphere_starting_position=sphere_starting_position,
         sphere_pid_gains=sphere_pid_gains,
+        hydroelastic_manipuland=hydroelastic_manipuland,
         directive_files=[scene_directive, manipuland_directive_path],
     )
     image_generator_class = IMAGE_GENERATORS[params["image_generator"]["class"]]
@@ -313,6 +334,7 @@ def run_sphere_pushing(
         manipuland_base_link_name=manipuland_base_link_name,
         sphere_starting_position=sphere_starting_position,
         sphere_pid_gains=sphere_pid_gains,
+        hydroelastic_manipuland=hydroelastic_manipuland,
         directive_files=[scene_directive],
         directive_strs=[processed_mesh_directive],
         manipuland_pose=RigidTransform(RollPitchYaw(*raw_mesh_pose[:3]), raw_mesh_pose[3:]),
