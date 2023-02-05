@@ -132,13 +132,13 @@ def create_env(
         ProcessModelDirectives(directive, parser)
 
     add_sphere(plant, position=sphere_starting_position)
-    # TODO: Figure out why this way of adding hydroelastic programatically is so slow and speed it up
     if hydroelastic_manipuland:
         # Make sphere complient hydroelastic
         sphere = plant.GetBodyByName("sphere")
         new_proximity_properties = ProximityProperties()
+        # NOTE: Setting hydroelastic properties becomes slow as the resolution hint decreases
         AddCompliantHydroelasticProperties(
-            resolution_hint=0.001, hydroelastic_modulus=1e8, properties=new_proximity_properties
+            resolution_hint=0.01, hydroelastic_modulus=1e8, properties=new_proximity_properties
         )
         geometry_ids = plant.GetCollisionGeometriesForBody(sphere)
         for geometry_id in geometry_ids:
