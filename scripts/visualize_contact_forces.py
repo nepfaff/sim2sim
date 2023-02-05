@@ -22,6 +22,7 @@ from pydrake.all import (
     MeshcatCone,
     RigidTransform,
     RotationMatrix,
+    Quaternion,
 )
 
 from sim2sim.util import get_parser
@@ -67,7 +68,7 @@ def loda_data(log_dir: str, outer: bool):
     point_contact_forces = process_array(point_contact_result_forces_raw)
 
     # Manipuland poses
-    manipuland_poses = np.loadtxt(os.path.join(log_dir, f"{prefix}_manipuland_poses.txt"))[:, 7]
+    manipuland_poses = np.loadtxt(os.path.join(log_dir, f"{prefix}_manipuland_poses.txt"))[:, :7]
 
     return (
         hydroelastic_centroids,
@@ -166,9 +167,6 @@ def main():
         inner_manipuland_poses,
     ) = loda_data(log_dir, outer=False)
 
-    # TODO: Visualize both outer and inner forces on object in one simulation (argument to choose which object to visualize)
-    # TODO: Different colors for outer and inner forces
-
     time_idx = np.abs(times - args.time).argmin()
     time_diff = abs(times[time_idx] - args.time)
     if time_diff > 0.01:
@@ -176,15 +174,11 @@ def main():
 
     outer_hydroelastic_centroid = outer_hydroelastic_centroids[time_idx]
     outer_hydroelastic_contact_force = outer_hydroelastic_contact_forces[time_idx]
-    print(f"outer_point_contact_point:\n{outer_point_contact_points[time_idx]}")
-    print(f"outer_point_contact_force:\n{outer_point_contact_forces[time_idx]}")
     outer_point_contact_point = outer_point_contact_points[time_idx]
     outer_point_contact_force = outer_point_contact_forces[time_idx]
     outer_manipuland_pose = outer_manipuland_poses[time_idx]
     inner_hydroelastic_centroid = inner_hydroelastic_centroids[time_idx]
     inner_hydroelastic_contact_force = inner_hydroelastic_contact_forces[time_idx]
-    print(f"inner_point_contact_point:\n{inner_point_contact_points[time_idx]}")
-    print(f"inner_point_contact_force:\n{inner_point_contact_forces[time_idx]}")
     inner_point_contact_point = inner_point_contact_points[time_idx]
     inner_point_contact_force = inner_point_contact_forces[time_idx]
     inner_manipuland_pose = inner_manipuland_poses[time_idx]
@@ -193,20 +187,32 @@ def main():
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1e-3)
     parser = get_parser(plant)
 
-    # TODO: transform manipulands to pose (easier to transform with meshcat or
-    # plant.SetDefaultFreeBodyPose(plant.GetBodyByName(manipuland_base_link_name), manipuland_pose)?)
+    # Visualize manipulands
+    experiment_description_path = os.path.join(args.data, "experiment_description.yaml")
+    experiment_description = yaml.safe_load(open(experiment_description_path, "r"))
+    manipuland_base_link_name = experiment_description["script"]["args"]["manipuland_base_link_name"]
     if args.manipuland in ["outer", "both"]:
-        experiment_description_path = os.path.join(args.data, "experiment_description.yaml")
-        experiment_description = yaml.safe_load(open(experiment_description_path, "r"))
         outer_manipuland_directive_path = os.path.join(
             args.data, experiment_description["script"]["args"]["manipuland_directive"]
         )
         outer_manipuland_directive = LoadModelDirectives(outer_manipuland_directive_path)
         ProcessModelDirectives(outer_manipuland_directive, parser)
+        quat = outer_manipuland_pose[:4]
+        quat_normalized = quat / np.linalg.norm(quat)
+        plant.SetDefaultFreeBodyPose(
+            plant.GetBodyByName(manipuland_base_link_name),
+            RigidTransform(Quaternion(quat_normalized), outer_manipuland_pose[4:]),
+        )
 
     if args.manipuland in ["inner", "both"]:
         inner_manipuland_sdf_path = os.path.join(args.data, "meshes", "processed_mesh.sdf")
-        parser.AddModelFromFile(inner_manipuland_sdf_path, "inner_manipuland")
+        inner_manipuland = parser.AddModelFromFile(inner_manipuland_sdf_path, "inner_manipuland")
+        quat = outer_manipuland_pose[:4]
+        quat_normalized = quat / np.linalg.norm(quat)
+        plant.SetDefaultFreeBodyPose(
+            plant.GetBodyByName(manipuland_base_link_name, inner_manipuland),
+            RigidTransform(Quaternion(quat_normalized), inner_manipuland_pose[4:]),
+        )
 
     meshcat = StartMeshcat()
     meshcat_params = MeshcatVisualizerParams()
