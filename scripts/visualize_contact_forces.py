@@ -56,6 +56,11 @@ def load_data(log_dir: str, outer: bool):
         allow_pickle=True,
     )
     hydroelastic_contact_forces = process_array(contact_result_forces_raw)
+    contact_result_torques_raw = np.load(
+        os.path.join(log_dir, f"{prefix}_hydroelastic_contact_result_torques.npy"),
+        allow_pickle=True,
+    )
+    hydroelastic_contact_torques = process_array(contact_result_torques_raw)
 
     # Point contact
     point_contact_result_contact_points_raw = np.load(
@@ -73,6 +78,7 @@ def load_data(log_dir: str, outer: bool):
     return (
         hydroelastic_centroids,
         hydroelastic_contact_forces,
+        hydroelastic_contact_torques,
         point_contact_points,
         point_contact_forces,
         manipuland_poses,
@@ -126,38 +132,64 @@ def add_hydroelastic_arrow(
     meshcat: Meshcat,
     path: str,
     force: np.ndarray,
+    torque: np.ndarray,
     centroid: np.ndarray,
     newtons_per_meter: float,
     radius: float = 0.001,
-    rgba=Rgba(1.0, 0.0, 0.0, 1.0),
+    force_rgba=Rgba(1.0, 0.0, 0.0, 1.0),
+    torque_rgba=Rgba(0.0, 0.0, 1.0, 1.0),
 ) -> None:
     """A hydroelastic arrow represents a single force from the centroid (not equal and opposite)."""
 
-    # Create arrow
+    # Create force arrow
     height = np.linalg.norm(force) / newtons_per_meter
     cylinder = Cylinder(radius, height)
     meshcat.SetObject(
-        path=path + "/cylinder",
+        path=path + "/force/cylinder",
         shape=cylinder,
-        rgba=rgba,
+        rgba=force_rgba,
     )
     arrowhead_height = arrowhead_width = radius * 2.0
     arrowhead = MeshcatCone(arrowhead_height, arrowhead_width, arrowhead_width)
     meshcat.SetObject(
-        path=path + "/head",
+        path=path + "/force/head",
         shape=arrowhead,
-        rgba=rgba,
+        rgba=force_rgba,
     )
 
-    # Transform arrow
+    # Create torque arrow
+    meshcat.SetObject(
+        path=path + "/torque/cylinder",
+        shape=cylinder,
+        rgba=torque_rgba,
+    )
+    meshcat.SetObject(
+        path=path + "/torque/head",
+        shape=arrowhead,
+        rgba=torque_rgba,
+    )
+
+    # Transform force arrow
     meshcat.SetTransform(
-        path, RigidTransform(RotationMatrix.MakeFromOneVector(force, 2), centroid)
+        path + "/force", RigidTransform(RotationMatrix.MakeFromOneVector(force, 2), centroid)
     )  # Arrow starts along z-axis (axis 2)
     meshcat.SetTransform(
-        path + "/cylinder", RigidTransform([0.0, 0.0, height / 2.0])
+        path + "/force/cylinder", RigidTransform([0.0, 0.0, height / 2.0])
     )  # Arrow starts at centroid and goes into single direction
     meshcat.SetTransform(
-        path + "/head", RigidTransform(RotationMatrix.MakeXRotation(np.pi), [0.0, 0.0, height + arrowhead_height])
+        path + "/force/head", RigidTransform(RotationMatrix.MakeXRotation(np.pi), [0.0, 0.0, height + arrowhead_height])
+    )
+
+    # Transform torque arrow
+    meshcat.SetTransform(
+        path + "/torque", RigidTransform(RotationMatrix.MakeFromOneVector(torque, 2), centroid)
+    )  # Arrow starts along z-axis (axis 2)
+    meshcat.SetTransform(
+        path + "/torque/cylinder", RigidTransform([0.0, 0.0, height / 2.0])
+    )  # Arrow starts at centroid and goes into single direction
+    meshcat.SetTransform(
+        path + "/torque/head",
+        RigidTransform(RotationMatrix.MakeXRotation(np.pi), [0.0, 0.0, height + arrowhead_height]),
     )
 
 
@@ -200,6 +232,7 @@ def main():
     (
         outer_hydroelastic_centroids,
         outer_hydroelastic_contact_forces,
+        outer_hydroelastic_contact_torques,
         outer_point_contact_points,
         outer_point_contact_forces,
         outer_manipuland_poses,
@@ -207,6 +240,7 @@ def main():
     (
         inner_hydroelastic_centroids,
         inner_hydroelastic_contact_forces,
+        inner_hydroelastic_contact_torques,
         inner_point_contact_points,
         inner_point_contact_forces,
         inner_manipuland_poses,
@@ -219,11 +253,13 @@ def main():
 
     outer_hydroelastic_centroid = outer_hydroelastic_centroids[time_idx]
     outer_hydroelastic_contact_force = outer_hydroelastic_contact_forces[time_idx]
+    outer_hydroelastic_contact_torque = outer_hydroelastic_contact_torques[time_idx]
     outer_point_contact_point = outer_point_contact_points[time_idx]
     outer_point_contact_force = outer_point_contact_forces[time_idx]
     outer_manipuland_pose = outer_manipuland_poses[time_idx]
     inner_hydroelastic_centroid = inner_hydroelastic_centroids[time_idx]
     inner_hydroelastic_contact_force = inner_hydroelastic_contact_forces[time_idx]
+    inner_hydroelastic_contact_torque = inner_hydroelastic_contact_torques[time_idx]
     inner_point_contact_point = inner_point_contact_points[time_idx]
     inner_point_contact_force = inner_point_contact_forces[time_idx]
     inner_manipuland_pose = inner_manipuland_poses[time_idx]
@@ -266,26 +302,34 @@ def main():
 
     if args.hydroelastic:
         # TODO: Also visualize contact torques (see C++ visualizer)
-        for i, (force, centroid) in enumerate(zip(outer_hydroelastic_contact_force, outer_hydroelastic_centroid)):
+        for i, (force, torque, centroid) in enumerate(
+            zip(outer_hydroelastic_contact_force, outer_hydroelastic_contact_torque, outer_hydroelastic_centroid)
+        ):
             if np.linalg.norm(force) > 0.0:
                 add_hydroelastic_arrow(
                     meshcat,
                     path=f"contact_forces/outer_sim/force_{i}",
                     force=force,
+                    torque=torque,
                     centroid=centroid,
                     newtons_per_meter=args.newtons_per_meter,
-                    rgba=Rgba(0.0, 1.0, 0.0, 1.0),
+                    force_rgba=Rgba(0.0, 1.0, 0.0, 1.0),
+                    torque_rgba=Rgba(0.0, 1.0, 1.0, 1.0),  # blue
                 )
 
-        for i, (force, centroid) in enumerate(zip(inner_hydroelastic_contact_force, inner_hydroelastic_centroid)):
+        for i, (force, torque, centroid) in enumerate(
+            zip(inner_hydroelastic_contact_force, inner_hydroelastic_contact_torque, inner_hydroelastic_centroid)
+        ):
             if np.linalg.norm(force) > 0.0:
                 add_hydroelastic_arrow(
                     meshcat,
                     path=f"contact_forces/inner_sim/force_{i}",
                     force=force,
+                    torque=torque,
                     centroid=centroid,
                     newtons_per_meter=args.newtons_per_meter,
-                    rgba=Rgba(1.0, 0.0, 0.0, 1.0),
+                    force_rgba=Rgba(1.0, 0.0, 0.0, 1.0),
+                    torque_rgba=Rgba(1.0, 0.5, 0.0, 1.0),  # orange
                 )
 
     else:
