@@ -27,7 +27,7 @@ pre-commit install
 ```
 
 Install the [learning_real2sim](https://github.com/liruiw/learning_real2sim) repo in development mode based on the
-instructions in its `README`.
+instructions in its `README`. Note that this repo is only needed for a small subset of experiments.
 
 ## Running an experiment
 
@@ -37,6 +37,18 @@ The experiment description file deterministically specifies an experiment.
 ```bash
 python scripts/run_experiment.py --experiment_description experiments/table_pid/table_pid_simple.yaml
 ```
+
+## Contact Force Visualizer
+
+The visualizer can be used to visualize both `outer` and `inner` manipulands and their contact forces over time.
+
+Example usage:
+```bash
+python3 scripts/visualize_contact_forces.py --data logs/sphere_pushing_quadric_decimation/
+```
+
+It is possible to step through time using the left and right arrow keys.
+See `scripts/visualize_contact_forces.py` for all available arguments.
 
 ## Generating a mesh dynamic distance dataset
 
