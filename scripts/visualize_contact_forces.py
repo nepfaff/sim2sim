@@ -27,6 +27,13 @@ from pydrake.all import (
 
 from sim2sim.util import get_parser
 
+# Meshcat item names
+TIME_SLIDER_NAME = "time"
+TOGGLE_INNER_FORCES_BUTTON_NAME = "Toggle inner forces default visibility"
+TOGGLE_OUTER_FORCES_BUTTON_NAME = "Toggle outer forces default visibility"
+TOGGLE_INNER_MANIPULAND_BUTTON_NAME = "Toggle inner manipuland default visibility"
+TOGGLE_OUTER_MANIPULAND_BUTTON_NAME = "Toggle outer manipuland default visibility"
+
 
 def load_data(log_dir: str, outer: bool):
     prefix = "outer" if outer else "inner"
@@ -92,7 +99,7 @@ def add_point_contact_arrow(
     contact_point: np.ndarray,
     newtons_per_meter: float,
     radius: float = 0.001,
-    rgba=Rgba(1.0, 0.0, 0.0, 1.0),
+    rgba: Rgba = Rgba(1.0, 0.0, 0.0, 1.0),
 ) -> None:
     """A point contact arrow represents equal and opposite forces from the contact point."""
 
@@ -137,8 +144,8 @@ def add_hydroelastic_arrow(
     newtons_per_meter: float,
     newton_meters_per_meter: float,
     radius: float = 0.001,
-    force_rgba=Rgba(1.0, 0.0, 0.0, 1.0),
-    torque_rgba=Rgba(0.0, 0.0, 1.0, 1.0),
+    force_rgba: Rgba = Rgba(1.0, 0.0, 0.0, 1.0),
+    torque_rgba: Rgba = Rgba(0.0, 0.0, 1.0, 1.0),
 ) -> None:
     """A hydroelastic arrow represents a single force from the centroid (not equal and opposite)."""
 
@@ -286,7 +293,7 @@ def main():
 
     # Add slider for stepping through time
     meshcat.AddSlider(
-        name="time",
+        name=TIME_SLIDER_NAME,
         min=0.0,
         max=times[-1],
         step=times[1] - times[0],
@@ -295,10 +302,24 @@ def main():
         increment_keycode="ArrowRight",
     )
 
+    # Add buttons for setting item visibility
+    toggle_inner_forces_button_clicks = 0
+    inner_forces_visible = True
+    meshcat.AddButton(name=TOGGLE_INNER_FORCES_BUTTON_NAME)
+    toggle_outer_forces_button_clicks = 0
+    outer_forces_visible = True
+    meshcat.AddButton(name=TOGGLE_OUTER_FORCES_BUTTON_NAME)
+    toggle_inner_manipuland_button_clicks = 0
+    inner_manipuland_visible = True
+    meshcat.AddButton(name=TOGGLE_INNER_MANIPULAND_BUTTON_NAME)
+    toggle_outer_manipuland_button_clicks = 0
+    outer_manipuland_visible = True
+    meshcat.AddButton(name=TOGGLE_OUTER_MANIPULAND_BUTTON_NAME)
+
     print("Entering infinite loop. Force quit to exit.")  # TODO: Check for user input in non-blocking way
     current_time = -1.0  # Force meshcat update
     while True:
-        new_demanded_time = meshcat.GetSliderValue("time")
+        new_demanded_time = meshcat.GetSliderValue(TIME_SLIDER_NAME)
         time_idx = np.abs(times - new_demanded_time).argmin()
         new_time = times[time_idx]
 
@@ -311,6 +332,24 @@ def main():
 
         # Delete all force arrows before adding the new ones
         meshcat.Delete("contact_forces")
+
+        # Update item visibility
+        if meshcat.GetButtonClicks(TOGGLE_INNER_FORCES_BUTTON_NAME) > toggle_inner_forces_button_clicks:
+            toggle_inner_forces_button_clicks += 1
+            inner_forces_visible = not inner_forces_visible
+        meshcat.SetProperty("contact_forces/inner_sim", "visible", inner_forces_visible)
+        if meshcat.GetButtonClicks(TOGGLE_OUTER_FORCES_BUTTON_NAME) > toggle_outer_forces_button_clicks:
+            toggle_outer_forces_button_clicks += 1
+            outer_forces_visible = not outer_forces_visible
+        meshcat.SetProperty("contact_forces/outer_sim", "visible", outer_forces_visible)
+        if meshcat.GetButtonClicks(TOGGLE_INNER_MANIPULAND_BUTTON_NAME) > toggle_inner_manipuland_button_clicks:
+            toggle_inner_manipuland_button_clicks += 1
+            inner_manipuland_visible = not inner_manipuland_visible
+        meshcat.SetProperty(f"visualizer/inner_manipuland", "visible", inner_manipuland_visible)
+        if meshcat.GetButtonClicks(TOGGLE_OUTER_MANIPULAND_BUTTON_NAME) > toggle_outer_manipuland_button_clicks:
+            toggle_outer_manipuland_button_clicks += 1
+            outer_manipuland_visible = not outer_manipuland_visible
+        meshcat.SetProperty(f"visualizer/{manipuland_name}", "visible", outer_manipuland_visible)
 
         # Visualize new contact forces
         if args.hydroelastic:
