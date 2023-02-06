@@ -206,12 +206,6 @@ def main():
         help="Path to the experiment data folder.",
     )
     arg_parser.add_argument(
-        "--time",  # TODO: Allow stepping through time with meshcat slider
-        required=True,
-        type=float,
-        help="The simulation time to visualize the contact forces for.",
-    )
-    arg_parser.add_argument(
         "--hydroelastic", action="store_true", help="Whether to plot hydroelastic or point contact forces."
     )
     arg_parser.add_argument(
@@ -256,24 +250,6 @@ def main():
         inner_manipuland_poses,
     ) = load_data(log_dir, outer=False)
 
-    time_idx = np.abs(times - args.time).argmin()
-    time_diff = abs(times[time_idx] - args.time)
-    if time_diff > 0.01:
-        print(f"Demanded and available time differ by {time_diff}s. Showing forces for time {times[time_idx]}s.")
-
-    outer_hydroelastic_centroid = outer_hydroelastic_centroids[time_idx]
-    outer_hydroelastic_contact_force = outer_hydroelastic_contact_forces[time_idx]
-    outer_hydroelastic_contact_torque = outer_hydroelastic_contact_torques[time_idx]
-    outer_point_contact_point = outer_point_contact_points[time_idx]
-    outer_point_contact_force = outer_point_contact_forces[time_idx]
-    outer_manipuland_pose = outer_manipuland_poses[time_idx]
-    inner_hydroelastic_centroid = inner_hydroelastic_centroids[time_idx]
-    inner_hydroelastic_contact_force = inner_hydroelastic_contact_forces[time_idx]
-    inner_hydroelastic_contact_torque = inner_hydroelastic_contact_torques[time_idx]
-    inner_point_contact_point = inner_point_contact_points[time_idx]
-    inner_point_contact_force = inner_point_contact_forces[time_idx]
-    inner_manipuland_pose = inner_manipuland_poses[time_idx]
-
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1e-3)
     parser = get_parser(plant)
@@ -281,95 +257,24 @@ def main():
     # Visualize manipulands
     experiment_description_path = os.path.join(args.data, "experiment_description.yaml")
     experiment_description = yaml.safe_load(open(experiment_description_path, "r"))
-    manipuland_base_link_name = experiment_description["script"]["args"]["manipuland_base_link_name"]
+    manipuland_name = experiment_description["logger"]["args"]["manipuland_name"]
+    manipuland_base_link_name = experiment_description["logger"]["args"]["manipuland_base_link_name"]
+
     if args.manipuland in ["outer", "both"]:
         outer_manipuland_directive_path = os.path.join(
             args.data, experiment_description["script"]["args"]["manipuland_directive"]
         )
         outer_manipuland_directive = LoadModelDirectives(outer_manipuland_directive_path)
         ProcessModelDirectives(outer_manipuland_directive, parser)
-        quat = outer_manipuland_pose[:4]
-        quat_normalized = quat / np.linalg.norm(quat)
-        plant.SetDefaultFreeBodyPose(
-            plant.GetBodyByName(manipuland_base_link_name),
-            RigidTransform(Quaternion(quat_normalized), outer_manipuland_pose[4:]),
-        )
 
     if args.manipuland in ["inner", "both"]:
         inner_manipuland_sdf_path = os.path.join(args.data, "meshes", "processed_mesh.sdf")
-        inner_manipuland = parser.AddModelFromFile(inner_manipuland_sdf_path, "inner_manipuland")
-        quat = outer_manipuland_pose[:4]
-        quat_normalized = quat / np.linalg.norm(quat)
-        plant.SetDefaultFreeBodyPose(
-            plant.GetBodyByName(manipuland_base_link_name, inner_manipuland),
-            RigidTransform(Quaternion(quat_normalized), inner_manipuland_pose[4:]),
-        )
+        parser.AddModelFromFile(inner_manipuland_sdf_path, "inner_manipuland")
 
     meshcat = StartMeshcat()
     meshcat_params = MeshcatVisualizerParams()
     meshcat_params.role = Role.kProximity
     _ = MeshcatVisualizer.AddToBuilder(builder, scene_graph.get_query_output_port(), meshcat, meshcat_params)
-
-    if args.hydroelastic:
-        # NOTE: The hydroelastic forces seem very different to the ones in the recorded HTMLs of the simulation.
-        # Further investigation is needed to determine why this is the case. For now, it is better to use this visualizer
-        # for point contact visualizations.
-        for i, (force, torque, centroid) in enumerate(
-            zip(outer_hydroelastic_contact_force, outer_hydroelastic_contact_torque, outer_hydroelastic_centroid)
-        ):
-            if np.linalg.norm(force) > 0.0:
-                add_hydroelastic_arrow(
-                    meshcat,
-                    path=f"contact_forces/outer_sim/force_{i}",
-                    force=force,
-                    torque=torque,
-                    centroid=centroid,
-                    newtons_per_meter=args.newtons_per_meter,
-                    newton_meters_per_meter=args.newton_meters_per_meter,
-                    force_rgba=Rgba(0.0, 1.0, 0.0, 1.0),
-                    torque_rgba=Rgba(0.0, 1.0, 1.0, 1.0),  # blue
-                )
-
-        for i, (force, torque, centroid) in enumerate(
-            zip(inner_hydroelastic_contact_force, inner_hydroelastic_contact_torque, inner_hydroelastic_centroid)
-        ):
-            if np.linalg.norm(force) > 0.0:
-                add_hydroelastic_arrow(
-                    meshcat,
-                    path=f"contact_forces/inner_sim/force_{i}",
-                    force=force,
-                    torque=torque,
-                    centroid=centroid,
-                    newtons_per_meter=args.newtons_per_meter,
-                    newton_meters_per_meter=args.newton_meters_per_meter,
-                    force_rgba=Rgba(1.0, 0.0, 0.0, 1.0),
-                    torque_rgba=Rgba(1.0, 0.5, 0.0, 1.0),  # orange
-                )
-
-    else:
-        for i, (force, point) in enumerate(zip(outer_point_contact_force, outer_point_contact_point)):
-            if np.linalg.norm(force) > 0.0:
-                add_point_contact_arrow(
-                    meshcat,
-                    path=f"contact_forces/outer_sim/force_{i}",
-                    force=force,
-                    contact_point=point,
-                    newtons_per_meter=args.newtons_per_meter,
-                    rgba=Rgba(0.0, 1.0, 0.0, 1.0),
-                )
-
-        for i, (force, point) in enumerate(zip(inner_point_contact_force, inner_point_contact_point)):
-            if np.linalg.norm(force) > 0.0:
-                add_point_contact_arrow(
-                    meshcat,
-                    path=f"contact_forces/inner_sim/force_{i}",
-                    force=force,
-                    contact_point=point,
-                    newtons_per_meter=args.newtons_per_meter,
-                    rgba=Rgba(1.0, 0.0, 0.0, 1.0),
-                )
-
-    # inner_meshcat.Delete("contacts")
 
     plant.Finalize()
     diagram = builder.Build()
@@ -379,15 +284,128 @@ def main():
     simulator.AdvanceTo(0.0)
     print("Finished loading visualization")
 
-    if args.save_html:
-        html = meshcat.StaticHtml()
-        html_path = os.path.join(args.data, "contact_force_visualizer.html")
-        with open(html_path, "w") as f:
-            f.write(html)
-        print(f"Saved meshcat HTML to {html_path}")
+    # Add slider for stepping through time
+    meshcat.AddSlider(
+        name="time",
+        min=0.0,
+        max=times[-1],
+        step=times[1] - times[0],
+        value=0.0,
+        decrement_keycode="ArrowLeft",
+        increment_keycode="ArrowRight",
+    )
 
-    # Sleep to give user enough time to click on meshcat link
-    time.sleep(5.0)
+    print("Entering infinite loop. Force quit to exit.")  # TODO: Check for user input in non-blocking way
+    current_time = -1.0  # Force meshcat update
+    while True:
+        new_demanded_time = meshcat.GetSliderValue("time")
+        time_idx = np.abs(times - new_demanded_time).argmin()
+        new_time = times[time_idx]
+
+        # Only update meshcat if the data changed
+        if new_time == current_time:
+            time.sleep(0.1)
+            continue
+        else:
+            current_time = new_time
+
+        # Delete all force arrows before adding the new ones
+        meshcat.Delete("contact_forces")
+
+        # Visualize new contact forces
+        if args.hydroelastic:
+            # NOTE: The hydroelastic forces seem very different to the ones in the recorded HTMLs of the simulation.
+            # Further investigation is needed to determine why this is the case. For now, it is better to use this visualizer
+            # for point contact visualizations.
+            for i, (force, torque, centroid) in enumerate(
+                zip(
+                    outer_hydroelastic_contact_forces[time_idx],
+                    outer_hydroelastic_contact_torques[time_idx],
+                    outer_hydroelastic_centroids[time_idx],
+                )
+            ):
+                if np.linalg.norm(force) > 0.0:
+                    add_hydroelastic_arrow(
+                        meshcat,
+                        path=f"contact_forces/outer_sim/force_{i}",
+                        force=force,
+                        torque=torque,
+                        centroid=centroid,
+                        newtons_per_meter=args.newtons_per_meter,
+                        newton_meters_per_meter=args.newton_meters_per_meter,
+                        force_rgba=Rgba(0.0, 1.0, 0.0, 1.0),
+                        torque_rgba=Rgba(0.0, 1.0, 1.0, 1.0),  # blue
+                    )
+
+            for i, (force, torque, centroid) in enumerate(
+                zip(
+                    inner_hydroelastic_contact_forces[time_idx],
+                    inner_hydroelastic_contact_torques[time_idx],
+                    inner_hydroelastic_centroids[time_idx],
+                )
+            ):
+                if np.linalg.norm(force) > 0.0:
+                    add_hydroelastic_arrow(
+                        meshcat,
+                        path=f"contact_forces/inner_sim/force_{i}",
+                        force=force,
+                        torque=torque,
+                        centroid=centroid,
+                        newtons_per_meter=args.newtons_per_meter,
+                        newton_meters_per_meter=args.newton_meters_per_meter,
+                        force_rgba=Rgba(1.0, 0.0, 0.0, 1.0),
+                        torque_rgba=Rgba(1.0, 0.5, 0.0, 1.0),  # orange
+                    )
+        else:
+            for i, (force, point) in enumerate(
+                zip(outer_point_contact_forces[time_idx], outer_point_contact_points[time_idx])
+            ):
+                if np.linalg.norm(force) > 0.0:
+                    add_point_contact_arrow(
+                        meshcat,
+                        path=f"contact_forces/outer_sim/force_{i}",
+                        force=force,
+                        contact_point=point,
+                        newtons_per_meter=args.newtons_per_meter,
+                        rgba=Rgba(0.0, 1.0, 0.0, 1.0),
+                    )
+
+            for i, (force, point) in enumerate(
+                zip(inner_point_contact_forces[time_idx], inner_point_contact_points[time_idx])
+            ):
+                if np.linalg.norm(force) > 0.0:
+                    add_point_contact_arrow(
+                        meshcat,
+                        path=f"contact_forces/inner_sim/force_{i}",
+                        force=force,
+                        contact_point=point,
+                        newtons_per_meter=args.newtons_per_meter,
+                        rgba=Rgba(1.0, 0.0, 0.0, 1.0),
+                    )
+
+        # Update manipuland mesh poses
+        outer_manipuland_pose = outer_manipuland_poses[time_idx]
+        quat = outer_manipuland_pose[:4]
+        quat_normalized = quat / np.linalg.norm(quat)
+        meshcat.SetTransform(
+            f"visualizer/{manipuland_name}/{manipuland_base_link_name}",
+            RigidTransform(Quaternion(quat_normalized), outer_manipuland_pose[4:]),
+        )
+        # Inner manipuland mesh pose
+        inner_manipuland_pose = inner_manipuland_poses[time_idx]
+        quat = inner_manipuland_pose[:4]
+        quat_normalized = quat / np.linalg.norm(quat)
+        meshcat.SetTransform(
+            f"visualizer/inner_manipuland/{manipuland_base_link_name}",
+            RigidTransform(Quaternion(quat_normalized), inner_manipuland_pose[4:]),
+        )
+
+        if args.save_html:
+            # Overwrite saved HTML
+            html = meshcat.StaticHtml()
+            html_path = os.path.join(args.data, "contact_force_visualizer.html")
+            with open(html_path, "w") as f:
+                f.write(html)
 
 
 if __name__ == "__main__":
