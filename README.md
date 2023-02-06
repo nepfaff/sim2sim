@@ -47,7 +47,17 @@ Example usage:
 python3 scripts/visualize_contact_forces.py --data logs/sphere_pushing_quadric_decimation/
 ```
 
-It is possible to step through time using the left and right arrow keys.
+Arrow colors:
+- Dark blue = outer generalized contact force (force component)
+- Blue purple = outer generalized contact force (torque component)
+- Pink = inner generalized contact force (force component)
+- Light pink = inner generalized contact force (torque component)
+- Green = outer point/ hydroelastic contact force
+- Light blue = outer hydroelastic contact torque
+- Red = inner point/ hydroelastic contact force
+- Orange = inner hydroelastic contact torque
+
+It is possible to step through time using the left and right arrow keys. The "toggle" buttons in meshcat can be used to show and hide items by default when stepping through time.
 See `scripts/visualize_contact_forces.py` for all available arguments.
 
 ## Generating a mesh dynamic distance dataset
