@@ -30,6 +30,8 @@ from sim2sim.util import get_parser, vector_pose_to_rigidtransform
 TIME_SLIDER_NAME = "time"
 TOGGLE_INNER_FORCES_BUTTON_NAME = "Toggle inner forces default visibility"
 TOGGLE_OUTER_FORCES_BUTTON_NAME = "Toggle outer forces default visibility"
+TOGGLE_INNER_GENERALIZED_FORCES_BUTTON_NAME = "Toggle inner generalized forces default visibility"
+TOGGLE_OUTER_GENERALIZED_FORCES_BUTTON_NAME = "Toggle outer generalized forces default visibility"
 TOGGLE_INNER_MANIPULAND_BUTTON_NAME = "Toggle inner manipuland default visibility"
 TOGGLE_OUTER_MANIPULAND_BUTTON_NAME = "Toggle outer manipuland default visibility"
 
@@ -50,6 +52,9 @@ def load_data(log_dir: str, outer: bool):
                 for el in arr
             ]
         )
+
+    # Generalized contact forces
+    generalized_contact_forces = np.loadtxt(os.path.join(log_dir, f"{prefix}_manipuland_contact_forces.txt"))
 
     # Hydroelastic
     contact_result_force_centroids_raw = np.load(
@@ -82,6 +87,7 @@ def load_data(log_dir: str, outer: bool):
     manipuland_poses = np.loadtxt(os.path.join(log_dir, f"{prefix}_manipuland_poses.txt"))[:, :7]
 
     return (
+        generalized_contact_forces,
         hydroelastic_centroids,
         hydroelastic_contact_forces,
         hydroelastic_contact_torques,
@@ -91,7 +97,7 @@ def load_data(log_dir: str, outer: bool):
     )
 
 
-def add_point_contact_arrow(
+def add_equal_opposite_force_arrow(
     meshcat: Meshcat,
     path: str,
     force: np.ndarray,
@@ -100,7 +106,10 @@ def add_point_contact_arrow(
     radius: float = 0.001,
     rgba: Rgba = Rgba(1.0, 0.0, 0.0, 1.0),
 ) -> None:
-    """A point contact arrow represents equal and opposite forces from the contact point."""
+    """
+    A contact force arrow that represents equal and opposite forces from the contact point.
+    Example: Point contact result forces.
+    """
 
     # Create arrow
     height = np.linalg.norm(force) / newtons_per_meter
@@ -134,7 +143,7 @@ def add_point_contact_arrow(
     )
 
 
-def add_hydroelastic_arrow(
+def add_single_direction_force_arrow(
     meshcat: Meshcat,
     path: str,
     force: np.ndarray,
@@ -146,7 +155,10 @@ def add_hydroelastic_arrow(
     force_rgba: Rgba = Rgba(1.0, 0.0, 0.0, 1.0),
     torque_rgba: Rgba = Rgba(0.0, 0.0, 1.0, 1.0),
 ) -> None:
-    """A hydroelastic arrow represents a single force from the centroid (not equal and opposite)."""
+    """
+    A contact force arrow that represents a single force from the centroid (not equal and opposite).
+    Examples: Generalized contact forces, hydroelastic contact result forces.
+    """
 
     # Create force arrow
     force_height = np.linalg.norm(force) / newtons_per_meter
@@ -247,6 +259,7 @@ def main():
     log_dir = os.path.join(args.data, "time_logs")
     times = np.loadtxt(os.path.join(log_dir, "outer_manipuland_pose_times.txt"))
     (
+        outer_generalized_contact_forces,
         outer_hydroelastic_centroids,
         outer_hydroelastic_contact_forces,
         outer_hydroelastic_contact_torques,
@@ -255,6 +268,7 @@ def main():
         outer_manipuland_poses,
     ) = load_data(log_dir, outer=True)
     (
+        inner_generalized_contact_forces,
         inner_hydroelastic_centroids,
         inner_hydroelastic_contact_forces,
         inner_hydroelastic_contact_torques,
@@ -312,6 +326,12 @@ def main():
     toggle_outer_forces_button_clicks = 0
     outer_forces_visible = True
     meshcat.AddButton(name=TOGGLE_OUTER_FORCES_BUTTON_NAME)
+    toggle_inner_generalized_forces_button_clicks = 0
+    inner_generalized_forces_visible = True
+    meshcat.AddButton(name=TOGGLE_INNER_GENERALIZED_FORCES_BUTTON_NAME)
+    toggle_outer_generalized_forces_button_clicks = 0
+    outer_generalized_forces_visible = True
+    meshcat.AddButton(name=TOGGLE_OUTER_GENERALIZED_FORCES_BUTTON_NAME)
     toggle_inner_manipuland_button_clicks = 0
     inner_manipuland_visible = True
     meshcat.AddButton(name=TOGGLE_INNER_MANIPULAND_BUTTON_NAME)
@@ -345,6 +365,20 @@ def main():
             toggle_outer_forces_button_clicks += 1
             outer_forces_visible = not outer_forces_visible
         meshcat.SetProperty("contact_forces/outer_sim", "visible", outer_forces_visible)
+        if (
+            meshcat.GetButtonClicks(TOGGLE_INNER_GENERALIZED_FORCES_BUTTON_NAME)
+            > toggle_inner_generalized_forces_button_clicks
+        ):
+            toggle_inner_generalized_forces_button_clicks += 1
+            inner_generalized_forces_visible = not inner_generalized_forces_visible
+        meshcat.SetProperty("contact_forces/inner_sim_generalized", "visible", inner_generalized_forces_visible)
+        if (
+            meshcat.GetButtonClicks(TOGGLE_OUTER_GENERALIZED_FORCES_BUTTON_NAME)
+            > toggle_outer_generalized_forces_button_clicks
+        ):
+            toggle_outer_generalized_forces_button_clicks += 1
+            outer_generalized_forces_visible = not outer_generalized_forces_visible
+        meshcat.SetProperty("contact_forces/outer_sim_generalized", "visible", outer_generalized_forces_visible)
         if meshcat.GetButtonClicks(TOGGLE_INNER_MANIPULAND_BUTTON_NAME) > toggle_inner_manipuland_button_clicks:
             toggle_inner_manipuland_button_clicks += 1
             inner_manipuland_visible = not inner_manipuland_visible
@@ -353,6 +387,34 @@ def main():
             toggle_outer_manipuland_button_clicks += 1
             outer_manipuland_visible = not outer_manipuland_visible
         meshcat.SetProperty(f"visualizer/{manipuland_name}", "visible", outer_manipuland_visible)
+
+        # Visualize generalized contact forces
+        outer_generalized_contact_force = outer_generalized_contact_forces[time_idx]
+        if np.linalg.norm(outer_generalized_contact_force) > 0.0:
+            add_single_direction_force_arrow(
+                meshcat,
+                path="contact_forces/outer_sim_generalized",
+                force=outer_generalized_contact_force[3:],
+                torque=outer_generalized_contact_force[:3],
+                centroid=outer_manipuland_poses[time_idx][4:],
+                newtons_per_meter=args.newtons_per_meter,
+                newton_meters_per_meter=args.newton_meters_per_meter,
+                force_rgba=Rgba(0.0, 0.0, 1.0, 1.0),  # blue
+                torque_rgba=Rgba(0.6, 0.6, 1.0, 1.0),  # purple
+            )
+        inner_generalized_contact_force = inner_generalized_contact_forces[time_idx]
+        if np.linalg.norm(inner_generalized_contact_force) > 0.0:
+            add_single_direction_force_arrow(
+                meshcat,
+                path="contact_forces/inner_sim_generalized",
+                force=inner_generalized_contact_force[3:],
+                torque=inner_generalized_contact_force[:3],
+                centroid=inner_manipuland_poses[time_idx][4:],
+                newtons_per_meter=args.newtons_per_meter,
+                newton_meters_per_meter=args.newton_meters_per_meter,
+                force_rgba=Rgba(1.0, 0.0, 0.5, 1.0),  # pink
+                torque_rgba=Rgba(1.0, 0.6, 0.8, 1.0),  # light pink
+            )
 
         # Visualize new contact forces
         if args.hydroelastic:
@@ -367,7 +429,7 @@ def main():
                 )
             ):
                 if np.linalg.norm(force) > 0.0:
-                    add_hydroelastic_arrow(
+                    add_single_direction_force_arrow(
                         meshcat,
                         path=f"contact_forces/outer_sim/force_{i}",
                         force=force,
@@ -376,7 +438,7 @@ def main():
                         newtons_per_meter=args.newtons_per_meter,
                         newton_meters_per_meter=args.newton_meters_per_meter,
                         force_rgba=Rgba(0.0, 1.0, 0.0, 1.0),
-                        torque_rgba=Rgba(0.0, 1.0, 1.0, 1.0),  # blue
+                        torque_rgba=Rgba(0.0, 1.0, 1.0, 1.0),  # light blue
                     )
 
             for i, (force, torque, centroid) in enumerate(
@@ -387,7 +449,7 @@ def main():
                 )
             ):
                 if np.linalg.norm(force) > 0.0:
-                    add_hydroelastic_arrow(
+                    add_single_direction_force_arrow(
                         meshcat,
                         path=f"contact_forces/inner_sim/force_{i}",
                         force=force,
@@ -403,7 +465,7 @@ def main():
                 zip(outer_point_contact_forces[time_idx], outer_point_contact_points[time_idx])
             ):
                 if np.linalg.norm(force) > 0.0:
-                    add_point_contact_arrow(
+                    add_equal_opposite_force_arrow(
                         meshcat,
                         path=f"contact_forces/outer_sim/force_{i}",
                         force=force,
@@ -416,7 +478,7 @@ def main():
                 zip(inner_point_contact_forces[time_idx], inner_point_contact_points[time_idx])
             ):
                 if np.linalg.norm(force) > 0.0:
-                    add_point_contact_arrow(
+                    add_equal_opposite_force_arrow(
                         meshcat,
                         path=f"contact_forces/inner_sim/force_{i}",
                         force=force,
