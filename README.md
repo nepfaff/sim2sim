@@ -48,14 +48,14 @@ python3 scripts/visualize_contact_forces.py --data logs/sphere_pushing_quadric_d
 ```
 
 Arrow colors:
-- Dark blue = outer generalized contact force (force component)
-- Blue purple = outer generalized contact force (torque component)
-- Pink = inner generalized contact force (force component)
-- Light pink = inner generalized contact force (torque component)
-- Green = outer point/ hydroelastic contact force
-- Light blue = outer hydroelastic contact torque
-- Red = inner point/ hydroelastic contact force
-- Orange = inner hydroelastic contact torque
+- ![#0000FF](https://placehold.co/15x15/0000FF/0000FF.png) Outer generalized contact force (force component)
+- ![#9999FF](https://placehold.co/15x15/9999FF/9999FF.png) Outer generalized contact force (torque component)
+- ![#FF0080](https://placehold.co/15x15/FF0080/FF0080.png) Inner generalized contact force (force component)
+- ![#FF99CC](https://placehold.co/15x15/FF99CC/FF99CC.png) Inner generalized contact force (torque component)
+- ![#00FF00](https://placehold.co/15x15/00FF00/00FF00.png) Outer point/ hydroelastic contact force
+- ![#00FFFF](https://placehold.co/15x15/00FFFF/00FFFF.png) Outer hydroelastic contact torque
+- ![#FF0000](https://placehold.co/15x15/FF0000/FF0000.png) Inner point/ hydroelastic contact force
+- ![#FF8000](https://placehold.co/15x15/FF8000/FF8000.png) Inner hydroelastic contact torque
 
 It is possible to step through time using the left and right arrow keys. The "toggle" buttons in meshcat can be used to show and hide items by default when stepping through time.
 See `scripts/visualize_contact_forces.py` for all available arguments.
