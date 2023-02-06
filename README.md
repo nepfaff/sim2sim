@@ -55,9 +55,12 @@ See `scripts/visualize_contact_forces.py` for all available arguments.
 **NOTE:** Currently only the `random_force` experiment is supported.
 
 1. Specify the desired experiment parameters in `experiments/random_force/random_force_metaball.yaml`.
-2. Generate the data using the following command (with your arguments):
+2. Generate the data using one of the following commands (with your arguments):
     ```bash
     python scripts/collect_random_force_data.py --experiment_description experiments/random_force/random_force_gmm.yaml --logging_path logs/metric_learning_data --num_runs_per_perturbation 10 --num_perturbations 1000
+    ```
+    ```bash
+    python3 scripts/collect_sphere_pushing_data.py --experiment_description experiments/sphere_pushing/sphere_pushing_gmm.yaml --logging_path logs/metric_learning_data --num_runs_per_perturbation 10 --num_perturbations 1000
     ```
 3. Postprocess the data:
     ```bash
