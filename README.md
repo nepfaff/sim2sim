@@ -27,7 +27,7 @@ pre-commit install
 ```
 
 Install the [learning_real2sim](https://github.com/liruiw/learning_real2sim) repo in development mode based on the
-instructions in its `README`.
+instructions in its `README`. Note that this repo is only needed for a small subset of experiments.
 
 ## Running an experiment
 
@@ -38,14 +38,29 @@ The experiment description file deterministically specifies an experiment.
 python scripts/run_experiment.py --experiment_description experiments/table_pid/table_pid_simple.yaml
 ```
 
+## Contact Force Visualizer
+
+The visualizer can be used to visualize both `outer` and `inner` manipulands and their contact forces over time.
+
+Example usage:
+```bash
+python3 scripts/visualize_contact_forces.py --data logs/sphere_pushing_quadric_decimation/
+```
+
+It is possible to step through time using the left and right arrow keys.
+See `scripts/visualize_contact_forces.py` for all available arguments.
+
 ## Generating a mesh dynamic distance dataset
 
 **NOTE:** Currently only the `random_force` experiment is supported.
 
 1. Specify the desired experiment parameters in `experiments/random_force/random_force_metaball.yaml`.
-2. Generate the data using the following command (with your arguments):
+2. Generate the data using one of the following commands (with your arguments):
     ```bash
     python scripts/collect_random_force_data.py --experiment_description experiments/random_force/random_force_gmm.yaml --logging_path logs/metric_learning_data --num_runs_per_perturbation 10 --num_perturbations 1000
+    ```
+    ```bash
+    python3 scripts/collect_sphere_pushing_data.py --experiment_description experiments/sphere_pushing/sphere_pushing_gmm.yaml --logging_path logs/metric_learning_data --num_runs_per_perturbation 10 --num_perturbations 1000
     ```
 3. Postprocess the data:
     ```bash

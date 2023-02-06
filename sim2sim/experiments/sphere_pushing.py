@@ -1,6 +1,6 @@
 import os
 import pathlib
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 from pydrake.all import (
     LoadModelDirectives,
@@ -13,11 +13,26 @@ from pydrake.all import (
     MultibodyPlant,
     MultibodyPlantConfig,
     AddMultibodyPlant,
+    Sphere,
+    SpatialInertia,
+    UnitInertia,
+    PrismaticJoint,
+    InverseDynamicsController,
+    AddCompliantHydroelasticProperties,
+    ProximityProperties,
+    RoleAssign,
 )
+from manipulation.scenarios import AddShape
 
-from sim2sim.simulation import BasicSimulator, BasicInnerOnlySimulator
+from sim2sim.simulation import BasicSimulator, SpherePushingSimulator
 from sim2sim.logging import DynamicLogger
-from sim2sim.util import get_parser, create_processed_mesh_directive_str, create_processed_mesh_primitive_directive_str
+from sim2sim.util import (
+    get_parser,
+    create_processed_mesh_directive_str,
+    create_processed_mesh_primitive_directive_str,
+    SphereStateSource,
+    copy_object_proximity_properties,
+)
 from sim2sim.images import SphereImageGenerator, NoneImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
 from sim2sim.mesh_processing import (
@@ -31,7 +46,7 @@ from sim2sim.mesh_processing import (
 )
 from sim2sim.physical_property_estimator import WaterDensityPhysicalPropertyEstimator, GTPhysicalPropertyEstimator
 
-SCENE_DIRECTIVE = "../../models/floor_drop/floor_drop_directive.yaml"
+SCENE_DIRECTIVE = "../../models/random_force/random_force_directive.yaml"
 
 # TODO: Add type info using base classes
 LOGGERS = {
@@ -59,8 +74,33 @@ PHYSICAL_PROPERTY_ESTIMATOR = {
 }
 SIMULATORS = {
     "BasicSimulator": BasicSimulator,
-    "BasicInnerOnlySimulator": BasicInnerOnlySimulator,
+    "SpherePushingSimulator": SpherePushingSimulator,
 }
+
+
+def add_sphere(plant: MultibodyPlant, radius: float = 0.05, position: List[float] = [0.0, 0.0, 0.0]) -> None:
+    sphere = AddShape(plant, Sphere(radius), "sphere", color=[0.9, 0.5, 0.5, 1.0])
+    _ = plant.AddRigidBody("false_body1", sphere, SpatialInertia(0, [0, 0, 0], UnitInertia(0, 0, 0)))
+    sphere_x = plant.AddJoint(
+        PrismaticJoint("sphere_x", plant.world_frame(), plant.GetFrameByName("false_body1"), [1, 0, 0], -10.0, 10.0)
+    )
+    sphere_x.set_default_translation(position[0])
+    plant.AddJointActuator("sphere_x", sphere_x)
+    _ = plant.AddRigidBody("false_body2", sphere, SpatialInertia(0, [0, 0, 0], UnitInertia(0, 0, 0)))
+    sphere_y = plant.AddJoint(
+        PrismaticJoint(
+            "sphere_y", plant.GetFrameByName("false_body1"), plant.GetFrameByName("false_body2"), [0, 1, 0], -10.0, 10.0
+        )
+    )
+    sphere_y.set_default_translation(position[1])
+    plant.AddJointActuator("sphere_y", sphere_y)
+    sphere_z = plant.AddJoint(
+        PrismaticJoint(
+            "sphere_z", plant.GetFrameByName("false_body2"), plant.GetFrameByName("sphere"), [0, 0, 1], -10.0, 10.0
+        )
+    )
+    sphere_z.set_default_translation(position[2])
+    plant.AddJointActuator("sphere_z", sphere_z)
 
 
 def create_env(
@@ -68,10 +108,13 @@ def create_env(
     timestep: float,
     manipuland_base_link_name: str,
     manipuland_pose: RigidTransform,
+    sphere_starting_position: List[float],
+    sphere_pid_gains: Dict[str, float],
+    hydroelastic_manipuland: bool,
     directive_files: List[str] = [],
     directive_strs: List[str] = [],
 ) -> Tuple[DiagramBuilder, SceneGraph, MultibodyPlant]:
-    """Creates the floor drop simulation environments without building it."""
+    """Creates the sphere pushing simulation environment without building it."""
 
     builder = DiagramBuilder()
     multibody_plant_config = MultibodyPlantConfig(
@@ -88,13 +131,62 @@ def create_env(
         directive = LoadModelDirectivesFromString(directive_str)
         ProcessModelDirectives(directive, parser)
 
+    add_sphere(plant, position=sphere_starting_position)
+    if hydroelastic_manipuland:
+        # Make sphere complient hydroelastic
+        sphere = plant.GetBodyByName("sphere")
+        new_proximity_properties = ProximityProperties()
+        # NOTE: Setting hydroelastic properties becomes slow as the resolution hint decreases
+        AddCompliantHydroelasticProperties(
+            resolution_hint=0.01, hydroelastic_modulus=1e8, properties=new_proximity_properties
+        )
+        geometry_ids = plant.GetCollisionGeometriesForBody(sphere)
+        for geometry_id in geometry_ids:
+            inspector = scene_graph.model_inspector()
+            const_proximity_properties = inspector.GetProximityProperties(geometry_id)
+            copy_object_proximity_properties(const_proximity_properties, new_proximity_properties)
+            scene_graph.AssignRole(plant.get_source_id(), geometry_id, new_proximity_properties, RoleAssign.kReplace)
+
+    # Sphere state source
+    sphere_state_source = builder.AddSystem(SphereStateSource(sphere_starting_position))
+    sphere_state_source.set_name("sphere_state_source")
+
+    # Sphere controller
+    sphere_controller_plant = MultibodyPlant(time_step=timestep)
+    sphere_controller_plant.set_name("sphere_controller_plant")
+    add_sphere(sphere_controller_plant)
+    sphere_controller_plant.Finalize()
+    sphere_inverse_dynamics_controller = builder.AddSystem(
+        InverseDynamicsController(
+            sphere_controller_plant,
+            kp=[sphere_pid_gains["kp"]] * 3,
+            ki=[sphere_pid_gains["ki"]] * 3,
+            kd=[sphere_pid_gains["kd"]] * 3,
+            has_reference_acceleration=False,
+        )
+    )
+    sphere_inverse_dynamics_controller.set_name("sphere_inverse_dynamics_controller")
+
     plant.SetDefaultFreeBodyPose(plant.GetBodyByName(manipuland_base_link_name), manipuland_pose)
     plant.Finalize()
+
+    # Connect sphere state source and controller to plant
+    sphere_instance = plant.GetModelInstanceByName("sphere")
+    builder.Connect(
+        plant.get_state_output_port(sphere_instance),
+        sphere_inverse_dynamics_controller.get_input_port_estimated_state(),
+    )
+    builder.Connect(
+        sphere_inverse_dynamics_controller.get_output_port_control(), plant.get_actuation_input_port(sphere_instance)
+    )
+    builder.Connect(
+        sphere_state_source.get_output_port(), sphere_inverse_dynamics_controller.get_input_port_desired_state()
+    )
 
     return builder, scene_graph, plant
 
 
-def run_floor_drop(
+def run_sphere_pushing(
     logging_path: str,
     params: dict,
     sim_duration: float,
@@ -105,9 +197,11 @@ def run_floor_drop(
     manipuland_default_pose: str,
     save_raw_mesh: bool,
     hydroelastic_manipuland: bool,
+    sphere_starting_position: List[float],
+    sphere_pid_gains: Dict[str, float],
 ):
     """
-    Experiment entrypoint for the floor drop scene.
+    Experiment entrypoint for the sphere pushing scene.
 
     :param logging_path: The path to log the data to.
     :param params: The experiment yaml file dict.
@@ -120,8 +214,9 @@ def run_floor_drop(
     :param manipuland_default_pose: The default pose of the outer manipuland of form [roll, pitch, yaw, x, y, z].
     :param save_raw_mesh: Whether to save the raw mesh from inverse graphics.
     :param hydroelastic_manipuland: Whether to use hydroelastic or point contact for the inner manipuland.
+    :param sphere_starting_position: The starting position [x, y, z] of the sphere.
+    :param sphere_pid_gains: The PID gains of the inverse dynamics controller. Must contain keys "kp", "ki", and "kd".
     """
-
     scene_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
     manipuland_directive_path = os.path.join(pathlib.Path(__file__).parent.resolve(), manipuland_directive)
 
@@ -141,6 +236,9 @@ def run_floor_drop(
         timestep=timestep,
         manipuland_base_link_name=manipuland_base_link_name,
         manipuland_pose=manipuland_default_pose_transform,
+        sphere_starting_position=sphere_starting_position,
+        sphere_pid_gains=sphere_pid_gains,
+        hydroelastic_manipuland=hydroelastic_manipuland,
         directive_files=[scene_directive, manipuland_directive_path],
     )
 
@@ -150,6 +248,9 @@ def run_floor_drop(
         env_params=params["env"],
         manipuland_base_link_name=manipuland_base_link_name,
         manipuland_pose=manipuland_default_pose_transform,
+        sphere_starting_position=sphere_starting_position,
+        sphere_pid_gains=sphere_pid_gains,
+        hydroelastic_manipuland=hydroelastic_manipuland,
         directive_files=[scene_directive, manipuland_directive_path],
     )
     image_generator_class = IMAGE_GENERATORS[params["image_generator"]["class"]]
@@ -231,6 +332,9 @@ def run_floor_drop(
         timestep=timestep,
         env_params=params["env"],
         manipuland_base_link_name=manipuland_base_link_name,
+        sphere_starting_position=sphere_starting_position,
+        sphere_pid_gains=sphere_pid_gains,
+        hydroelastic_manipuland=hydroelastic_manipuland,
         directive_files=[scene_directive],
         directive_strs=[processed_mesh_directive],
         manipuland_pose=RigidTransform(RollPitchYaw(*raw_mesh_pose[:3]), raw_mesh_pose[3:]),

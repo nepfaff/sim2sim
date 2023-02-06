@@ -23,6 +23,7 @@ class IIWAPushInHoleSimulator(IIWAJointTrajectorySimulatorBase):
         inner_builder: DiagramBuilder,
         inner_scene_graph: SceneGraph,
         logger: DynamicLoggerBase,
+        is_hydroelastic: bool,
         mesh_pose: List[float],
     ):
         """
@@ -31,9 +32,12 @@ class IIWAPushInHoleSimulator(IIWAJointTrajectorySimulatorBase):
         :param inner_builder: Diagram builder for the inner simulation environment.
         :param inner_scene_graph: Scene graph for the inner simulation environment.
         :param logger: The logger.
+        :param is_hydroelastic: Whether hydroelastic or point contact is used.
         :param mesh_pose: The manipuland mesh pose of form [roll, pitch, yaw, x, y, z] where angles are in radians.
         """
-        super().__init__(outer_builder, outer_scene_graph, inner_builder, inner_scene_graph, logger, mesh_pose)
+        super().__init__(
+            outer_builder, outer_scene_graph, inner_builder, inner_scene_graph, logger, is_hydroelastic, mesh_pose
+        )
 
     def simulate(self, duration: float) -> None:
         # Use inner diagram for planning

@@ -49,10 +49,10 @@
             <length>0.099900</length>
           </cylinder>
         </geometry>
-        <!-- <drake:proximity_properties>
+        <drake:proximity_properties>
           <drake:rigid_hydroelastic/>
-          <drake:mesh_resolution_hint>0.001</drake:mesh_resolution_hint>
-        </drake:proximity_properties> -->
+          <drake:mesh_resolution_hint>0.01</drake:mesh_resolution_hint>
+        </drake:proximity_properties>
       </collision>
       <collision name="point_collision1">
         <pose>0.016425 0.016425 0.050450 0 0 0 </pose>
@@ -61,6 +61,10 @@
             <radius>1e-7</radius>
           </sphere>
         </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic/>
+          <drake:mesh_resolution_hint>0.01</drake:mesh_resolution_hint>
+        </drake:proximity_properties>
       </collision>
       <collision name="point_collision2">
         <pose>0.016425 0.016425 -0.050450 0 0 0 </pose>
@@ -69,6 +73,10 @@
             <radius>1e-7</radius>
           </sphere>
         </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic/>
+          <drake:mesh_resolution_hint>0.01</drake:mesh_resolution_hint>
+        </drake:proximity_properties>
       </collision>
       <collision name="point_collision3">
         <pose>-0.016425 0.016425 0.050450 0 0 0 </pose>
@@ -77,6 +85,10 @@
             <radius>1e-7</radius>
           </sphere>
         </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic/>
+          <drake:mesh_resolution_hint>0.01</drake:mesh_resolution_hint>
+        </drake:proximity_properties>
       </collision>
       <collision name="point_collision4">
         <pose>-0.016425 0.016425 -0.050450 0 0 0 </pose>
@@ -85,6 +97,10 @@
             <radius>1e-7</radius>
           </sphere>
         </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic/>
+          <drake:mesh_resolution_hint>0.01</drake:mesh_resolution_hint>
+        </drake:proximity_properties>
       </collision>
       <collision name="point_collision5">
         <pose>0.016425 -0.016425 0.050450 0 0 0 </pose>
@@ -93,6 +109,10 @@
             <radius>1e-7</radius>
           </sphere>
         </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic/>
+          <drake:mesh_resolution_hint>0.01</drake:mesh_resolution_hint>
+        </drake:proximity_properties>
       </collision>
       <collision name="point_collision6">
         <pose>0.016425 -0.016425 -0.050450 0 0 0 </pose>
@@ -101,6 +121,10 @@
             <radius>1e-7</radius>
           </sphere>
         </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic/>
+          <drake:mesh_resolution_hint>0.01</drake:mesh_resolution_hint>
+        </drake:proximity_properties>
       </collision>
       <collision name="point_collision7">
         <pose>-0.016425 -0.016425 0.050450 0 0 0 </pose>
@@ -109,6 +133,10 @@
             <radius>1e-7</radius>
           </sphere>
         </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic/>
+          <drake:mesh_resolution_hint>0.01</drake:mesh_resolution_hint>
+        </drake:proximity_properties>
       </collision>
       <collision name="point_collision8">
         <pose>-0.016425 -0.016425 -0.050450 0 0 0 </pose>
@@ -117,6 +145,10 @@
             <radius>1e-7</radius>
           </sphere>
         </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic/>
+          <drake:mesh_resolution_hint>0.01</drake:mesh_resolution_hint>
+        </drake:proximity_properties>
       </collision>
     </link>
   </model>

@@ -4,6 +4,10 @@ from .util import (
     create_processed_mesh_directive_str,
     open3d_to_trimesh,
     create_processed_mesh_primitive_directive_str,
+    get_hydroelastic_contact_viz_params,
+    get_point_contact_contact_viz_params,
+    copy_object_proximity_properties,
+    vector_pose_to_rigidtransform,
 )
 from .physics import calc_mesh_inertia
 from .iiwa import (
@@ -17,7 +21,7 @@ from .iiwa import (
     prune_infeasible_eef_poses,
     IIWAControlModeSource,
 )
-from .systems import ExternalForceSystem
+from .systems import ExternalForceSystem, SphereStateSource
 from .metrics import (
     average_displacement_error,
     average_displacement_error_translation_only,

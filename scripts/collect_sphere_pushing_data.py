@@ -1,5 +1,5 @@
 """
-Script for collecting random force data for metric learning.
+Script for collecting sphere pushing data for metric learning.
 NOTE: Using textured meshes in inverse graphics/ mesh processing might cause issues with multicore execution.
 """
 
@@ -12,8 +12,10 @@ from multiprocessing import Process
 
 import numpy as np
 from tqdm import tqdm
+import open3d as o3d
 
-from sim2sim.experiments import run_random_force
+from sim2sim.experiments import run_sphere_pushing
+from sim2sim.images import generate_camera_locations_circle
 
 PERTURBATION_DIR_BASENAME = "perturb_"
 PERTURBATION_RANDOM_SEED = 1
@@ -44,9 +46,9 @@ def main():
         "--num_perturbations", default=1000, type=int, help="The number of different perturbations to run."
     )
     parser.add_argument(
-        "--use_random_seed",
+        "--viz_starting_locations",
         action="store_true",
-        help="Whether to use a random seed for repeatability.",
+        help="Whether to visualize the possible sphere starting locations.",
     )
     args = parser.parse_args()
 
@@ -61,6 +63,23 @@ def main():
                 perturb_num = num
     else:
         os.mkdir(args.logging_path)
+
+    sphere_start_locations = []
+    for z_distance, radius, num_locations in zip([0.06, 0.12, 0.18], [0.3, 0.25, 0.2], [10, 10, 10]):
+        locations = generate_camera_locations_circle(
+            center=[0.0, 0.0, z_distance],
+            radius=radius,
+            num_points=num_locations,
+            xz=False,
+        )
+        sphere_start_locations.append(locations)
+    sphere_start_locations = np.concatenate(sphere_start_locations, axis=0)
+
+    if args.viz_starting_locations:
+        viz_geoms = []
+        for location in sphere_start_locations:
+            viz_geoms.append(o3d.geometry.TriangleMesh.create_sphere(0.01).translate(location))
+        o3d.visualization.draw_geometries(viz_geoms)
 
     perturbation_rng = np.random.default_rng(PERTURBATION_RANDOM_SEED)
     for _ in tqdm(range(args.num_perturbations)):
@@ -81,15 +100,17 @@ def main():
         random_seed = START_RANDOM_SEED
         processes = []
         for i in range(args.num_runs_per_perturbation):
-            if args.use_random_seed:
-                experiment_specification["simulator"]["args"]["random_seed"] = random_seed
-                random_seed += 1
+            rng = np.random.default_rng(random_seed)
+            sphere_start_location = sphere_start_locations[rng.choice(len(sphere_start_locations))]
+            experiment_specification["script"]["args"]["sphere_starting_position"] = sphere_start_location
+            random_seed += 1
+
             kwargs = {
                 "logging_path": os.path.join(perturb_path, f"run_{i:04d}"),
                 "params": experiment_specification,
             }
             kwargs.update(experiment_specification["script"]["args"])
-            p = Process(target=run_random_force, kwargs=kwargs)
+            p = Process(target=run_sphere_pushing, kwargs=kwargs)
             processes.append(p)
             p.start()
 

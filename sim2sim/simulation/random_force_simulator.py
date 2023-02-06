@@ -23,6 +23,7 @@ class RandomForceSimulator(SimulatorBase):
         inner_builder: DiagramBuilder,
         inner_scene_graph: SceneGraph,
         logger: DynamicLoggerBase,
+        is_hydroelastic: bool,
         use_point_finger: bool,
         force_magnitude: float,
         settling_time: float,
@@ -36,6 +37,7 @@ class RandomForceSimulator(SimulatorBase):
         :param inner_builder: Diagram builder for the inner simulation environment.
         :param inner_scene_graph: Scene graph for the inner simulation environment.
         :param logger: The logger.
+        :param is_hydroelastic: Whether hydroelastic or point contact is used.
         :param use_point_finger: Whether to use a point finger to apply the force. Otherwise, the external force will
             be applied onto the object directly.
         :param force_magnitude: The magnitude of the force to apply in N.
@@ -45,7 +47,7 @@ class RandomForceSimulator(SimulatorBase):
             needed if `use_point_finger` is `False`.
         :param random_seed: The random seed to use. It will be random, if None.
         """
-        super().__init__(outer_builder, outer_scene_graph, inner_builder, inner_scene_graph, logger)
+        super().__init__(outer_builder, outer_scene_graph, inner_builder, inner_scene_graph, logger, is_hydroelastic)
 
         self._use_point_finger = use_point_finger
         self._force_magnitude = force_magnitude
@@ -62,11 +64,13 @@ class RandomForceSimulator(SimulatorBase):
         self._outer_visualizer, self._outer_meshcat = self._logger.add_visualizers(
             self._outer_builder,
             self._outer_scene_graph,
+            self._is_hydroelastic,
             is_outer=True,
         )
         self._inner_visualizer, self._inner_meshcat = self._logger.add_visualizers(
             self._inner_builder,
             self._inner_scene_graph,
+            self._is_hydroelastic,
             is_outer=False,
         )
 
