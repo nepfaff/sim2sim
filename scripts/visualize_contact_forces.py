@@ -1,4 +1,4 @@
-"""Script for visualizing a collision representation and its contact forces at a given simulation time point."""
+"""Script for visualizing a collision representation and its contact forces."""
 
 import argparse
 import os
@@ -22,10 +22,9 @@ from pydrake.all import (
     MeshcatCone,
     RigidTransform,
     RotationMatrix,
-    Quaternion,
 )
 
-from sim2sim.util import get_parser
+from sim2sim.util import get_parser, vector_pose_to_rigidtransform
 
 # Meshcat item names
 TIME_SLIDER_NAME = "time"
@@ -204,40 +203,47 @@ def add_hydroelastic_arrow(
     )
 
 
-def main():
-    arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument(
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
         "--data",
         required=True,
         type=str,
         help="Path to the experiment data folder.",
     )
-    arg_parser.add_argument(
+    parser.add_argument(
         "--hydroelastic", action="store_true", help="Whether to plot hydroelastic or point contact forces."
     )
-    arg_parser.add_argument(
+    parser.add_argument(
         "--manipuland",
-        default="outer",
+        default="both",
         type=str,
         help="The manipuland to visualize. Options are 'outer', 'inner', 'both', and 'none'.",
     )
-    arg_parser.add_argument(
+    parser.add_argument(
         "--newtons_per_meter",
         default=1e2,
         type=float,
         help="HSets the length scale of the force vectors.",
     )
-    arg_parser.add_argument(
+    parser.add_argument(
         "--newton_meters_per_meter",
         default=1.0,
         type=float,
         help="Sets the length scale of the torque/ moment vectors.",
     )
-    arg_parser.add_argument("--save_html", action="store_true", help="Whether to save the meshcat HTML.")
-    args = arg_parser.parse_args()
+    parser.add_argument("--save_html", action="store_true", help="Whether to save the meshcat HTML.")
 
+    args = parser.parse_args()
     assert args.manipuland in ["outer", "inner", "both", "none"]
 
+    return args
+
+
+def main():
+    args = parse_args()
+
+    # Load data
     log_dir = os.path.join(args.data, "time_logs")
     times = np.loadtxt(os.path.join(log_dir, "outer_manipuland_pose_times.txt"))
     (
@@ -266,14 +272,12 @@ def main():
     experiment_description = yaml.safe_load(open(experiment_description_path, "r"))
     manipuland_name = experiment_description["logger"]["args"]["manipuland_name"]
     manipuland_base_link_name = experiment_description["logger"]["args"]["manipuland_base_link_name"]
-
     if args.manipuland in ["outer", "both"]:
         outer_manipuland_directive_path = os.path.join(
             args.data, experiment_description["script"]["args"]["manipuland_directive"]
         )
         outer_manipuland_directive = LoadModelDirectives(outer_manipuland_directive_path)
         ProcessModelDirectives(outer_manipuland_directive, parser)
-
     if args.manipuland in ["inner", "both"]:
         inner_manipuland_sdf_path = os.path.join(args.data, "meshes", "processed_mesh.sdf")
         parser.AddModelFromFile(inner_manipuland_sdf_path, "inner_manipuland")
@@ -289,7 +293,6 @@ def main():
     # Need to simulate for visualization to work
     simulator = Simulator(diagram)
     simulator.AdvanceTo(0.0)
-    print("Finished loading visualization")
 
     # Add slider for stepping through time
     meshcat.AddSlider(
@@ -317,7 +320,7 @@ def main():
     meshcat.AddButton(name=TOGGLE_OUTER_MANIPULAND_BUTTON_NAME)
 
     print("Entering infinite loop. Force quit to exit.")  # TODO: Check for user input in non-blocking way
-    current_time = -1.0  # Force meshcat update
+    current_time = -1.0  # Force initial meshcat update
     while True:
         new_demanded_time = meshcat.GetSliderValue(TIME_SLIDER_NAME)
         time_idx = np.abs(times - new_demanded_time).argmin()
@@ -423,20 +426,13 @@ def main():
                     )
 
         # Update manipuland mesh poses
-        outer_manipuland_pose = outer_manipuland_poses[time_idx]
-        quat = outer_manipuland_pose[:4]
-        quat_normalized = quat / np.linalg.norm(quat)
         meshcat.SetTransform(
             f"visualizer/{manipuland_name}/{manipuland_base_link_name}",
-            RigidTransform(Quaternion(quat_normalized), outer_manipuland_pose[4:]),
+            vector_pose_to_rigidtransform(outer_manipuland_poses[time_idx]),
         )
-        # Inner manipuland mesh pose
-        inner_manipuland_pose = inner_manipuland_poses[time_idx]
-        quat = inner_manipuland_pose[:4]
-        quat_normalized = quat / np.linalg.norm(quat)
         meshcat.SetTransform(
             f"visualizer/inner_manipuland/{manipuland_base_link_name}",
-            RigidTransform(Quaternion(quat_normalized), inner_manipuland_pose[4:]),
+            vector_pose_to_rigidtransform(inner_manipuland_poses[time_idx]),
         )
 
         if args.save_html:

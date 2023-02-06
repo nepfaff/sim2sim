@@ -5,7 +5,7 @@ import open3d as o3d
 import trimesh
 import numpy as np
 from scipy.spatial.transform import Rotation as R
-from pydrake.all import MultibodyPlant, Parser, RigidTransform, ContactVisualizerParams, ProximityProperties
+from pydrake.all import MultibodyPlant, Parser, RigidTransform, ContactVisualizerParams, ProximityProperties, Quaternion
 from manipulation.scenarios import AddPackagePaths
 from manipulation.meshcat_utils import AddMeshcatTriad
 
@@ -406,3 +406,10 @@ def copy_object_proximity_properties(
             new_proximity_properties.AddProperty(
                 group_name, name, const_proximity_properties.GetProperty(group_name, name)
             )
+
+
+def vector_pose_to_rigidtransform(pose: np.ndarray) -> RigidTransform:
+    """Converts a pose of form [qw, qx, qy, qz, x, y, z] into a Drake RigidTransform."""
+    quat = pose[:4]
+    quat_normalized = quat / np.linalg.norm(quat)
+    return RigidTransform(Quaternion(quat_normalized), pose[4:])

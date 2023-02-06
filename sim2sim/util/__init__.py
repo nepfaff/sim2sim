@@ -7,6 +7,7 @@ from .util import (
     get_hydroelastic_contact_viz_params,
     get_point_contact_contact_viz_params,
     copy_object_proximity_properties,
+    vector_pose_to_rigidtransform,
 )
 from .physics import calc_mesh_inertia
 from .iiwa import (
