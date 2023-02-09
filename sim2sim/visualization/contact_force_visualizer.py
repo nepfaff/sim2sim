@@ -36,50 +36,6 @@ TOGGLE_OUTER_GENERALIZED_FORCES_BUTTON_NAME = "Toggle outer generalized forces d
 TOGGLE_INNER_MANIPULAND_BUTTON_NAME = "Toggle inner manipuland default visibility"
 TOGGLE_OUTER_MANIPULAND_BUTTON_NAME = "Toggle outer manipuland default visibility"
 
-# TODO: Copy as docstrings
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--data",
-        required=True,
-        type=str,
-        help="Path to the experiment data folder.",
-    )
-    parser.add_argument(
-        "--hydroelastic", action="store_true", help="Whether to plot hydroelastic or point contact forces."
-    )
-    parser.add_argument(
-        "--manipuland",
-        default="both",
-        type=str,
-        help="The manipuland to visualize. Options are 'outer', 'inner', 'both', and 'none'.",
-    )
-    parser.add_argument(
-        "--newtons_per_meter",
-        default=1e2,
-        type=float,
-        help="HSets the length scale of the force vectors.",
-    )
-    parser.add_argument(
-        "--newton_meters_per_meter",
-        default=1.0,
-        type=float,
-        help="Sets the length scale of the torque/ moment vectors.",
-    )
-    parser.add_argument(
-        "--separation_distance",
-        default=0.0,
-        type=float,
-        help="The distance in meters that the outer and inner manipuland should be separated from each other. "
-        + "This only has an effect if `--manipuland` is 'both'.",
-    )
-    parser.add_argument("--save_html", action="store_true", help="Whether to save the meshcat HTML.")
-
-    args = parser.parse_args()
-    assert args.manipuland in ["outer", "inner", "both", "none"]
-
-    return args
-
 
 class ContactForceVisualizer:
     """A visualizer for simultaneously visualizing both outer and inner manipulands with their contact forces."""
@@ -94,6 +50,18 @@ class ContactForceVisualizer:
         newton_meters_per_meter: float,
         hydroelastic: bool,
     ):
+        """
+        :param data_path: Path to the experiment data folder.
+        :param manipuland: The manipuland to visualize. Options are 'outer', 'inner', 'both', and 'none'.
+        :param separation_distance: The distance in meters that the outer and inner manipuland should be separated from
+            each other. This only has an effect if `--manipuland` is 'both'.
+        :param save_html: Whether to save the meshcat HTML.
+        :param newtons_per_meter: Sets the length scale of the force vectors.
+        :param newton_meters_per_meter: Sets the length scale of the torque/ moment vectors.
+        :param hydroelastic: Whether to plot hydroelastic or point contact forces.
+        """
+        assert manipuland in ["outer", "inner", "both", "none"]
+
         self._data_path = data_path
         self._manipuland = manipuland
         self._separation_distance = separation_distance

@@ -24,7 +24,7 @@ def main():
         "--newtons_per_meter",
         default=1e2,
         type=float,
-        help="HSets the length scale of the force vectors.",
+        help="Sets the length scale of the force vectors.",
     )
     parser.add_argument(
         "--newton_meters_per_meter",
@@ -40,9 +40,7 @@ def main():
         + "This only has an effect if `--manipuland` is 'both'.",
     )
     parser.add_argument("--save_html", action="store_true", help="Whether to save the meshcat HTML.")
-
     args = parser.parse_args()
-    assert args.manipuland in ["outer", "inner", "both", "none"]
 
     visualizer = ContactForceVisualizer(
         data_path=args.data,
