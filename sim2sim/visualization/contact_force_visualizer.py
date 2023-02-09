@@ -1,9 +1,9 @@
 """Script for visualizing a collision representation and its contact forces."""
 
-import argparse
 import os
 import yaml
 import time
+from typing import Tuple
 
 import numpy as np
 import open3d as o3d
@@ -11,7 +11,6 @@ from pydrake.all import (
     StartMeshcat,
     MeshcatVisualizerParams,
     Role,
-    Meshcat,
     MeshcatVisualizer,
     DiagramBuilder,
     AddMultibodyPlantSceneGraph,
@@ -122,24 +121,24 @@ class ContactForceVisualizer:
         ) = self._load_data(self._log_dir, outer=False)
 
         if self._manipuland == "both" and self._separation_distance > 0.0:
+            separation_direction_vec = self._get_separation_direction_vec(
+                self._outer_manipuland_poses[:, 4:], self._inner_manipuland_poses[:, 4:]
+            )
+            separation_direction_vec_unit = separation_direction_vec / np.linalg.norm(separation_direction_vec)
+            self._separation_vec = self._separation_distance / 2.0 * separation_direction_vec_unit
+
             self._modify_data_for_side_by_side_visualization()
 
     def _modify_data_for_side_by_side_visualization(self) -> None:
-        separation_direction_vec = self._get_separation_vec(
-            self._outer_manipuland_poses[:, 4:], self._inner_manipuland_poses[:, 4:]
-        )
-        separation_direction_vec_unit = separation_direction_vec / np.linalg.norm(separation_direction_vec)
-        separation_vec = self._separation_distance / 2.0 * separation_direction_vec_unit
-
         add_force_vec = lambda a, vec: np.array([el + vec if np.linalg.norm(el) > 0.0 else el for el in a])
 
-        self._outer_hydroelastic_centroids = add_force_vec(self._outer_hydroelastic_centroids, separation_vec)
-        self._outer_point_contact_points = add_force_vec(self._outer_point_contact_points, separation_vec)
-        self._outer_manipuland_poses[:, 4:] += separation_vec
+        self._outer_hydroelastic_centroids = add_force_vec(self._outer_hydroelastic_centroids, self._separation_vec)
+        self._outer_point_contact_points = add_force_vec(self._outer_point_contact_points, self._separation_vec)
+        self._outer_manipuland_poses[:, 4:] += self._separation_vec
 
-        self._inner_hydroelastic_centroids = add_force_vec(self._inner_hydroelastic_centroids, -separation_vec)
-        self._inner_point_contact_points = add_force_vec(self._inner_point_contact_points, -separation_vec)
-        self._inner_manipuland_poses[:, 4:] -= separation_vec
+        self._inner_hydroelastic_centroids = add_force_vec(self._inner_hydroelastic_centroids, -self._separation_vec)
+        self._inner_point_contact_points = add_force_vec(self._inner_point_contact_points, -self._separation_vec)
+        self._inner_manipuland_poses[:, 4:] -= self._separation_vec
 
     def _visualize_manipulands(self) -> None:
         """Visualizes the manipuland(s) at the world origin."""
@@ -328,7 +327,7 @@ class ContactForceVisualizer:
         )
 
     @staticmethod
-    def _get_separation_vec(
+    def _get_separation_direction_vec(
         outer_translations: np.ndarray, inner_translations: np.ndarray, viz: bool = False
     ) -> np.ndarray:
         """
@@ -546,10 +545,10 @@ class ContactForceVisualizer:
         with open(html_path, "w") as f:
             f.write(html)
 
-    def _run_loop_iteration(self, current_time: int) -> int:
+    def _run_loop_iteration(self, current_time: int) -> Tuple[float, int]:
         """
         :param current_time: The current timestep.
-        :return: The updated `current_time` timestep.
+        :return: A tuple of (updated current_time, time_idx for new current_time).
         """
         new_demanded_time = self._meshcat.GetSliderValue(TIME_SLIDER_NAME)
         time_idx = np.abs(self._times - new_demanded_time).argmin()
@@ -558,7 +557,7 @@ class ContactForceVisualizer:
         # Only update meshcat if the data changed
         if new_time == current_time:
             time.sleep(0.1)
-            return current_time
+            return current_time, time_idx
         else:
             current_time = new_time
 
@@ -573,7 +572,7 @@ class ContactForceVisualizer:
 
         self._update_manipuland_poses(time_idx)
 
-        return current_time
+        return current_time, time_idx
 
     def run(self) -> None:
         """Runs the infinite visualizer loop."""
@@ -582,7 +581,7 @@ class ContactForceVisualizer:
         print("Entering infinite loop. Force quit to exit.")  # TODO: Check for user input in non-blocking way
         current_time = -1.0  # Force initial meshcat update
         while True:
-            current_time = self._run_loop_iteration(current_time)
+            current_time, _ = self._run_loop_iteration(current_time)
 
             if self._save_html:
                 self._save_current_html()

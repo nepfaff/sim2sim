@@ -111,6 +111,7 @@ def create_env(
     sphere_starting_position: List[float],
     sphere_pid_gains: Dict[str, float],
     hydroelastic_manipuland: bool,
+    sphere_radius: float,
     directive_files: List[str] = [],
     directive_strs: List[str] = [],
 ) -> Tuple[DiagramBuilder, SceneGraph, MultibodyPlant]:
@@ -131,7 +132,7 @@ def create_env(
         directive = LoadModelDirectivesFromString(directive_str)
         ProcessModelDirectives(directive, parser)
 
-    add_sphere(plant, position=sphere_starting_position)
+    add_sphere(plant, radius=sphere_radius, position=sphere_starting_position)
     if hydroelastic_manipuland:
         # Make sphere complient hydroelastic
         sphere = plant.GetBodyByName("sphere")
@@ -154,7 +155,7 @@ def create_env(
     # Sphere controller
     sphere_controller_plant = MultibodyPlant(time_step=timestep)
     sphere_controller_plant.set_name("sphere_controller_plant")
-    add_sphere(sphere_controller_plant)
+    add_sphere(sphere_controller_plant, radius=sphere_radius)
     sphere_controller_plant.Finalize()
     sphere_inverse_dynamics_controller = builder.AddSystem(
         InverseDynamicsController(
@@ -199,6 +200,7 @@ def run_sphere_pushing(
     hydroelastic_manipuland: bool,
     sphere_starting_position: List[float],
     sphere_pid_gains: Dict[str, float],
+    sphere_radius: float,
 ):
     """
     Experiment entrypoint for the sphere pushing scene.
@@ -238,6 +240,7 @@ def run_sphere_pushing(
         manipuland_pose=manipuland_default_pose_transform,
         sphere_starting_position=sphere_starting_position,
         sphere_pid_gains=sphere_pid_gains,
+        sphere_radius=sphere_radius,
         hydroelastic_manipuland=hydroelastic_manipuland,
         directive_files=[scene_directive, manipuland_directive_path],
     )
@@ -250,6 +253,7 @@ def run_sphere_pushing(
         manipuland_pose=manipuland_default_pose_transform,
         sphere_starting_position=sphere_starting_position,
         sphere_pid_gains=sphere_pid_gains,
+        sphere_radius=sphere_radius,
         hydroelastic_manipuland=hydroelastic_manipuland,
         directive_files=[scene_directive, manipuland_directive_path],
     )
@@ -334,6 +338,7 @@ def run_sphere_pushing(
         manipuland_base_link_name=manipuland_base_link_name,
         sphere_starting_position=sphere_starting_position,
         sphere_pid_gains=sphere_pid_gains,
+        sphere_radius=sphere_radius,
         hydroelastic_manipuland=hydroelastic_manipuland,
         directive_files=[scene_directive],
         directive_strs=[processed_mesh_directive],
