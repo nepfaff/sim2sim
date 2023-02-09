@@ -10,7 +10,7 @@ from pydrake.all import (
     Simulator,
 )
 
-from sim2sim.logging import DynamicLoggerBase
+from sim2sim.logging import DynamicLogger
 from sim2sim.util import convert_camera_poses_to_iiwa_eef_poses, prune_infeasible_eef_poses, IIWAJointTrajectorySource
 from sim2sim.images import SphereImageGenerator
 
@@ -25,7 +25,7 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
         self,
         builder: DiagramBuilder,
         scene_graph: SceneGraph,
-        logger: DynamicLoggerBase,
+        logger: DynamicLogger,
         simulate_time: float,
         look_at_point: Union[List, np.ndarray],
         z_distances: Union[List, np.ndarray],

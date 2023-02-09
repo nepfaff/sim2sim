@@ -7,7 +7,7 @@ import sklearn.mixture
 
 from .mesh_processor_base import MeshProcessorBase
 from sim2sim.util import open3d_to_trimesh
-from sim2sim.logging import DynamicLoggerBase
+from sim2sim.logging import DynamicLogger
 from learning_real2sim.src.ellipsoid import Ellipsoid
 
 DIV_EPSILON = 1e-9
@@ -16,7 +16,7 @@ DIV_EPSILON = 1e-9
 class GMMMeshProcessor(MeshProcessorBase):
     """Replaces the mesh with spheres obtained from fitting GMMs using Expectation Maximization."""
 
-    def __init__(self, logger: DynamicLoggerBase, visualize: bool, gmm_em_params: Dict[str, Any], threshold_std: float):
+    def __init__(self, logger: DynamicLogger, visualize: bool, gmm_em_params: Dict[str, Any], threshold_std: float):
         """
         :param logger: The logger.
         :param visualize: Whether to visualize the fitted spheres.

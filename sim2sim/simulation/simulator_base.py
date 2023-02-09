@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from pydrake.all import DiagramBuilder, SceneGraph
 
-from sim2sim.logging.dynamic_logger_base import DynamicLoggerBase
+from sim2sim.logging import DynamicLogger
 
 
 class SimulatorBase(ABC):
@@ -14,7 +14,7 @@ class SimulatorBase(ABC):
         outer_scene_graph: SceneGraph,
         inner_builder: DiagramBuilder,
         inner_scene_graph: SceneGraph,
-        logger: DynamicLoggerBase,
+        logger: DynamicLogger,
         is_hydroelastic: bool,
     ):
         """

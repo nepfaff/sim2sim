@@ -8,7 +8,7 @@ from pydrake.all import (
     RollPitchYaw,
 )
 
-from sim2sim.logging import DynamicLoggerBase
+from sim2sim.logging import DynamicLogger
 from sim2sim.simulation import IIWAJointTrajectorySimulatorBase
 from sim2sim.util import IIWAControlModeSource
 
@@ -22,7 +22,7 @@ class IIWARearrangementSimulator(IIWAJointTrajectorySimulatorBase):
         outer_scene_graph: SceneGraph,
         inner_builder: DiagramBuilder,
         inner_scene_graph: SceneGraph,
-        logger: DynamicLoggerBase,
+        logger: DynamicLogger,
         is_hydroelastic: bool,
         mesh_pose: List[float],
     ):

@@ -7,7 +7,7 @@ from pydrake.all import DiagramBuilder, SceneGraph, Simulator, RigidTransform
 import open3d as o3d
 from scipy.spatial.transform import Rotation as R
 
-from sim2sim.logging import DynamicLoggerBase
+from sim2sim.logging import DynamicLogger
 from sim2sim.simulation import SimulatorBase
 from sim2sim.images import generate_camera_locations_sphere
 from sim2sim.util import ExternalForceSystem
@@ -22,7 +22,7 @@ class RandomForceSimulator(SimulatorBase):
         outer_scene_graph: SceneGraph,
         inner_builder: DiagramBuilder,
         inner_scene_graph: SceneGraph,
-        logger: DynamicLoggerBase,
+        logger: DynamicLogger,
         is_hydroelastic: bool,
         use_point_finger: bool,
         force_magnitude: float,

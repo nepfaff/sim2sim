@@ -1,7 +1,7 @@
-from typing import Tuple, List, Optional, Dict, Any
 import os
-import datetime
+from typing import Tuple, List, Optional, Dict, Any, Union
 import yaml
+import datetime
 
 import numpy as np
 import open3d as o3d
@@ -22,12 +22,13 @@ from pydrake.all import (
 from PIL import Image
 from matplotlib import pyplot as plt
 
-from sim2sim.logging import DynamicLoggerBase
 from sim2sim.util import get_hydroelastic_contact_viz_params, get_point_contact_contact_viz_params
 from .abstract_value_logger import AbstractValueLogger
 
 
-class DynamicLogger(DynamicLoggerBase):
+class DynamicLogger:
+    """The dynamic logger. NOTE: Specialized loggers should inherit from this class."""
+
     def __init__(
         self,
         logging_frequency_hz: float,
@@ -45,11 +46,62 @@ class DynamicLogger(DynamicLoggerBase):
         :param manipuland_name: The name of the manipuland. Required for pose logging.
         :param manipuland_base_link_name: The manipuland base link name. Required for contact result force logging.
         """
-        super().__init__(logging_frequency_hz, logging_path, kProximity)
-
+        self._logging_frequency_hz = logging_frequency_hz
+        self._logging_path = logging_path
+        self._kProximity = kProximity
         self._label_to_mask = label_to_mask
         self._manipuland_name = manipuland_name
         self._manipuland_base_link_name = manipuland_base_link_name
+
+        self._outer_plant: Union[MultibodyPlant, None] = None
+        self._inner_plant: Union[MultibodyPlant, None] = None
+        self._outer_scene_graph: Union[SceneGraph, None] = None
+        self._inner_scene_graph: Union[SceneGraph, None] = None
+
+        if not os.path.exists(logging_path):
+            os.mkdir(logging_path)
+
+        self._creation_timestamp = str(datetime.datetime.now())
+
+        # Data directory names in `logging_path`
+        self._camera_poses_dir_path = os.path.join(logging_path, "camera_poses")
+        self._intrinsics_dir_path = os.path.join(logging_path, "intrinsics")
+        self._images_dir_path = os.path.join(logging_path, "images")
+        self._depths_dir_path = os.path.join(logging_path, "depths")
+        self._masks_dir_path = os.path.join(logging_path, "binary_masks")
+        self._mesh_dir_path = os.path.join(logging_path, "meshes")
+        self._time_logs_dir_path = os.path.join(logging_path, "time_logs")
+        self._data_directory_paths = [
+            self._camera_poses_dir_path,
+            self._intrinsics_dir_path,
+            self._images_dir_path,
+            self._depths_dir_path,
+            self._masks_dir_path,
+            self._mesh_dir_path,
+            self._time_logs_dir_path,
+        ]
+        self._create_data_directories()
+        self._meta_data_file_path = os.path.join(logging_path, "meta_data.yaml")
+        self._experiment_description_file_path = os.path.join(logging_path, "experiment_description.yaml")
+
+        # Camera logs
+        self._camera_poses: List[np.ndarray] = []
+        self._intrinsics: List[np.ndarray] = []
+        self._images: List[np.ndarray] = []
+        self._depths: List[np.ndarray] = []
+        self._labels: List[np.ndarray] = []
+        self._masks: List[np.ndarray] = []
+
+        # Mesh processing logs
+        self._raw_mesh: Optional[o3d.geometry.TriangleMesh] = None
+        self._processed_mesh: Optional[o3d.geometry.TriangleMesh] = None
+        self._processed_meshes: List[o3d.geometry.TriangleMesh] = []
+
+        # Meta data logs
+        self._outer_simulation_time: Optional[float] = None
+        self._inner_simulation_time: Optional[float] = None
+        self._experiment_description: Optional[dict] = None
+        self._meta_data: Dict[str, Any] = {}
 
         # Manipuland pose logs
         self._outer_manipuland_pose_logger = None
@@ -74,6 +126,11 @@ class DynamicLogger(DynamicLoggerBase):
         # Manipuland physics
         self._manipuland_mass_estimated: float = None
         self._manipuland_inertia_estimated: List[float] = None
+
+    def _create_data_directories(self) -> None:
+        for path in self._data_directory_paths:
+            if not os.path.exists(path):
+                os.mkdir(path)
 
     @staticmethod
     def add_meshcat_visualizer(
@@ -127,6 +184,15 @@ class DynamicLogger(DynamicLoggerBase):
                 builder, meshcat, self._outer_plant if is_outer else self._inner_plant, is_hydroelastic
             )
         return visualizer, meshcat
+
+    def add_plants(self, outer_plant: MultibodyPlant, inner_plant: MultibodyPlant) -> None:
+        """Add finalized plants."""
+        self._outer_plant = outer_plant
+        self._inner_plant = inner_plant
+
+    def add_scene_graphs(self, outer_scene_graph: SceneGraph, inner_scene_graph: SceneGraph) -> None:
+        self._outer_scene_graph = outer_scene_graph
+        self._inner_scene_graph = inner_scene_graph
 
     def add_manipuland_pose_logging(self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder) -> None:
         self._outer_manipuland_pose_logger = LogVectorOutput(
@@ -305,21 +371,33 @@ class DynamicLogger(DynamicLoggerBase):
         experiment_description: Optional[dict] = None,
         meta_data: Optional[Dict[str, Any]] = None,
     ) -> None:
-        super().log(
-            camera_poses=camera_poses,
-            intrinsics=intrinsics,
-            images=images,
-            depths=depths,
-            labels=labels,
-            masks=masks,
-            raw_mesh=raw_mesh,
-            processed_mesh=processed_mesh,
-            processed_mesh_piece=processed_mesh_piece,
-            outer_simulation_time=outer_simulation_time,
-            inner_simulation_time=inner_simulation_time,
-            experiment_description=experiment_description,
-            meta_data=meta_data,
-        )
+        """TODO"""
+        if camera_poses is not None:
+            self._camera_poses.extend(camera_poses)
+        if intrinsics is not None:
+            self._intrinsics.extend(intrinsics)
+        if images is not None:
+            self._images.extend(images)
+        if depths is not None:
+            self._depths.extend(depths)
+        if labels is not None:
+            self._labels.extend(labels)
+        if masks is not None:
+            self._masks.extend(masks)
+        if raw_mesh is not None:
+            self._raw_mesh = raw_mesh
+        if processed_mesh is not None:
+            self._processed_mesh = processed_mesh
+        if processed_mesh_piece is not None:
+            self._processed_meshes.extend(processed_mesh_piece)
+        if outer_simulation_time is not None:
+            self._outer_simulation_time = outer_simulation_time
+        if inner_simulation_time is not None:
+            self._inner_simulation_time = inner_simulation_time
+        if experiment_description is not None:
+            self._experiment_description = experiment_description
+        if meta_data is not None:
+            self._meta_data.update(meta_data)
 
     def _create_time_series_plots(self) -> None:
         # Create pose error plots

@@ -3,7 +3,7 @@ from typing import Tuple, List, Union, Any, Dict
 
 import open3d as o3d
 
-from sim2sim.logging import DynamicLoggerBase
+from sim2sim.logging import DynamicLogger
 
 
 class MeshProcessorBase(ABC):
@@ -12,7 +12,7 @@ class MeshProcessorBase(ABC):
     simulation.
     """
 
-    def __init__(self, logger: DynamicLoggerBase):
+    def __init__(self, logger: DynamicLogger):
         """
         :param logger: The logger.
         """

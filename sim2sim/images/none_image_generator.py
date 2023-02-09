@@ -6,7 +6,7 @@ from pydrake.all import (
     SceneGraph,
 )
 
-from sim2sim.logging import DynamicLoggerBase
+from sim2sim.logging import DynamicLogger
 from .image_generator_base import ImageGeneratorBase
 
 
@@ -19,7 +19,7 @@ class NoneImageGenerator(ImageGeneratorBase):
         self,
         builder: DiagramBuilder,
         scene_graph: SceneGraph,
-        logger: DynamicLoggerBase,
+        logger: DynamicLogger,
     ):
         super().__init__(builder, scene_graph, logger)
 

@@ -5,7 +5,7 @@ from typing import Optional
 import numpy as np
 from pydrake.all import DiagramBuilder, SceneGraph, Simulator
 
-from sim2sim.logging import DynamicLoggerBase
+from sim2sim.logging import DynamicLogger
 from sim2sim.simulation import SimulatorBase
 from sim2sim.util import SphereStateSource
 
@@ -19,7 +19,7 @@ class SpherePushingSimulator(SimulatorBase):
         outer_scene_graph: SceneGraph,
         inner_builder: DiagramBuilder,
         inner_scene_graph: SceneGraph,
-        logger: DynamicLoggerBase,
+        logger: DynamicLogger,
         is_hydroelastic: bool,
         settling_time: float,
         manipuland_name: str,

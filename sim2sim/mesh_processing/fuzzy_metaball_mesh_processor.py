@@ -4,7 +4,7 @@ import open3d as o3d
 import numpy as np
 
 from .mesh_processor_base import MeshProcessorBase
-from sim2sim.logging import DynamicLoggerBase
+from sim2sim.logging import DynamicLogger
 from learning_real2sim.src.meta_ball import MetaBall
 from sim2sim.util import open3d_to_trimesh
 
@@ -16,7 +16,7 @@ class FuzzyMetaballMeshProcessor(MeshProcessorBase):
 
     def __init__(
         self,
-        logger: DynamicLoggerBase,
+        logger: DynamicLogger,
         visualize: bool,
         mesh_path: str,
         num_iter: int,

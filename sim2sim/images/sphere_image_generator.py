@@ -16,7 +16,7 @@ from pydrake.all import (
     Context,
 )
 
-from sim2sim.logging import DynamicLoggerBase
+from sim2sim.logging import DynamicLogger
 from .image_generator_base import ImageGeneratorBase
 from .cameras import generate_camera_pose_circle
 
@@ -31,7 +31,7 @@ class SphereImageGenerator(ImageGeneratorBase):
         self,
         builder: DiagramBuilder,
         scene_graph: SceneGraph,
-        logger: DynamicLoggerBase,
+        logger: DynamicLogger,
         simulate_time: float,
         look_at_point: Union[List, np.ndarray],
         z_distances: Union[List, np.ndarray],

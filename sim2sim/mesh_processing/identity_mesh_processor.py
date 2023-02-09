@@ -2,14 +2,14 @@ from typing import Tuple, List, Union, Any, Dict
 
 import open3d as o3d
 
-from sim2sim.logging import DynamicLoggerBase
+from sim2sim.logging import DynamicLogger
 from .mesh_processor_base import MeshProcessorBase
 
 
 class IdentityMeshProcessor(MeshProcessorBase):
     """Implements an identity `process_mesh` function that directly outputs the input mesh."""
 
-    def __init__(self, logger: DynamicLoggerBase):
+    def __init__(self, logger: DynamicLogger):
         super().__init__(logger)
 
     def process_mesh(

@@ -7,7 +7,7 @@ from pydrake.all import (
     Simulator,
 )
 
-from sim2sim.logging import DynamicLoggerBase
+from sim2sim.logging import DynamicLogger
 from sim2sim.simulation import SimulatorBase
 
 
@@ -20,7 +20,7 @@ class BasicSimulator(SimulatorBase):
         outer_scene_graph: SceneGraph,
         inner_builder: DiagramBuilder,
         inner_scene_graph: SceneGraph,
-        logger: DynamicLoggerBase,
+        logger: DynamicLogger,
         is_hydroelastic: bool,
     ):
         super().__init__(outer_builder, outer_scene_graph, inner_builder, inner_scene_graph, logger, is_hydroelastic)
