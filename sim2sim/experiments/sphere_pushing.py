@@ -25,7 +25,7 @@ from pydrake.all import (
 from manipulation.scenarios import AddShape
 
 from sim2sim.simulation import BasicSimulator, SpherePushingSimulator
-from sim2sim.logging import DynamicLogger
+from sim2sim.logging import SpherePushingLogger
 from sim2sim.util import (
     get_parser,
     create_processed_mesh_directive_str,
@@ -50,7 +50,7 @@ SCENE_DIRECTIVE = "../../models/random_force/random_force_directive.yaml"
 
 # TODO: Add type info using base classes
 LOGGERS = {
-    "DynamicLogger": DynamicLogger,
+    "SpherePushingLogger": SpherePushingLogger,
 }
 IMAGE_GENERATORS = {
     "NoneImageGenerator": NoneImageGenerator,

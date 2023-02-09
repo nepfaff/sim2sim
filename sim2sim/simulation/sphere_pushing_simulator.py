@@ -5,7 +5,7 @@ from typing import Optional
 import numpy as np
 from pydrake.all import DiagramBuilder, SceneGraph, Simulator
 
-from sim2sim.logging import DynamicLogger
+from sim2sim.logging import SpherePushingLogger
 from sim2sim.simulation import SimulatorBase
 from sim2sim.util import SphereStateSource
 
@@ -19,7 +19,7 @@ class SpherePushingSimulator(SimulatorBase):
         outer_scene_graph: SceneGraph,
         inner_builder: DiagramBuilder,
         inner_scene_graph: SceneGraph,
-        logger: DynamicLogger,
+        logger: SpherePushingLogger,
         is_hydroelastic: bool,
         settling_time: float,
         manipuland_name: str,
@@ -69,6 +69,7 @@ class SpherePushingSimulator(SimulatorBase):
         self._logger.add_manipuland_pose_logging(self._outer_builder, self._inner_builder)
         self._logger.add_manipuland_contact_force_logging(self._outer_builder, self._inner_builder)
         self._logger.add_contact_result_logging(self._outer_builder, self._inner_builder)
+        self._logger.add_sphere_pose_logging(self._outer_builder, self._inner_builder)
 
         self._outer_diagram = self._outer_builder.Build()
         self._inner_diagram = self._inner_builder.Build()
@@ -150,3 +151,4 @@ class SpherePushingSimulator(SimulatorBase):
             context = simulator.get_mutable_context()
             self._logger.log_manipuland_poses(context, is_outer=(i == 0))
             self._logger.log_manipuland_contact_forces(context, is_outer=(i == 0))
+            self._logger.log_sphere_poses(context, is_outer=(i == 0))

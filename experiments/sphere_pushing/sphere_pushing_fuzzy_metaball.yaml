@@ -25,12 +25,13 @@ script:
 # Component specifications
 # 'args' are constructor arguments that are not part of the base class constructors
 logger:
-  class: "DynamicLogger"
+  class: "SpherePushingLogger"
   args:
     label_to_mask: -1 # NOTE: Does not correspond to anything
     manipuland_name: "ycb_tomato_soup_can"
     manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
     kProximity: true
+    sphere_name: "sphere"
 
 image_generator:
   class: "NoneImageGenerator"

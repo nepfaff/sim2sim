@@ -18,6 +18,7 @@ from pydrake.all import (
     LogVectorOutput,
     Context,
     ContactResults,
+    VectorLogSink,
 )
 from PIL import Image
 from matplotlib import pyplot as plt
@@ -104,18 +105,18 @@ class DynamicLogger:
         self._meta_data: Dict[str, Any] = {}
 
         # Manipuland pose logs
-        self._outer_manipuland_pose_logger = None
+        self._outer_manipuland_pose_logger: VectorLogSink = None
         self._outer_manipuland_poses: np.ndarray = None
         self._outer_manipuland_pose_times: np.ndarray = None
-        self._inner_manipuland_pose_logger = None
+        self._inner_manipuland_pose_logger: VectorLogSink = None
         self._inner_manipuland_poses: np.ndarray = None
         self._inner_manipuland_pose_times: np.ndarray = None
 
         # Manipuland contact force logs
-        self._outer_manipuland_contact_force_logger = None
+        self._outer_manipuland_contact_force_logger: VectorLogSink = None
         self._outer_manipuland_contact_forces: np.ndarray = None
         self._outer_manipuland_contact_force_times: np.ndarray = None
-        self._inner_manipuland_contact_force_logger = None
+        self._inner_manipuland_contact_force_logger: VectorLogSink = None
         self._inner_manipuland_contact_forces: np.ndarray = None
         self._inner_manipuland_contact_force_times: np.ndarray = None
 
