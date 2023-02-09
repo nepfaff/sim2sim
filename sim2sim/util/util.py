@@ -413,3 +413,15 @@ def vector_pose_to_rigidtransform(pose: np.ndarray) -> RigidTransform:
     quat = pose[:4]
     quat_normalized = quat / np.linalg.norm(quat)
     return RigidTransform(Quaternion(quat_normalized), pose[4:])
+
+
+def get_principal_component(points: np.ndarray) -> np.ndarray:
+    """
+    :param points: Points of shape (N,K).
+    :return: The principle component vector of shape (K,).
+    """
+    cov = np.cov(points.T)
+    eigval, eigvec = np.linalg.eig(cov)
+    order = eigval.argsort()
+    principal_component = eigvec[:, order[-1]]
+    return principal_component

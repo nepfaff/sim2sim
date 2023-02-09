@@ -6,6 +6,7 @@ import yaml
 import time
 
 import numpy as np
+import open3d as o3d
 from pydrake.all import (
     StartMeshcat,
     MeshcatVisualizerParams,
@@ -24,7 +25,7 @@ from pydrake.all import (
     RotationMatrix,
 )
 
-from sim2sim.util import get_parser, vector_pose_to_rigidtransform
+from sim2sim.util import get_parser, vector_pose_to_rigidtransform, get_principal_component
 
 # Meshcat item names
 TIME_SLIDER_NAME = "time"
@@ -215,6 +216,40 @@ def add_single_direction_force_arrow(
     )
 
 
+def get_separation_vec(outer_translations: np.ndarray, inner_translations: np.ndarray, viz: bool = False) -> np.ndarray:
+    """
+    Returns the vector perpendicular to both the manipuland translations and the z-axis where the translations are the
+    combined outer and inner translations.
+
+    :param outer_translations: The outer translations of shape (N,3).
+    :param inner_translations: The inner translations of shape (N,3).
+    :param viz: Whether to visualize the translation points with the principal component and separations vectors.
+    :return: The separation vector of shape (3,).
+    """
+    combined_translations = np.concatenate([outer_translations, inner_translations], axis=0)
+    principle_component = get_principal_component(combined_translations)
+    z_axis = [0.0, 0.0, 1.0]
+    separation_vec = np.cross(principle_component, z_axis)
+
+    if viz:
+        # Visualize the outer translations in green, the inner translations in orange, the principal component in blue,
+        # and the separation vector in red
+        outer_pcd = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(outer_translations))
+        outer_pcd.paint_uniform_color([0.0, 1.0, 0.0])
+        inner_pcd = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(inner_translations))
+        inner_pcd.paint_uniform_color([1.0, 0.5, 0.0])  # orange
+        lines = o3d.geometry.LineSet()
+        lines.points = o3d.utility.Vector3dVector(
+            np.array([-principle_component, principle_component, -separation_vec, separation_vec])
+        )
+        lines.lines = o3d.utility.Vector2iVector(np.array([[0, 1], [2, 3]]))
+        lines.colors = o3d.utility.Vector3dVector(np.array([[0.0, 0.0, 1.0], [1.0, 0.0, 0.0]]))
+        world_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.01)
+        o3d.visualization.draw_geometries([outer_pcd, inner_pcd, lines, world_frame])
+
+    return separation_vec
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -243,6 +278,13 @@ def parse_args() -> argparse.Namespace:
         default=1.0,
         type=float,
         help="Sets the length scale of the torque/ moment vectors.",
+    )
+    parser.add_argument(
+        "--separation_distance",
+        default=0.0,
+        type=float,
+        help="The distance in meters that the outer and inner manipuland should be separated from each other. "
+        + "This only has an effect if `--manipuland` is 'both'.",
     )
     parser.add_argument("--save_html", action="store_true", help="Whether to save the meshcat HTML.")
 
@@ -276,6 +318,21 @@ def main():
         inner_point_contact_forces,
         inner_manipuland_poses,
     ) = load_data(log_dir, outer=False)
+
+    if args.manipuland == "both" and args.separation_distance > 0.0:
+        separation_direction_vec = get_separation_vec(outer_manipuland_poses[:, 4:], inner_manipuland_poses[:, 4:])
+        separation_direction_vec_unit = separation_direction_vec / np.linalg.norm(separation_direction_vec)
+        separation_vec = args.separation_distance / 2.0 * separation_direction_vec_unit
+
+        add_force_vec = lambda a, vec: np.array([el + vec if np.linalg.norm(el) > 0.0 else el for el in a])
+
+        outer_hydroelastic_centroids = add_force_vec(outer_hydroelastic_centroids, separation_vec)
+        outer_point_contact_points = add_force_vec(outer_point_contact_points, separation_vec)
+        outer_manipuland_poses[:, 4:] += separation_vec
+
+        inner_hydroelastic_centroids = add_force_vec(inner_hydroelastic_centroids, -separation_vec)
+        inner_point_contact_points = add_force_vec(inner_point_contact_points, -separation_vec)
+        inner_manipuland_poses[:, 4:] -= separation_vec
 
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1e-3)

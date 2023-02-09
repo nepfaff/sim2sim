@@ -8,6 +8,7 @@ from .util import (
     get_point_contact_contact_viz_params,
     copy_object_proximity_properties,
     vector_pose_to_rigidtransform,
+    get_principal_component,
 )
 from .physics import calc_mesh_inertia
 from .iiwa import (

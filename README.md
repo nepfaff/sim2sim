@@ -44,7 +44,7 @@ The visualizer can be used to visualize both `outer` and `inner` manipulands and
 
 Example usage:
 ```bash
-python3 scripts/visualize_contact_forces.py --data logs/sphere_pushing_quadric_decimation/
+python3 scripts/visualize_contact_forces.py --data logs/sphere_pushing_quadric_decimation/ --separation_distance 0.2
 ```
 
 Arrow colors:
