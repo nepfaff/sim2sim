@@ -6,6 +6,9 @@ from manipulation.scenarios import AddShape
 
 from sim2sim.visualization import ContactForceVisualizer
 
+TOGGLE_INNER_SPHERE_BUTTON_NAME = "Toggle inner sphere default visibility"
+TOGGLE_OUTER_SPHERE_BUTTON_NAME = "Toggle outer sphere default visibility"
+
 
 class SpherePushingContactForceVisualizer(ContactForceVisualizer):
     """A sphere pushing experiment specific contact force visualizer."""
@@ -45,6 +48,12 @@ class SpherePushingContactForceVisualizer(ContactForceVisualizer):
 
         self._sphere_radius = self._experiment_description["script"]["args"]["sphere_radius"]
 
+        # Meshcat button data
+        self._toggle_inner_sphere_button_clicks = 0
+        self._inner_sphere_visible = True
+        self._toggle_outer_sphere_button_clicks = 0
+        self._outer_sphere_visible = True
+
         # Load sphere data
         self._outer_sphere_translations = np.loadtxt(os.path.join(self._log_dir, f"outer_sphere_poses.txt"))[:, :3]
         self._inner_sphere_translations = np.loadtxt(os.path.join(self._log_dir, f"inner_sphere_poses.txt"))[:, :3]
@@ -82,9 +91,25 @@ class SpherePushingContactForceVisualizer(ContactForceVisualizer):
             f"visualizer/inner_sphere", RigidTransform(p=self._inner_sphere_translations[time_idx])
         )
 
+    def _update_item_visibility(self) -> None:
+        if self._meshcat.GetButtonClicks(TOGGLE_INNER_SPHERE_BUTTON_NAME) > self._toggle_inner_sphere_button_clicks:
+            self._toggle_inner_sphere_button_clicks += 1
+            self._inner_sphere_visible = not self._inner_sphere_visible
+        self._meshcat.SetProperty(f"visualizer/inner_sphere", "visible", self._inner_sphere_visible)
+        if self._meshcat.GetButtonClicks(TOGGLE_OUTER_SPHERE_BUTTON_NAME) > self._toggle_outer_sphere_button_clicks:
+            self._toggle_outer_sphere_button_clicks += 1
+            self._outer_sphere_visible = not self._outer_sphere_visible
+        self._meshcat.SetProperty(f"visualizer/outer_sphere", "visible", self._outer_sphere_visible)
+
+        super()._update_item_visibility()
+
     def setup(self) -> None:
         self._visualize_spheres()
+
         super().setup()
+
+        self._meshcat.AddButton(name=TOGGLE_INNER_SPHERE_BUTTON_NAME)
+        self._meshcat.AddButton(name=TOGGLE_OUTER_SPHERE_BUTTON_NAME)
 
     def _run_loop_iteration(self, current_time: int) -> int:
         new_time, time_idx = super()._run_loop_iteration(current_time)
