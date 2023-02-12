@@ -35,6 +35,9 @@ TOGGLE_OUTER_GENERALIZED_FORCES_BUTTON_NAME = "Toggle outer generalized forces d
 TOGGLE_INNER_MANIPULAND_BUTTON_NAME = "Toggle inner manipuland default visibility"
 TOGGLE_OUTER_MANIPULAND_BUTTON_NAME = "Toggle outer manipuland default visibility"
 
+# Minimum force/ torque magnitude for Drake operations to work
+FORCE_TORQUE_MIN_MAGNITUDE = 1e-10
+
 
 class ContactForceVisualizer:
     """A visualizer for simultaneously visualizing both outer and inner manipulands with their contact forces."""
@@ -48,6 +51,7 @@ class ContactForceVisualizer:
         newtons_per_meter: float,
         newton_meters_per_meter: float,
         hydroelastic: bool,
+        force_magnitude_theshold: float = 1e-9,
     ):
         """
         :param data_path: Path to the experiment data folder.
@@ -58,6 +62,7 @@ class ContactForceVisualizer:
         :param newtons_per_meter: Sets the length scale of the force vectors.
         :param newton_meters_per_meter: Sets the length scale of the torque/ moment vectors.
         :param hydroelastic: Whether to plot hydroelastic or point contact forces.
+        :param force_magnitude_theshold: Don't visualize forces that have a magnitude of less than this.
         """
         assert manipuland in ["outer", "inner", "both", "none"]
 
@@ -68,6 +73,7 @@ class ContactForceVisualizer:
         self._newtons_per_meter = newtons_per_meter
         self._newton_meters_per_meter = newton_meters_per_meter
         self._hydroelastic = hydroelastic
+        self._force_magnitude_theshold = force_magnitude_theshold
 
         self._log_dir = os.path.join(data_path, "time_logs")
         self._is_setup = False
@@ -225,9 +231,12 @@ class ContactForceVisualizer:
         A contact force arrow that represents equal and opposite forces from the contact point.
         Example: Point contact result forces.
         """
+        force_magnitude = np.linalg.norm(force)
+        if force_magnitude < FORCE_TORQUE_MIN_MAGNITUDE:
+            return
 
         # Create arrow
-        height = np.linalg.norm(force) / self._newtons_per_meter
+        height = force_magnitude / self._newtons_per_meter
         # Cylinder gets scaled to twice the contact force length because we draw both (equal and opposite) forces
         cylinder = Cylinder(radius, 2 * height)
         self._meshcat.SetObject(
@@ -271,60 +280,68 @@ class ContactForceVisualizer:
         A contact force arrow that represents a single force from the centroid (not equal and opposite).
         Examples: Generalized contact forces, hydroelastic contact result forces.
         """
-
-        # Create force arrow
-        force_height = np.linalg.norm(force) / self._newtons_per_meter
-        force_cylinder = Cylinder(radius, force_height)
-        self._meshcat.SetObject(
-            path=path + "/force/cylinder",
-            shape=force_cylinder,
-            rgba=force_rgba,
-        )
         arrowhead_height = arrowhead_width = radius * 2.0
         arrowhead = MeshcatCone(arrowhead_height, arrowhead_width, arrowhead_width)
-        self._meshcat.SetObject(
-            path=path + "/force/head",
-            shape=arrowhead,
-            rgba=force_rgba,
-        )
+
+        force_magnitude = np.linalg.norm(force)
+
+        # Create force arrow
+        if force_magnitude > FORCE_TORQUE_MIN_MAGNITUDE:
+            force_height = np.linalg.norm(force) / self._newtons_per_meter
+            force_cylinder = Cylinder(radius, force_height)
+            self._meshcat.SetObject(
+                path=path + "/force/cylinder",
+                shape=force_cylinder,
+                rgba=force_rgba,
+            )
+            self._meshcat.SetObject(
+                path=path + "/force/head",
+                shape=arrowhead,
+                rgba=force_rgba,
+            )
+
+        torque_magnitude = np.linalg.norm(torque)
 
         # Create torque arrow
-        torque_height = np.linalg.norm(torque) / self._newton_meters_per_meter
-        torque_cylinder = Cylinder(radius, torque_height)
-        self._meshcat.SetObject(
-            path=path + "/torque/cylinder",
-            shape=torque_cylinder,
-            rgba=torque_rgba,
-        )
-        self._meshcat.SetObject(
-            path=path + "/torque/head",
-            shape=arrowhead,
-            rgba=torque_rgba,
-        )
+        if torque_magnitude > FORCE_TORQUE_MIN_MAGNITUDE:
+            torque_height = torque_magnitude / self._newton_meters_per_meter
+            torque_cylinder = Cylinder(radius, torque_height)
+            self._meshcat.SetObject(
+                path=path + "/torque/cylinder",
+                shape=torque_cylinder,
+                rgba=torque_rgba,
+            )
+            self._meshcat.SetObject(
+                path=path + "/torque/head",
+                shape=arrowhead,
+                rgba=torque_rgba,
+            )
 
         # Transform force arrow
-        self._meshcat.SetTransform(
-            path + "/force", RigidTransform(RotationMatrix.MakeFromOneVector(force, 2), centroid)
-        )  # Arrow starts along z-axis (axis 2)
-        self._meshcat.SetTransform(
-            path + "/force/cylinder", RigidTransform([0.0, 0.0, force_height / 2.0])
-        )  # Arrow starts at centroid and goes into single direction
-        self._meshcat.SetTransform(
-            path + "/force/head",
-            RigidTransform(RotationMatrix.MakeXRotation(np.pi), [0.0, 0.0, force_height + arrowhead_height]),
-        )
+        if force_magnitude > FORCE_TORQUE_MIN_MAGNITUDE:
+            self._meshcat.SetTransform(
+                path + "/force", RigidTransform(RotationMatrix.MakeFromOneVector(force, 2), centroid)
+            )  # Arrow starts along z-axis (axis 2)
+            self._meshcat.SetTransform(
+                path + "/force/cylinder", RigidTransform([0.0, 0.0, force_height / 2.0])
+            )  # Arrow starts at centroid and goes into single direction
+            self._meshcat.SetTransform(
+                path + "/force/head",
+                RigidTransform(RotationMatrix.MakeXRotation(np.pi), [0.0, 0.0, force_height + arrowhead_height]),
+            )
 
         # Transform torque arrow
-        self._meshcat.SetTransform(
-            path + "/torque", RigidTransform(RotationMatrix.MakeFromOneVector(torque, 2), centroid)
-        )  # Arrow starts along z-axis (axis 2)
-        self._meshcat.SetTransform(
-            path + "/torque/cylinder", RigidTransform([0.0, 0.0, torque_height / 2.0])
-        )  # Arrow starts at centroid and goes into single direction
-        self._meshcat.SetTransform(
-            path + "/torque/head",
-            RigidTransform(RotationMatrix.MakeXRotation(np.pi), [0.0, 0.0, torque_height + arrowhead_height]),
-        )
+        if torque_magnitude > FORCE_TORQUE_MIN_MAGNITUDE:
+            self._meshcat.SetTransform(
+                path + "/torque", RigidTransform(RotationMatrix.MakeFromOneVector(torque, 2), centroid)
+            )  # Arrow starts along z-axis (axis 2)
+            self._meshcat.SetTransform(
+                path + "/torque/cylinder", RigidTransform([0.0, 0.0, torque_height / 2.0])
+            )  # Arrow starts at centroid and goes into single direction
+            self._meshcat.SetTransform(
+                path + "/torque/head",
+                RigidTransform(RotationMatrix.MakeXRotation(np.pi), [0.0, 0.0, torque_height + arrowhead_height]),
+            )
 
     @staticmethod
     def _get_separation_direction_vec(
@@ -447,7 +464,7 @@ class ContactForceVisualizer:
 
     def _visualize_generalized_contact_forces(self, time_idx: int) -> None:
         outer_generalized_contact_force = self._outer_generalized_contact_forces[time_idx]
-        if np.linalg.norm(outer_generalized_contact_force) > 0.0:
+        if np.linalg.norm(outer_generalized_contact_force) > self._force_magnitude_theshold:
             self._add_single_direction_force_arrow(
                 path="contact_forces/outer_sim_generalized",
                 force=outer_generalized_contact_force[3:],
@@ -457,7 +474,7 @@ class ContactForceVisualizer:
                 torque_rgba=Rgba(0.6, 0.6, 1.0, 1.0),  # purple
             )
         inner_generalized_contact_force = self._inner_generalized_contact_forces[time_idx]
-        if np.linalg.norm(inner_generalized_contact_force) > 0.0:
+        if np.linalg.norm(inner_generalized_contact_force) > self._force_magnitude_theshold:
             self._add_single_direction_force_arrow(
                 path="contact_forces/inner_sim_generalized",
                 force=inner_generalized_contact_force[3:],
@@ -479,7 +496,7 @@ class ContactForceVisualizer:
                     self._outer_hydroelastic_centroids[time_idx],
                 )
             ):
-                if np.linalg.norm(force) > 0.0:
+                if np.linalg.norm(force) > self._force_magnitude_theshold:
                     self._add_single_direction_force_arrow(
                         path=f"contact_forces/outer_sim/force_{i}",
                         force=force,
@@ -496,7 +513,7 @@ class ContactForceVisualizer:
                     self._inner_hydroelastic_centroids[time_idx],
                 )
             ):
-                if np.linalg.norm(force) > 0.0:
+                if np.linalg.norm(force) > self._force_magnitude_theshold:
                     self._add_single_direction_force_arrow(
                         path=f"contact_forces/inner_sim/force_{i}",
                         force=force,
@@ -509,7 +526,7 @@ class ContactForceVisualizer:
             for i, (force, point) in enumerate(
                 zip(self._outer_point_contact_forces[time_idx], self._outer_point_contact_points[time_idx])
             ):
-                if np.linalg.norm(force) > 0.0:
+                if np.linalg.norm(force) > self._force_magnitude_theshold:
                     self._add_equal_opposite_force_arrow(
                         path=f"contact_forces/outer_sim/force_{i}",
                         force=force,
@@ -520,7 +537,7 @@ class ContactForceVisualizer:
             for i, (force, point) in enumerate(
                 zip(self._inner_point_contact_forces[time_idx], self._inner_point_contact_points[time_idx])
             ):
-                if np.linalg.norm(force) > 0.0:
+                if np.linalg.norm(force) > self._force_magnitude_theshold:
                     self._add_equal_opposite_force_arrow(
                         path=f"contact_forces/inner_sim/force_{i}",
                         force=force,
