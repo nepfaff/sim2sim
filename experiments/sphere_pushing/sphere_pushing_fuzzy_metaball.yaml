@@ -2,7 +2,7 @@
 experiment_id: "sphere_pushing_fuzzy_metaball"
 env:
   contact_model: "point"
-  solver: "sap"
+  solver: "tamsi"
   obj_name: "ycb_tomato_soup_can"
 
 script:
