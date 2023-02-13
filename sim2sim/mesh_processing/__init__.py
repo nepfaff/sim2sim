@@ -5,3 +5,4 @@ from .convex_decomp_mesh_processor import ConvexDecompMeshProcessor
 from .col_aware_decomp_mesh_processor import CoACDMeshProcessor
 from .gmm_mesh_processor import GMMMeshProcessor
 from .fuzzy_metaball_mesh_processor import FuzzyMetaballMeshProcessor
+from .identity_primitive_mesh_processor import IdentityPrimitiveMeshProcessor
