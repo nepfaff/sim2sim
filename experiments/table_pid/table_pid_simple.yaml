@@ -1,5 +1,9 @@
 # Unique identifier for this experiment for logging
 experiment_id: "table_pid_simple"
+env:
+  contact_model: "hydroelastic_with_fallback"
+  solver: "sap"
+  obj_name: "ycb_tomato_soup_can"
 
 script:
   name: "table_pid"
@@ -9,6 +13,7 @@ script:
     timestep: 0.001
     final_table_angle: 0.7854
     logging_frequency_hz: 100
+    hydroelastic_manipuland: true
 
 # Component specifications
 # 'args' are constructor arguments that are not part of the base class constructors
@@ -19,7 +24,6 @@ logger:
     manipuland_name: "ycb_tomato_soup_can"
     manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
     kProximity: false
-    hydroelastic_manipuland: true
 
 # image_generator:
 #   class: "SphereImageGenerator"
