@@ -1,12 +1,18 @@
 # Unique identifier for this experiment for logging
 experiment_id: "iiwa_manip_rearrangement_pepper"
 
+env:
+  contact_model: "hydroelastic_with_fallback"
+  solver: "sap"
+  obj_name: "ycb_tomato_soup_can"
+
 script:
   name: "iiwa_manip_pepper"
   args:
     sim_duration: -1.0 # Not used for IIWARearrangementSimulator
-    timestep: 0.01
+    timestep: 0.005
     logging_frequency_hz: 100
+    hydroelastic_manipuland: true
 
 # Component specifications
 # 'args' are constructor arguments that are not part of the base class constructors
@@ -17,7 +23,6 @@ logger:
     manipuland_name: "pepper"
     manipuland_base_link_name: "pepper_base_link"
     kProximity: false
-    hydroelastic_manipuland: true
 
 # image_generator:
 #   class: "SphereImageGenerator"
