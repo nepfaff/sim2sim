@@ -18,6 +18,7 @@ def run_iiwa_manip_tomato_soup_can(
     sim_duration: float,
     timestep: float,
     logging_frequency_hz: float,
+    hydroelastic_manipuland: bool,
 ):
     """
     Experiment entrypoint for the iiwa manip scenes.
@@ -27,6 +28,7 @@ def run_iiwa_manip_tomato_soup_can(
     :param sim_duration: The simulation duration in seconds.
     :param timestep: The timestep to use in seconds.
     :param logging_frequency_hz: The dynamics logging frequency.
+    :param hydroelastic_manipuland: Whether to use hydroelastic or point contact for the inner manipuland.
     """
 
     manipuland_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), MANIPULAND_DIRECTIVE)
@@ -41,4 +43,5 @@ def run_iiwa_manip_tomato_soup_can(
         MANIPULANT_DEFAULT_POSE,
         MANIPULAND_BASE_LINK_NAME,
         MANIPULAND_NAME,
+        hydroelastic_manipuland,
     )

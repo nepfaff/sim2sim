@@ -1,5 +1,4 @@
 import os
-import shutil
 import pathlib
 from typing import List, Tuple
 
@@ -32,7 +31,11 @@ from sim2sim.util import (
 )
 from sim2sim.images import NoneImageGenerator, SphereImageGenerator, IIWAWristSphereImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
-from sim2sim.mesh_processing import IdentityMeshProcessor, QuadricDecimationMeshProcessor
+from sim2sim.mesh_processing import (
+    IdentityMeshProcessor,
+    QuadricDecimationMeshProcessor,
+    IdentityPrimitiveMeshProcessor,
+)
 from sim2sim.simulation import (
     BasicSimulator,
     BasicInnerOnlySimulator,
@@ -58,6 +61,7 @@ INVERSE_GRAPHICS = {
 MESH_PROCESSORS = {
     "IdentityMeshProcessor": IdentityMeshProcessor,
     "QuadricDecimationMeshProcessor": QuadricDecimationMeshProcessor,
+    "IdentityPrimitiveMeshProcessor": IdentityPrimitiveMeshProcessor,
 }
 PHYSICAL_PROPERTY_ESTIMATOR = {
     "WaterDensityPhysicalPropertyEstimator": WaterDensityPhysicalPropertyEstimator,
@@ -120,12 +124,9 @@ def create_env(
     builder.Connect(iiwa_control_mode_source.GetOutputPort("iiwa_control_mode"), iiwa_control_mode_input)
 
     # Add wsg controller
-    (
-        wsg_position_input,
-        wsg_force_limit_input,
-        wsg_state_measured_output,
-        wsg_force_measured_output,
-    ) = add_wsg_system(builder=builder, plant=plant, wsg_instance_idx=plant.GetModelInstanceByName("wsg"))
+    (wsg_position_input, wsg_force_limit_input, wsg_state_measured_output, wsg_force_measured_output,) = add_wsg_system(
+        builder=builder, plant=plant, wsg_instance_idx=plant.GetModelInstanceByName("wsg"), wsg_time_step=timestep
+    )
 
     add_cameras(
         builder=builder,

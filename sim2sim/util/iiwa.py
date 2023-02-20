@@ -172,6 +172,7 @@ def add_wsg_system(
     builder: DiagramBuilder,
     plant: MultibodyPlant,
     wsg_instance_idx: ModelInstanceIndex,
+    wsg_time_step: float,
 ) -> tuple:
     """
     Adds a wsg controller for `wsg_instance_idx`.
@@ -185,7 +186,7 @@ def add_wsg_system(
     wsg_instance_name = plant.GetModelInstanceName(wsg_instance_idx)
 
     # WSG controller
-    wsg_controller = builder.AddSystem(SchunkWsgPositionController())
+    wsg_controller = builder.AddSystem(SchunkWsgPositionController(time_step=wsg_time_step))
     wsg_controller.set_name(wsg_instance_name + "_controller")
 
     builder.Connect(
@@ -585,7 +586,7 @@ class WSGCommandSource(LeafSystem):
 
         self._command_pos = initial_pos
 
-        self._control_output_port = self.DeclareVectorOutputPort("wsg_position", BasicVector(1), self.CalcOutput)
+        self._control_output_port = self.DeclareVectorOutputPort("wsg_position", 1, self.CalcOutput)
 
     def set_new_pos_command(self, pos: float) -> None:
         """
@@ -594,7 +595,7 @@ class WSGCommandSource(LeafSystem):
         self._command_pos = pos
 
     def CalcOutput(self, context, output):
-        output.SetFromVector([self._command_pos])
+        output.SetAtIndex(0, self._command_pos)
 
 
 def prune_infeasible_eef_poses(
