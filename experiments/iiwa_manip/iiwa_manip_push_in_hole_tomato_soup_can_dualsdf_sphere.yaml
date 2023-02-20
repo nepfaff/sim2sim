@@ -1,0 +1,51 @@
+# Unique identifier for this experiment for logging
+experiment_id: "iiwa_manip_push_in_hole_tomato_soup_can_dualsdf_sphere"
+
+env:
+  contact_model: "point"
+  solver: "tamsi"
+  obj_name: "ycb_tomato_soup_can"
+
+script:
+  name: "iiwa_manip_tomato_soup_can"
+  args:
+    sim_duration: -1.0 # Not used for IIWAPushInHoleSimulator
+    timestep: 0.001
+    logging_frequency_hz: 100
+    hydroelastic_manipuland: false
+
+# Component specifications
+# 'args' are constructor arguments that are not part of the base class constructors
+logger:
+  class: "DynamicLogger"
+  args:
+    label_to_mask: 22 # This label corresponds to the tomato soup can in the iiwa_manip_tomato_soup_can setup
+    manipuland_name: "ycb_tomato_soup_can"
+    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
+    kProximity: false
+
+image_generator:
+  class: "NoneImageGenerator"
+  args:
+
+inverse_graphics:
+  class: "IdentityInverseGraphics"
+  args:
+    mesh_path: ./data/pepper_instant_ngp.obj
+    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.5, 0.050450]
+
+mesh_processor:
+  class: "IdentityPrimitiveMeshProcessor"
+  args:
+    primitive_info_path: ./data/tomato_soup_can_dualsdf_sphere.pkl
+
+physical_property_estimator:
+  class: "GTPhysicalPropertyEstimator"
+  args:
+    mass: 0.349000
+    inertia: [[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]
+
+simulator:
+  class: "IIWAPushInHoleSimulator"
+  args:
+    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.5, 0.050450]
