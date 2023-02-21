@@ -120,7 +120,7 @@ def generate_camera_pose_circle(
     look_at_point = look_at_point @ rot_inv
     camera_location_center = camera_location_center @ rot_inv
 
-    points = generate_camera_locations_circle(camera_location_center, radius, num_cam_poses)
+    points = generate_camera_locations_circle(camera_location_center, radius, num_cam_poses, xz=True)
     R_pt3d, T_pt3d = get_look_at_views(points, np.zeros_like(points) + look_at_point)
     R_cv, t_cv = pytorch3d_world2cam_to_opencv_world2cam(R_pt3d, T_pt3d)
 
