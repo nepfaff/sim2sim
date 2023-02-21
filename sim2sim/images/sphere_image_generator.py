@@ -66,7 +66,7 @@ class SphereImageGenerator(ImageGeneratorBase):
         self._min_depth_range = 0.1
         self._max_depth_range = 10.0
 
-    def _generate_camera_poses(self) -> np.ndarray:
+    def _generate_camera_poses(self, visualize: bool = False) -> np.ndarray:
         """
         :return: Homogenous world2cam transforms of shape (n,4,4) where n is the number of camera poses. OpenCV convention.
         """
@@ -79,7 +79,22 @@ class SphereImageGenerator(ImageGeneratorBase):
                 num_cam_poses=num_poses,
             )
             camera_poses.append(X_CWs)
-        return np.concatenate(camera_poses, axis=0)
+        X_CWs = np.concatenate(camera_poses, axis=0)
+
+        if visualize:
+            import open3d as o3d
+
+            viz_geometries = [
+                o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.1).transform(np.linalg.inv(X_CW))
+                for X_CW in X_CWs
+            ]
+
+            # World frame
+            viz_geometries.append(o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.2))
+
+            o3d.visualization.draw_geometries(viz_geometries)
+
+        return X_CWs
 
     def _add_cameras(self, camera_poses: np.ndarray, camera_info: CameraInfo) -> None:
         """
