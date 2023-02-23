@@ -1,0 +1,67 @@
+# Unique identifier for this experiment for logging
+experiment_id: "sphere_pushing_potted_meat_can_coacd"
+env:
+  contact_model: "point"
+  solver: "tamsi"
+  obj_name: "ycb_potted_meat_can"
+
+script:
+  name: "sphere_pushing"
+  args:
+    sim_duration: 1.0
+    timestep: 0.001
+    logging_frequency_hz: 1000
+    manipuland_directive: "../../models/manipulands/potted_meat_can_manipuland_directive.yaml"
+    manipuland_base_link_name: "ycb_potted_meat_can_base_link"
+    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.05]
+    save_raw_mesh: false
+    hydroelastic_manipuland: false
+    sphere_starting_position: [0.3, 0.0, 0.1]
+    sphere_pid_gains:
+      kp: 100.0
+      ki: 1.0
+      kd: 20.0
+    sphere_radius: 0.05
+
+# Component specifications
+# 'args' are constructor arguments that are not part of the base class constructors
+logger:
+  class: "SpherePushingLogger"
+  args:
+    label_to_mask: -1 # NOTE: Does not correspond to anything
+    manipuland_name: "ycb_potted_meat_can"
+    manipuland_base_link_name: "ycb_potted_meat_can_base_link"
+    kProximity: true
+    sphere_name: "sphere"
+
+image_generator:
+  class: "NoneImageGenerator"
+  args:
+
+inverse_graphics:
+  class: "IdentityInverseGraphics"
+  args:
+    mesh_path: ./data/ycb_potted_meat_can/potted_meat_can_instant_ngp.obj
+    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.05]
+
+mesh_processor:
+  class: "CoACDMeshProcessor"
+  args:
+      mesh_name: ./data/ycb_potted_meat_can/potted_meat_can_instant_ngp.obj
+      mesh_dir: "tmp"
+      preview_with_trimesh: false
+
+physical_property_estimator:
+  class: "GTPhysicalPropertyEstimator"
+  args:
+    mass: 0.370
+    inertia: [[0.000317, 0.0, 0.0], [0.0, 0.000421, 0.0], [0.0, 0.0, 0.000533]]
+
+simulator:
+  class: "SpherePushingSimulator"
+  args:
+    settling_time: 0.2
+    manipuland_name: ycb_potted_meat_can
+    controll_period: 0.01
+    closed_loop_control: True
+    num_meters_to_move_in_manpuland_direction: 0.6
