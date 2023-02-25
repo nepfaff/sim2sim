@@ -214,7 +214,7 @@ def run_pipeline(
 
     # Create a new version of the scene for generating camera data
     camera_builder, camera_scene_graph, _ = create_env(
-        env_params=params["env"],
+        env_params=params[f"{prefix}env"],
         timestep=timestep,
         manipuland_base_link_name=manipuland_base_link_name,
         manipuland_pose=manipuland_default_pose,
@@ -288,7 +288,7 @@ def run_pipeline(
             mass,
             inertia,
             logger._mesh_dir_path,
-            params["env"]["obj_name"],
+            params[f"{prefix}env"]["obj_name"],
             manipuland_base_link_name,
             hydroelastic=hydroelastic_manipuland,
             prefix=prefix,
@@ -299,7 +299,7 @@ def run_pipeline(
             inertia,
             processed_mesh_file_path,
             logger._mesh_dir_path,
-            params["env"]["obj_name"],
+            params[f"{prefix}env"]["obj_name"],
             manipuland_base_link_name,
             hydroelastic=hydroelastic_manipuland,
             prefix=prefix,
@@ -307,7 +307,7 @@ def run_pipeline(
 
     builder, scene_graph, plant = create_env(
         timestep=timestep,
-        env_params=params["env"],
+        env_params=params[f"{prefix}env"],
         manipuland_base_link_name=manipuland_base_link_name,
         sphere_starting_position=sphere_starting_position,
         sphere_pid_gains=sphere_pid_gains,
@@ -438,7 +438,8 @@ def run_sphere_pushing(
         inner_builder=inner_builder,
         inner_scene_graph=inner_scene_graph,
         logger=logger,
-        is_hydroelastic=params["env"]["contact_model"] != "point",
+        is_hydroelastic=params[f"{'inner_' if is_pipeline_comparison else ''}env"]["contact_model"]
+        != "point",  # Visualize outer contact forces if inner/outer use different contact engines
         **(params["simulator"]["args"] if params["simulator"]["args"] is not None else {}),
     )
     simulator.simulate(sim_duration)

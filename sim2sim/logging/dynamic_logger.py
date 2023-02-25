@@ -516,6 +516,7 @@ class DynamicLogger:
         raw_mesh_name = f"{prefix}raw_mesh"
         processed_mesh_name = f"{prefix}processed_mesh"
         raw_mesh_file_path = os.path.join(self._mesh_dir_path, f"{raw_mesh_name}.obj")
+        processed_mesh_file_path = ""
 
         if self._raw_mesh:
             o3d.io.write_triangle_mesh(raw_mesh_file_path, self._raw_mesh)

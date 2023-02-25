@@ -1,7 +1,12 @@
 # Unique identifier for this experiment for logging
 experiment_id: "sphere_pushing_coacd_vs_dualsdf_sphere"
-# TODO: specify inner and outer
-env:
+
+outer_env:
+  contact_model: "point"
+  solver: "tamsi"
+  obj_name: "ycb_tomato_soup_can"
+
+inner_env:
   contact_model: "point"
   solver: "tamsi"
   obj_name: "ycb_tomato_soup_can"
@@ -16,7 +21,7 @@ script:
     manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
     manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
     save_raw_mesh: false
-    hydroelastic_manipuland: false
+    hydroelastic_manipuland: false # No effect if 'contact_model' is 'point'
     sphere_starting_position: [0.3, 0.0, 0.1]
     sphere_pid_gains:
       kp: 100.0
@@ -86,6 +91,6 @@ simulator:
     settling_time: 0.2
     manipuland_name: ycb_tomato_soup_can
     controll_period: 0.01
-    closed_loop_control: True
+    closed_loop_control: false
     num_meters_to_move_in_manpuland_direction: 0.6
  
