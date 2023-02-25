@@ -189,6 +189,138 @@ def create_env(
     return builder, scene_graph, plant
 
 
+def run_pipeline(
+    params: dict,
+    logger: SpherePushingLogger,
+    timestep: float,
+    manipuland_base_link_name: str,
+    manipuland_default_pose: RigidTransform,
+    save_raw_mesh: bool,
+    hydroelastic_manipuland: bool,
+    sphere_starting_position: List[float],
+    sphere_pid_gains: Dict[str, float],
+    sphere_radius: float,
+    scene_directive_path: str,
+    manipuland_directive_path: str,
+    prefix: str = "",
+):
+    """
+    Runs the sim2sim pipeline of camera data generation, mesh generation, mesh processing, and physical property
+    estimation.
+
+    :param prefix: The prefix of the pipeline components in `params`.
+    """
+    prefix = prefix + "_" if prefix else ""
+
+    # Create a new version of the scene for generating camera data
+    camera_builder, camera_scene_graph, _ = create_env(
+        env_params=params["env"],
+        timestep=timestep,
+        manipuland_base_link_name=manipuland_base_link_name,
+        manipuland_pose=manipuland_default_pose,
+        sphere_starting_position=sphere_starting_position,
+        sphere_pid_gains=sphere_pid_gains,
+        sphere_radius=sphere_radius,
+        hydroelastic_manipuland=hydroelastic_manipuland,
+        directive_files=[scene_directive_path, manipuland_directive_path],
+    )
+    image_generator_name = f"{prefix}image_generator"
+    image_generator_class = IMAGE_GENERATORS[params[image_generator_name]["class"]]
+    image_generator = image_generator_class(
+        builder=camera_builder,
+        scene_graph=camera_scene_graph,
+        logger=logger,
+        **(params[image_generator_name]["args"] if params[image_generator_name]["args"] is not None else {}),
+    )
+
+    images, intrinsics, extrinsics, depths, labels, masks = image_generator.generate_images()
+    print(f"Finished generating images{f' for {prefix}' if prefix else ''}.")
+
+    inverse_graphics_name = f"{prefix}inverse_graphics"
+    inverse_graphics_class = INVERSE_GRAPHICS[params[inverse_graphics_name]["class"]]
+    inverse_graphics = inverse_graphics_class(
+        **(params[inverse_graphics_name]["args"] if params[inverse_graphics_name]["args"] is not None else {}),
+        images=images,
+        intrinsics=intrinsics,
+        extrinsics=extrinsics,
+        depth=depths,
+        labels=labels,
+        masks=masks,
+    )
+    raw_mesh, raw_mesh_pose = inverse_graphics.run()
+    # TODO: Log 'raw_mesh_pose' and 'manipuland_default_pose_transform' as meta-data
+    print(f"Finished running inverse graphics{f' for {prefix}' if prefix else ''}.")
+
+    mesh_processor_name = f"{prefix}mesh_processor"
+    mesh_processor_class = MESH_PROCESSORS[params[mesh_processor_name]["class"]]
+    mesh_processor = mesh_processor_class(
+        logger=logger,
+        **(params[mesh_processor_name]["args"] if params[mesh_processor_name]["args"] is not None else {}),
+    )
+    is_primitive, processed_mesh, processed_mesh_pieces, primitive_info = mesh_processor.process_mesh(raw_mesh)
+    print(f"Finished mesh processing{f' for {prefix}' if prefix else ''}.")
+
+    # Compute mesh inertia and mass
+    physical_porperty_estimator_name = f"{prefix}physical_property_estimator"
+    physical_property_estimator_class = PHYSICAL_PROPERTY_ESTIMATOR[params[physical_porperty_estimator_name]["class"]]
+    physical_porperty_estimator = physical_property_estimator_class(
+        **(
+            params[physical_porperty_estimator_name]["args"]
+            if params[physical_porperty_estimator_name]["args"] is not None
+            else {}
+        ),
+    )
+    mass, inertia = physical_porperty_estimator.estimate_physical_properties(processed_mesh)
+    print(f"Finished estimating physical properties{f' for {prefix}' if prefix else ''}.")
+    logger.log_manipuland_estimated_physics(manipuland_mass_estimated=mass, manipuland_inertia_estimated=inertia)
+
+    # Save mesh data to create SDF files that can be added to a new simulation environment
+    if save_raw_mesh:
+        logger.log(raw_mesh=raw_mesh)
+    logger.log(processed_mesh=processed_mesh, processed_mesh_piece=processed_mesh_pieces)
+    _, processed_mesh_file_path = logger.save_mesh_data(prefix=prefix)
+    processed_mesh_file_path = os.path.join(pathlib.Path(__file__).parent.resolve(), "../..", processed_mesh_file_path)
+
+    # Create a directive for processed_mesh manipuland
+    if is_primitive:
+        processed_mesh_directive = create_processed_mesh_primitive_directive_str(
+            primitive_info,
+            mass,
+            inertia,
+            logger._mesh_dir_path,
+            params["env"]["obj_name"],
+            manipuland_base_link_name,
+            hydroelastic=hydroelastic_manipuland,
+            prefix=prefix,
+        )
+    else:
+        processed_mesh_directive = create_processed_mesh_directive_str(
+            mass,
+            inertia,
+            processed_mesh_file_path,
+            logger._mesh_dir_path,
+            params["env"]["obj_name"],
+            manipuland_base_link_name,
+            hydroelastic=hydroelastic_manipuland,
+            prefix=prefix,
+        )
+
+    builder, scene_graph, plant = create_env(
+        timestep=timestep,
+        env_params=params["env"],
+        manipuland_base_link_name=manipuland_base_link_name,
+        sphere_starting_position=sphere_starting_position,
+        sphere_pid_gains=sphere_pid_gains,
+        sphere_radius=sphere_radius,
+        hydroelastic_manipuland=hydroelastic_manipuland,
+        directive_files=[scene_directive_path],
+        directive_strs=[processed_mesh_directive],
+        manipuland_pose=RigidTransform(RollPitchYaw(*raw_mesh_pose[:3]), raw_mesh_pose[3:]),
+    )
+
+    return builder, scene_graph, plant
+
+
 def run_sphere_pushing(
     logging_path: str,
     params: dict,
@@ -203,6 +335,7 @@ def run_sphere_pushing(
     sphere_starting_position: List[float],
     sphere_pid_gains: Dict[str, float],
     sphere_radius: float,
+    is_pipeline_comparison: bool,
 ):
     """
     Experiment entrypoint for the sphere pushing scene.
@@ -220,8 +353,10 @@ def run_sphere_pushing(
     :param hydroelastic_manipuland: Whether to use hydroelastic or point contact for the inner manipuland.
     :param sphere_starting_position: The starting position [x, y, z] of the sphere.
     :param sphere_pid_gains: The PID gains of the inverse dynamics controller. Must contain keys "kp", "ki", and "kd".
+    :param sphere_radius: The sphere radius in meters.
+    :param is_pipeline_comparison: Whether it is a sim2sim pipeline comparison experiment.
     """
-    scene_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
+    scene_directive_path = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
     manipuland_directive_path = os.path.join(pathlib.Path(__file__).parent.resolve(), manipuland_directive)
 
     logger_class = LOGGERS[params["logger"]["class"]]
@@ -232,130 +367,76 @@ def run_sphere_pushing(
     )
     logger.log(experiment_description=params)
 
-    manipuland_default_pose_transform = RigidTransform(
-        RollPitchYaw(*manipuland_default_pose[:3]), manipuland_default_pose[3:]
-    )
-    builder_outer, scene_graph_outer, outer_plant = create_env(
-        env_params=params["env"],
-        timestep=timestep,
-        manipuland_base_link_name=manipuland_base_link_name,
-        manipuland_pose=manipuland_default_pose_transform,
-        sphere_starting_position=sphere_starting_position,
-        sphere_pid_gains=sphere_pid_gains,
-        sphere_radius=sphere_radius,
-        hydroelastic_manipuland=hydroelastic_manipuland,
-        directive_files=[scene_directive, manipuland_directive_path],
-    )
+    manipuland_default_pose = RigidTransform(RollPitchYaw(*manipuland_default_pose[:3]), manipuland_default_pose[3:])
+    if is_pipeline_comparison:
+        outer_builder, outer_scene_graph, outer_plant = run_pipeline(
+            prefix="outer",
+            params=params,
+            logger=logger,
+            timestep=timestep,
+            manipuland_base_link_name=manipuland_base_link_name,
+            manipuland_default_pose=manipuland_default_pose,
+            save_raw_mesh=save_raw_mesh,
+            hydroelastic_manipuland=hydroelastic_manipuland,
+            sphere_starting_position=sphere_starting_position,
+            sphere_pid_gains=sphere_pid_gains,
+            sphere_radius=sphere_radius,
+            scene_directive_path=scene_directive_path,
+            manipuland_directive_path=manipuland_directive_path,
+        )
 
-    # Create a new version of the scene for generating camera data
-    builder_camera, scene_graph_camera, _ = create_env(
-        timestep=timestep,
-        env_params=params["env"],
-        manipuland_base_link_name=manipuland_base_link_name,
-        manipuland_pose=manipuland_default_pose_transform,
-        sphere_starting_position=sphere_starting_position,
-        sphere_pid_gains=sphere_pid_gains,
-        sphere_radius=sphere_radius,
-        hydroelastic_manipuland=hydroelastic_manipuland,
-        directive_files=[scene_directive, manipuland_directive_path],
-    )
-    image_generator_class = IMAGE_GENERATORS[params["image_generator"]["class"]]
-    image_generator = image_generator_class(
-        builder=builder_camera,
-        scene_graph=scene_graph_camera,
-        logger=logger,
-        **(params["image_generator"]["args"] if params["image_generator"]["args"] is not None else {}),
-    )
-
-    images, intrinsics, extrinsics, depths, labels, masks = image_generator.generate_images()
-    print("Finished generating images.")
-
-    inverse_graphics_class = INVERSE_GRAPHICS[params["inverse_graphics"]["class"]]
-    inverse_graphics = inverse_graphics_class(
-        **(params["inverse_graphics"]["args"] if params["inverse_graphics"]["args"] is not None else {}),
-        images=images,
-        intrinsics=intrinsics,
-        extrinsics=extrinsics,
-        depth=depths,
-        labels=labels,
-        masks=masks,
-    )
-    raw_mesh, raw_mesh_pose = inverse_graphics.run()
-    # TODO: Log 'raw_mesh_pose' and 'manipuland_default_pose_transform' as meta-data
-    print("Finished running inverse graphics.")
-
-    mesh_processor_class = MESH_PROCESSORS[params["mesh_processor"]["class"]]
-    mesh_processor = mesh_processor_class(
-        logger=logger,
-        **(params["mesh_processor"]["args"] if params["mesh_processor"]["args"] is not None else {}),
-    )
-    is_primitive, processed_mesh, processed_mesh_piece, primitive_info = mesh_processor.process_mesh(raw_mesh)
-    print("Finished mesh processing.")
-
-    # Compute mesh inertia and mass assuming constant density of water
-    physical_property_estimator_class = PHYSICAL_PROPERTY_ESTIMATOR[params["physical_property_estimator"]["class"]]
-    physical_porperty_estimator = physical_property_estimator_class(
-        **(
-            params["physical_property_estimator"]["args"]
-            if params["physical_property_estimator"]["args"] is not None
-            else {}
-        ),
-    )
-    mass, inertia = physical_porperty_estimator.estimate_physical_properties(processed_mesh)
-    print("Finished estimating physical properties.")
-    logger.log_manipuland_estimated_physics(manipuland_mass_estimated=mass, manipuland_inertia_estimated=inertia)
-
-    # Save mesh data to create SDF files that can be added to a new simulation environment
-    if save_raw_mesh:
-        logger.log(raw_mesh=raw_mesh)
-    logger.log(processed_mesh=processed_mesh, processed_mesh_piece=processed_mesh_piece)
-    _, processed_mesh_file_path = logger.save_mesh_data()
-    processed_mesh_file_path = os.path.join(pathlib.Path(__file__).parent.resolve(), "../..", processed_mesh_file_path)
-
-    # Create a directive for processed_mesh manipuland
-    if is_primitive:
-        processed_mesh_directive = create_processed_mesh_primitive_directive_str(
-            primitive_info,
-            mass,
-            inertia,
-            logger._mesh_dir_path,
-            params["env"]["obj_name"],
-            manipuland_base_link_name,
-            hydroelastic=hydroelastic_manipuland,
+        inner_builder, inner_scene_graph, inner_plant = run_pipeline(
+            prefix="inner",
+            params=params,
+            logger=logger,
+            timestep=timestep,
+            manipuland_base_link_name=manipuland_base_link_name,
+            manipuland_default_pose=manipuland_default_pose,
+            save_raw_mesh=save_raw_mesh,
+            hydroelastic_manipuland=hydroelastic_manipuland,
+            sphere_starting_position=sphere_starting_position,
+            sphere_pid_gains=sphere_pid_gains,
+            sphere_radius=sphere_radius,
+            scene_directive_path=scene_directive_path,
+            manipuland_directive_path=manipuland_directive_path,
         )
     else:
-        processed_mesh_directive = create_processed_mesh_directive_str(
-            mass,
-            inertia,
-            processed_mesh_file_path,
-            logger._mesh_dir_path,
-            params["env"]["obj_name"],
-            manipuland_base_link_name,
-            hydroelastic=hydroelastic_manipuland,
+        outer_builder, outer_scene_graph, outer_plant = create_env(
+            env_params=params["env"],
+            timestep=timestep,
+            manipuland_base_link_name=manipuland_base_link_name,
+            manipuland_pose=manipuland_default_pose,
+            sphere_starting_position=sphere_starting_position,
+            sphere_pid_gains=sphere_pid_gains,
+            sphere_radius=sphere_radius,
+            hydroelastic_manipuland=hydroelastic_manipuland,
+            directive_files=[scene_directive_path, manipuland_directive_path],
         )
 
-    builder_inner, scene_graph_inner, inner_plant = create_env(
-        timestep=timestep,
-        env_params=params["env"],
-        manipuland_base_link_name=manipuland_base_link_name,
-        sphere_starting_position=sphere_starting_position,
-        sphere_pid_gains=sphere_pid_gains,
-        sphere_radius=sphere_radius,
-        hydroelastic_manipuland=hydroelastic_manipuland,
-        directive_files=[scene_directive],
-        directive_strs=[processed_mesh_directive],
-        manipuland_pose=RigidTransform(RollPitchYaw(*raw_mesh_pose[:3]), raw_mesh_pose[3:]),
-    )
+        inner_builder, inner_scene_graph, inner_plant = run_pipeline(
+            params=params,
+            logger=logger,
+            timestep=timestep,
+            manipuland_base_link_name=manipuland_base_link_name,
+            manipuland_default_pose=manipuland_default_pose,
+            save_raw_mesh=save_raw_mesh,
+            hydroelastic_manipuland=hydroelastic_manipuland,
+            sphere_starting_position=sphere_starting_position,
+            sphere_pid_gains=sphere_pid_gains,
+            sphere_radius=sphere_radius,
+            scene_directive_path=scene_directive_path,
+            manipuland_directive_path=manipuland_directive_path,
+        )
 
     logger.add_plants(outer_plant, inner_plant)
-    logger.add_scene_graphs(scene_graph_outer, scene_graph_inner)
+    logger.add_scene_graphs(outer_scene_graph, inner_scene_graph)
 
     simulator_class = SIMULATORS[params["simulator"]["class"]]
     simulator = simulator_class(
-        outer_builder=builder_outer,
-        outer_scene_graph=scene_graph_outer,
-        inner_builder=builder_inner,
-        inner_scene_graph=scene_graph_inner,
+        outer_builder=outer_builder,
+        outer_scene_graph=outer_scene_graph,
+        inner_builder=inner_builder,
+        inner_scene_graph=inner_scene_graph,
         logger=logger,
         is_hydroelastic=params["env"]["contact_model"] != "point",
         **(params["simulator"]["args"] if params["simulator"]["args"] is not None else {}),

@@ -101,10 +101,11 @@ def create_decomposition_processed_mesh_sdf_file(
     mass: float,
     inertia: np.ndarray,
     processed_mesh_file_path: str,
-    mesh_pieces: List,
+    mesh_pieces: List[str],
     sdf_folder: str,
     manipuland_base_link_name: str,
     hydroelastic: bool,
+    prefix: str = "",
 ) -> str:
     """
     Creates and saves an SDF file for the processed decomposition of a mesh.
@@ -112,8 +113,10 @@ def create_decomposition_processed_mesh_sdf_file(
     :param mass: The object mass in kg.
     :param inertia: The moment of inertia matrix of shape (3,3).
     :param processed_mesh_file_path: The path to the processed mesh obj file.
+    :param mesh_pieces: A list of mesh piece paths.
     :param sdf_folder: The folder to write the sdf file to.
     :param hydroelastic: Whether to make the body rigid hydroelastic.
+    :param prefix: An optional prefix for the processed mesh sdf file name.
     """
     procesed_mesh_sdf_str = f"""
         <?xml version="1.0"?>
@@ -170,7 +173,7 @@ def create_decomposition_processed_mesh_sdf_file(
             </sdf>
         """
 
-    procesed_mesh_sdf_path = os.path.join(sdf_folder, "processed_mesh.sdf")
+    procesed_mesh_sdf_path = os.path.join(sdf_folder, f"{prefix}processed_mesh.sdf")
     with open(procesed_mesh_sdf_path, "w") as f:
         f.write(procesed_mesh_sdf_str)
 
@@ -185,6 +188,7 @@ def create_processed_mesh_directive_str(
     model_name: str,
     manipuland_base_link_name: str,
     hydroelastic: bool,
+    prefix: str = "",
 ) -> str:
     """
     Creates a directive for the processed mesh.
@@ -195,10 +199,14 @@ def create_processed_mesh_directive_str(
     :param sdf_folder: The folder to write the sdf file to.
     :param model_name: The name of the directive model.
     :param hydroelastic: Whether to make the body rigid hydroelastic.
+    :param prefix: An optional prefix for the processed mesh sdf file name.
     """
     if not (processed_mesh_file_path).endswith(".obj"):
-        dir_name = "/".join(processed_mesh_file_path.split("/")[:-1])
-        listed_files = [os.path.join(dir_name, f) for f in os.listdir(dir_name) if "piece" in f]
+        listed_files = [
+            os.path.join(processed_mesh_file_path, f)
+            for f in os.listdir(processed_mesh_file_path)
+            if "mesh_piece_" in f
+        ]
         procesed_mesh_sdf_path = create_decomposition_processed_mesh_sdf_file(
             mass,
             inertia,
@@ -207,6 +215,7 @@ def create_processed_mesh_directive_str(
             sdf_folder,
             manipuland_base_link_name,
             hydroelastic,
+            prefix,
         )
     else:
         procesed_mesh_sdf_path = create_processed_mesh_sdf_file(
@@ -228,6 +237,7 @@ def create_processed_mesh_primitive_sdf_file(
     sdf_folder: str,
     manipuland_base_link_name: str,
     hydroelastic: bool,
+    prefix: str = "",
 ) -> str:
     """
     Creates and saves an SDF file for a processed mesh consisting of primitive geometries.
@@ -239,6 +249,7 @@ def create_processed_mesh_primitive_sdf_file(
     :param inertia: The moment of inertia matrix of shape (3,3).
     :param sdf_folder: The folder to write the sdf file to.
     :param hydroelastic: Whether to make the body rigid hydroelastic.
+    :param prefix: An optional prefix for the processed mesh sdf file name.
     """
     procesed_mesh_sdf_str = f"""
         <?xml version="1.0"?>
@@ -313,7 +324,7 @@ def create_processed_mesh_primitive_sdf_file(
             </sdf>
         """
 
-    procesed_mesh_sdf_path = os.path.join(sdf_folder, "processed_mesh.sdf")
+    procesed_mesh_sdf_path = os.path.join(sdf_folder, f"{prefix}processed_mesh.sdf")
     with open(procesed_mesh_sdf_path, "w") as f:
         f.write(procesed_mesh_sdf_str)
 
@@ -328,6 +339,7 @@ def create_processed_mesh_primitive_directive_str(
     model_name: str,
     manipuland_base_link_name: str,
     hydroelastic: str,
+    prefix: str = "",
 ) -> str:
     """
     Creates a directive for the processed mesh that contains primitive geometries.
@@ -340,9 +352,10 @@ def create_processed_mesh_primitive_directive_str(
     :param sdf_folder: The folder to write the sdf file to.
     :param model_name: The name of the directive model.
     :param hydroelastic: Whether to make the body rigid hydroelastic.
+    :param prefix: An optional prefix for the processed mesh sdf file name.
     """
     procesed_mesh_sdf_path = create_processed_mesh_primitive_sdf_file(
-        primitive_info, mass, inertia, sdf_folder, manipuland_base_link_name, hydroelastic
+        primitive_info, mass, inertia, sdf_folder, manipuland_base_link_name, hydroelastic, prefix
     )
     processed_mesh_directive = f"""
         directives:
