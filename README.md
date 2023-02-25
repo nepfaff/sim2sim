@@ -29,13 +29,36 @@ pre-commit install
 Install the [learning_real2sim](https://github.com/liruiw/learning_real2sim) repo in development mode based on the
 instructions in its `README`. Note that this repo is only needed for a small subset of experiments.
 
+## Experiment Types
+
+This repo provides two different experiment types. The first one is the sim2sim pipeline experiment as shown in the
+system overview diagram. The second one is for comparing two different sim2sim pipelines by running one of them as the
+'outer' and one of them as the 'inner'. The main difference here is that the sim2sim pipeline is duplicated and one of
+them is run instead of the hand-crafted 'outer'/ real-world manipuland. This is particularly useful for evaluating how
+two different sim2sim pipelines differ from each other (e.g. by using the contact force visualizer).
+
+**NOTE:** The sim2im pipeline comparison experiment type is currently only supported by the `sphere_pushing` experiment.
+
+The sim2sim pipeline comparison experiment type is shown in the image below:
+![pipeline_comparison_diagram](pipeline_comparison_diagram.png)
+
+### Experiment description files
+
+An experiment description file deterministically specifies an experiment. New experiments can easily be constructed by
+mixing components and their parameters in an experiment description file.
+
+An example of a sim2sim pipeline experiment can be found in `experiments/sphere_pushing/sphere_pushing_coacd.yaml` and
+an example of a sim2sim pipeline comparison experiment can be found in
+`experiments/sphere_pushing/sphere_pushing_coacd_vs_dualsdf_sphere.yaml`. These two look very similar apart from the `is_pipeline_comparison` parameter and that there is an `inner` and `outer` version for most components in the pipeline
+comparison experiment.
+
 ## Running an experiment
 
 Replace `experiments/table_pid/table_pid_simple.yaml` in the command below with your experiment description file.
 The experiment description file deterministically specifies an experiment.
 
 ```bash
-python scripts/run_experiment.py --experiment_description experiments/table_pid/table_pid_simple.yaml
+python scripts/run_experiment.py --experiment_description experiments/sphere_pushing/sphere_pushing_coacd.yaml
 ```
 
 ## Contact Force Visualizer
@@ -44,7 +67,7 @@ The visualizer can be used to visualize both `outer` and `inner` manipulands and
 
 Example usage:
 ```bash
-python3 scripts/visualize_contact_forces.py --data logs/sphere_pushing_quadric_decimation/ --separation_distance 0.2
+python3 scripts/visualize_contact_forces.py --data logs/sphere_pushing_coacd/ --separation_distance 0.2
 ```
 
 Arrow colors:
