@@ -104,6 +104,7 @@ class ContactForceVisualizer:
         self._experiment_description = yaml.safe_load(open(experiment_description_path, "r"))
         self._manipuland_name = self._experiment_description["logger"]["args"]["manipuland_name"]
         self._manipuland_base_link_name = self._experiment_description["logger"]["args"]["manipuland_base_link_name"]
+        self._is_pipeline_comparison = self._experiment_description["script"]["args"]["is_pipeline_comparison"]
 
         # Load data
         self._times = np.loadtxt(os.path.join(self._log_dir, "outer_manipuland_pose_times.txt"))
@@ -149,13 +150,19 @@ class ContactForceVisualizer:
     def _visualize_manipulands(self) -> None:
         """Visualizes the manipuland(s) at the world origin."""
         if self._manipuland in ["outer", "both"]:
-            outer_manipuland_directive_path = os.path.join(
-                self._data_path, self._experiment_description["script"]["args"]["manipuland_directive"]
-            )
-            outer_manipuland_directive = LoadModelDirectives(outer_manipuland_directive_path)
-            ProcessModelDirectives(outer_manipuland_directive, self._parser)
+            if self._is_pipeline_comparison:
+                outer_manipuland_sdf_path = os.path.join(self._data_path, "meshes", f"outer_processed_mesh.sdf")
+                self._parser.AddModelFromFile(outer_manipuland_sdf_path, self._manipuland_name)
+            else:
+                outer_manipuland_directive_path = os.path.join(
+                    self._data_path, self._experiment_description["script"]["args"]["manipuland_directive"]
+                )
+                outer_manipuland_directive = LoadModelDirectives(outer_manipuland_directive_path)
+                ProcessModelDirectives(outer_manipuland_directive, self._parser)
         if self._manipuland in ["inner", "both"]:
-            inner_manipuland_sdf_path = os.path.join(self._data_path, "meshes", "processed_mesh.sdf")
+            inner_manipuland_sdf_path = os.path.join(
+                self._data_path, "meshes", f"{'inner_' if self._is_pipeline_comparison else ''}processed_mesh.sdf"
+            )
             self._parser.AddModelFromFile(inner_manipuland_sdf_path, "inner_manipuland")
 
     @staticmethod

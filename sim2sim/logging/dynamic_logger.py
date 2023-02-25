@@ -506,22 +506,29 @@ class DynamicLogger:
     def postprocess_data(self) -> None:
         self._create_time_series_plots()
 
-    def save_mesh_data(self) -> Tuple[str, str]:
+    def save_mesh_data(self, prefix: str = "") -> Tuple[str, str]:
         """
         Saves the raw and processed meshes if they exist.
 
+        :param prefix: An optional prefix for the raw and processed mesh names.
         :return: A tuple of (raw_mesh_file_path, processed_mesh_file_path).
         """
-        raw_mesh_file_path = os.path.join(self._mesh_dir_path, "raw_mesh.obj")
-        processed_mesh_file_path = os.path.join(self._mesh_dir_path, "processed_mesh.obj")
+        raw_mesh_name = f"{prefix}raw_mesh"
+        processed_mesh_name = f"{prefix}processed_mesh"
+        raw_mesh_file_path = os.path.join(self._mesh_dir_path, f"{raw_mesh_name}.obj")
+        processed_mesh_file_path = ""
+
         if self._raw_mesh:
             o3d.io.write_triangle_mesh(raw_mesh_file_path, self._raw_mesh)
         if self._processed_mesh:
+            processed_mesh_file_path = os.path.join(self._mesh_dir_path, f"{processed_mesh_name}.obj")
             o3d.io.write_triangle_mesh(processed_mesh_file_path, self._processed_mesh)
         if self._processed_meshes:
-            processed_mesh_file_path = os.path.join(self._mesh_dir_path, "processed_mesh")
+            processed_mesh_file_path = os.path.join(self._mesh_dir_path, f"{processed_mesh_name}_pieces")
+            if not os.path.exists(processed_mesh_file_path):
+                os.mkdir(processed_mesh_file_path)
             for idx, mesh in enumerate(self._processed_meshes):
-                o3d.io.write_triangle_mesh(processed_mesh_file_path + f"_piece_{idx}.obj", mesh)
+                o3d.io.write_triangle_mesh(os.path.join(processed_mesh_file_path, f"mesh_piece_{idx}.obj"), mesh)
         return raw_mesh_file_path, processed_mesh_file_path
 
     def save_manipuland_pose_logs(self) -> None:
@@ -682,8 +689,5 @@ class DynamicLogger:
         self.save_manipuland_pose_logs()
         self.save_manipuland_contact_force_logs()
         self.save_contact_result_force_logs(self._manipuland_base_link_name)
-
-        # Mesh data
-        self.save_mesh_data()
 
         self.postprocess_data()

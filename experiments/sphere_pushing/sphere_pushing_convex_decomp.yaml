@@ -22,6 +22,7 @@ script:
       ki: 1.0
       kd: 20.0
     sphere_radius: 0.05
+    is_pipeline_comparison: False
 
 # Component specifications
 # 'args' are constructor arguments that are not part of the base class constructors

@@ -1,6 +1,12 @@
 # Unique identifier for this experiment for logging
-experiment_id: "sphere_pushing_coacd"
-env:
+experiment_id: "sphere_pushing_coacd_vs_dualsdf_sphere"
+
+outer_env:
+  contact_model: "point"
+  solver: "tamsi"
+  obj_name: "ycb_tomato_soup_can"
+
+inner_env:
   contact_model: "point"
   solver: "tamsi"
   obj_name: "ycb_tomato_soup_can"
@@ -15,14 +21,14 @@ script:
     manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
     manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
     save_raw_mesh: false
-    hydroelastic_manipuland: false
+    hydroelastic_manipuland: false # No effect if 'contact_model' is 'point'
     sphere_starting_position: [0.3, 0.0, 0.1]
     sphere_pid_gains:
       kp: 100.0
       ki: 1.0
       kd: 20.0
     sphere_radius: 0.05
-    is_pipeline_comparison: False
+    is_pipeline_comparison: True
 
 # Component specifications
 # 'args' are constructor arguments that are not part of the base class constructors
@@ -35,24 +41,45 @@ logger:
     kProximity: true
     sphere_name: "sphere"
 
-image_generator:
+outer_image_generator:
   class: "NoneImageGenerator"
   args:
 
-inverse_graphics:
+inner_image_generator:
+  class: "NoneImageGenerator"
+  args:
+
+outer_inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
     mesh_path: ./data/tomato_soup_can_instant_ngp.obj
     mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
 
-mesh_processor:
+inner_inverse_graphics:
+  class: "IdentityInverseGraphics"
+  args:
+    mesh_path: ./data/tomato_soup_can_instant_ngp.obj
+    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
+
+outer_mesh_processor:
   class: "CoACDMeshProcessor"
   args:
       mesh_name: ./data/tomato_soup_can_instant_ngp.obj
       mesh_dir: "tmp"
       preview_with_trimesh: false
 
-physical_property_estimator:
+inner_mesh_processor:
+  class: "IdentityPrimitiveMeshProcessor"
+  args:
+    primitive_info_path: ./data/tomato_soup_can_dualsdf_sphere.pkl
+
+outer_physical_property_estimator:
+  class: "GTPhysicalPropertyEstimator"
+  args:
+    mass: 0.349000
+    inertia: [[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]
+
+inner_physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
   args:
     mass: 0.349000
@@ -64,5 +91,6 @@ simulator:
     settling_time: 0.2
     manipuland_name: ycb_tomato_soup_can
     controll_period: 0.01
-    closed_loop_control: True
+    closed_loop_control: false
     num_meters_to_move_in_manpuland_direction: 0.6
+ 
