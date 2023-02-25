@@ -1,6 +1,7 @@
 import logging
 import os
 from typing import Tuple, List, Union, Any, Dict
+import shutil
 
 import open3d as o3d
 import trimesh
@@ -92,7 +93,7 @@ class CoACDMeshProcessor(MeshProcessorBase):
             scene.set_camera(angles=(1, 0, 0), distance=0.3, center=(0, 0, 0))
             scene.show()
 
-        os.system(f"rm {out_dir}/*")
+        shutil.rmtree(self._mesh_dir)
         output_meshes = []
         for part in convex_pieces:
             open3d_part = part.as_open3d
