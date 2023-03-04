@@ -123,6 +123,10 @@ See `scripts/visualize_contact_forces.py` for all available arguments.
     ```bash
     python scripts/postprocess_simulation_complexity_data.py --data_path logs/simulation_complexity/
     ```
+    
+## Data format
+
+The camera extrinsics are homogenous `world2cam` transformation matrices with `OpenCV convention`.
 
 ## Requirements for using mesh decomposition
 
