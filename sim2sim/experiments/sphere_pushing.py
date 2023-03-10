@@ -136,6 +136,9 @@ def create_env(
 
     add_sphere(plant, radius=sphere_radius, position=sphere_starting_position)
     if hydroelastic_manipuland:
+        print(
+            "Enabling hydroelastic for sphere. This might take a while. Increase the resolution hint to make this faster."
+        )
         # Make sphere complient hydroelastic
         sphere = plant.GetBodyByName("sphere")
         new_proximity_properties = ProximityProperties()
