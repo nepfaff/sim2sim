@@ -62,7 +62,8 @@ class DynamicLogger:
 
         # Clean logging path
         print(f"Removing and creating {logging_path}")
-        shutil.rmtree(logging_path)
+        if os.path.exists(logging_path):
+            shutil.rmtree(logging_path)
         os.mkdir(logging_path)
 
         self._creation_timestamp = str(datetime.datetime.now())
