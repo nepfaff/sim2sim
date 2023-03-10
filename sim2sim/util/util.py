@@ -1,5 +1,6 @@
 import os
 from typing import List, Dict, Any
+import copy
 
 import open3d as o3d
 import trimesh
@@ -438,3 +439,17 @@ def get_principal_component(points: np.ndarray) -> np.ndarray:
     order = eigval.argsort()
     principal_component = eigvec[:, order[-1]]
     return principal_component
+
+
+def get_main_mesh_cluster(mesh: o3d.geometry.TriangleMesh) -> o3d.geometry.TriangleMesh:
+    """Remove all but the largest mesh cluster."""
+    triangle_clusters, cluster_n_triangles, _ = mesh.cluster_connected_triangles()
+    triangle_clusters = np.asarray(triangle_clusters)
+    cluster_n_triangles = np.asarray(cluster_n_triangles)
+
+    largest_cluster = copy.deepcopy(mesh)
+    largest_cluster_idx = cluster_n_triangles.argmax()
+    triangles_to_remove = triangle_clusters != largest_cluster_idx
+    largest_cluster.remove_triangles_by_mask(triangles_to_remove)
+
+    return largest_cluster

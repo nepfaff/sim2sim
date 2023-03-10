@@ -9,6 +9,7 @@ from .util import (
     copy_object_proximity_properties,
     vector_pose_to_rigidtransform,
     get_principal_component,
+    get_main_mesh_cluster,
 )
 from .physics import calc_mesh_inertia
 from .iiwa import (
