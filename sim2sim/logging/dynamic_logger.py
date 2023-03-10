@@ -2,6 +2,7 @@ import os
 from typing import Tuple, List, Optional, Dict, Any, Union
 import yaml
 import datetime
+import shutil
 
 import numpy as np
 import open3d as o3d
@@ -59,8 +60,10 @@ class DynamicLogger:
         self._outer_scene_graph: Union[SceneGraph, None] = None
         self._inner_scene_graph: Union[SceneGraph, None] = None
 
-        if not os.path.exists(logging_path):
-            os.mkdir(logging_path)
+        # Clean logging path
+        print(f"Removing and creating {logging_path}")
+        shutil.rmtree(logging_path)
+        os.mkdir(logging_path)
 
         self._creation_timestamp = str(datetime.datetime.now())
 
