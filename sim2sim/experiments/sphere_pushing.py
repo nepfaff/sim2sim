@@ -144,7 +144,7 @@ def create_env(
         new_proximity_properties = ProximityProperties()
         # NOTE: Setting hydroelastic properties becomes slow as the resolution hint decreases
         AddCompliantHydroelasticProperties(
-            resolution_hint=0.01, hydroelastic_modulus=1e8, properties=new_proximity_properties
+            resolution_hint=0.1, hydroelastic_modulus=1e8, properties=new_proximity_properties
         )
         geometry_ids = plant.GetCollisionGeometriesForBody(sphere)
         for geometry_id in geometry_ids:
