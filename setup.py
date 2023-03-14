@@ -18,5 +18,6 @@ setup(
         "open3d",
         "scipy",
         "pyrender",
+        "prettytable",
     ],
 )
