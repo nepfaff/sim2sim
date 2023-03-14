@@ -1,5 +1,5 @@
 # Unique identifier for this experiment for logging
-experiment_id: "floor_drop_coacd"
+experiment_id: "floor_drop_quadric_decimation"
 
 env:
   contact_model: "point"
@@ -39,11 +39,9 @@ inverse_graphics:
     mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
 
 mesh_processor:
-  class: "CoACDMeshProcessor"
+  class: "QuadricDecimationMeshProcessor"
   args:
-      mesh_name: ./data/tomato_soup_can_instant_ngp.obj
-      mesh_dir: "tmp"
-      preview_with_trimesh: false
+    target_triangle_num: 10000
 
 physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
@@ -52,5 +50,5 @@ physical_property_estimator:
     inertia: [[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]
 
 simulator:
-  class: "BasicSimulator"
+  class: "BasicSimulator" # BasicInnerOnlySimulator
   args:

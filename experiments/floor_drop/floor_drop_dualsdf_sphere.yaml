@@ -1,5 +1,6 @@
 # Unique identifier for this experiment for logging
 experiment_id: "floor_drop_dualsdf_sphere"
+
 env:
   contact_model: "point"
   solver: "tamsi"
@@ -15,7 +16,7 @@ script:
     manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
     manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
     save_raw_mesh: false
-    hydroelastic_manipuland: true
+    hydroelastic_manipuland: false
 
 # Component specifications
 # 'args' are constructor arguments that are not part of the base class constructors

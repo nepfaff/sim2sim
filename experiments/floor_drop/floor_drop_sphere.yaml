@@ -1,8 +1,9 @@
 # Unique identifier for this experiment for logging
 experiment_id: "floor_drop_sphere"
+
 env:
-  contact_model: "hydroelastic_with_fallback"
-  solver: "sap"
+  contact_model: "point"
+  solver: "tamsi"
   obj_name: "ycb_tomato_soup_can"
 
 script:
@@ -11,11 +12,11 @@ script:
     sim_duration: 0.5
     timestep: 0.01
     logging_frequency_hz: 1000
-    manipuland_directive: "../../models/table_pid/table_pid_manipuland_directive.yaml"
+    manipuland_directive: "../../models/random_force/random_force_manipuland_directive.yaml"
     manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
-    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.3]
+    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
     save_raw_mesh: false
-    hydroelastic_manipuland: true
+    hydroelastic_manipuland: false
 
 # Component specifications
 # 'args' are constructor arguments that are not part of the base class constructors
@@ -35,13 +36,13 @@ inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
     mesh_path: ./data/tomato_soup_can_instant_ngp.obj
-    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.3]
+    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
 
 mesh_processor:
   class: "SphereMeshProcessor"
   args:
     target_sphere_num: 10
-    visualize: true
+    visualize: false
 
 physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
