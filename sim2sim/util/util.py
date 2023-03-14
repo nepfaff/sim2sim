@@ -107,6 +107,7 @@ def create_decomposition_processed_mesh_sdf_file(
     manipuland_base_link_name: str,
     hydroelastic: bool,
     prefix: str = "",
+    parts_are_convex: bool = True,
 ) -> str:
     """
     Creates and saves an SDF file for the processed decomposition of a mesh.
@@ -152,6 +153,7 @@ def create_decomposition_processed_mesh_sdf_file(
                             <pose>0 0 0 0 0 0</pose>
                             <geometry>
                                 <mesh>
+                                    {'<drake:declare_convex/>' if parts_are_convex else ''}
                                     <uri>{mesh_path}</uri>
                                 </mesh>
                             </geometry>
