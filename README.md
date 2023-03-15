@@ -49,7 +49,8 @@ mixing components and their parameters in an experiment description file.
 
 An example of a sim2sim pipeline experiment can be found in `experiments/sphere_pushing/sphere_pushing_coacd.yaml` and
 an example of a sim2sim pipeline comparison experiment can be found in
-`experiments/sphere_pushing/sphere_pushing_coacd_vs_dualsdf_sphere.yaml`. These two look very similar apart from the `is_pipeline_comparison` parameter and that there is an `inner` and `outer` version for most components in the pipeline
+`experiments/sphere_pushing/sphere_pushing_coacd_vs_dualsdf_sphere.yaml`. These two look very similar apart from the
+`is_pipeline_comparison` parameter and that there is an `inner` and `outer` version for most components in the pipeline
 comparison experiment.
 
 ## Running an experiment
@@ -80,8 +81,27 @@ Arrow colors:
 - ![#FF0000](https://placehold.co/15x15/FF0000/FF0000.png) Inner point/ hydroelastic contact force
 - ![#FF8000](https://placehold.co/15x15/FF8000/FF8000.png) Inner hydroelastic contact torque
 
-It is possible to step through time using the left and right arrow keys. The "toggle" buttons in meshcat can be used to show and hide items by default when stepping through time.
+It is possible to step through time using the left and right arrow keys. The "toggle" buttons in meshcat can be used to
+show and hide items by default when stepping through time.
 See `scripts/visualize_contact_forces.py` for all available arguments.
+
+## Evaluating real2sim approaches quantitatively
+
+### Evaluation based on errors at final timestep
+
+The following script can be used for ranking different real2sim approaches based on translation, rotation, and velocity
+errors at the final timestep.
+
+```bash
+python scripts/rank_real2sim_approaches_final_errors.py --experiment_descriptions experiments/floor_drop/
+```
+
+where `experiments/floor_drop/` is a folder containing experiment description files.
+
+The intended setup are experiment description files that describe the same experiment but with different real2sim
+approaches. For example, they may have different real2sim pipeline components or different component parameters.
+The experiment description files are ranked based on a weighted combination of the individual errors. The weights are
+hardcoded in `scripts/rank_real2sim_approaches_final_errors.py`.
 
 ## Generating a mesh dynamic distance dataset
 
@@ -114,7 +134,8 @@ See `scripts/visualize_contact_forces.py` for all available arguments.
     
 ## Generating simulator timing scale data with number of ellipsoids
 
-1. Comment out all meshcat specific stuff in `simulation/random_force_simulator.py` (Drake crashes if more than 100 meshcats are spawned and it is not possible to clean them up without terminating the top-level script).
+1. Comment out all meshcat specific stuff in `simulation/random_force_simulator.py` (Drake crashes if more than 100
+meshcats are spawned and it is not possible to clean them up without terminating the top-level script).
 2. Collect the data:
     ```bash
     python scripts/collect_simulation_complexity_data.py --logging_path logs/simulation_complexity --experiment_description experiments/random_force/random_force_gmm.yaml
@@ -131,7 +152,8 @@ The camera extrinsics are homogenous `world2cam` transformation matrices with `O
 ## Requirements for using mesh decomposition
 
 1. Install [pointnet-pytorch](https://github.com/liruiw/Pointnet2_PyTorch).
-2. Install [v-hacd](https://github.com/mikedh/trimesh/blob/30a423b884903905aba82408255f02dec0b33175/docker/builds/vhacd.bash) in trimesh by running the script.
+2. Install [v-hacd](https://github.com/mikedh/trimesh/blob/30a423b884903905aba82408255f02dec0b33175/docker/builds/vhacd.bash)
+in trimesh by running the script.
 3. Install [CoACD](https://github.com/liruiw/CoACD). Copy the binaries to the system bin with the name `coacd`.
 
 ## Error: "Meshes does not have textures"
