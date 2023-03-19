@@ -292,6 +292,22 @@ def create_processed_mesh_primitive_sdf_file(
                     <radius>{radius}</radius>
                 </sphere>
             """
+        elif info["name"] == "box":
+            size = info["size"]
+            geometry = f"""
+                <box>
+                    <size>{size[0]} {size[1]} {size[2]}</size>
+                </box>
+            """
+        elif info["name"] == "cylinder":
+            height = info["height"]
+            radius = info["radius"]
+            geometry = f"""
+                <cylinder>
+                    <radius>{radius}</radius>
+                    <length>{height}</length>
+                </cylinder>
+            """
         else:
             raise RuntimeError(f"Unsupported primitive type: {info['name']}")
 
