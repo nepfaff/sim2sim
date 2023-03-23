@@ -51,6 +51,7 @@ class ContactForceVisualizer:
         newtons_per_meter: float,
         newton_meters_per_meter: float,
         hydroelastic: bool,
+        kIllustration: bool,
         force_magnitude_theshold: float = 1e-9,
     ):
         """
@@ -62,6 +63,7 @@ class ContactForceVisualizer:
         :param newtons_per_meter: Sets the length scale of the force vectors.
         :param newton_meters_per_meter: Sets the length scale of the torque/ moment vectors.
         :param hydroelastic: Whether to plot hydroelastic or point contact forces.
+        :param kIllustration: Whether to use kIllustration or kProximity for meshcat.
         :param force_magnitude_theshold: Don't visualize forces that have a magnitude of less than this.
         """
         assert manipuland in ["outer", "inner", "both", "none"]
@@ -73,6 +75,7 @@ class ContactForceVisualizer:
         self._newtons_per_meter = newtons_per_meter
         self._newton_meters_per_meter = newton_meters_per_meter
         self._hydroelastic = hydroelastic
+        self._kIllustration = kIllustration
         self._force_magnitude_theshold = force_magnitude_theshold
 
         self._log_dir = os.path.join(data_path, "time_logs")
@@ -392,7 +395,7 @@ class ContactForceVisualizer:
 
         # Add meshcat
         meshcat_params = MeshcatVisualizerParams()
-        meshcat_params.role = Role.kProximity
+        meshcat_params.role = Role.kIllustration if self._kIllustration else Role.kProximity
         _ = MeshcatVisualizer.AddToBuilder(
             self._builder, self._scene_graph.get_query_output_port(), self._meshcat, meshcat_params
         )

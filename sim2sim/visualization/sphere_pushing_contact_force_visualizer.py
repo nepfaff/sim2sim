@@ -22,6 +22,7 @@ class SpherePushingContactForceVisualizer(ContactForceVisualizer):
         newtons_per_meter: float,
         newton_meters_per_meter: float,
         hydroelastic: bool,
+        kIllustration: bool,
         sphere_transparency: float,
     ):
         """
@@ -33,6 +34,7 @@ class SpherePushingContactForceVisualizer(ContactForceVisualizer):
         :param newtons_per_meter: Sets the length scale of the force vectors.
         :param newton_meters_per_meter: Sets the length scale of the torque/ moment vectors.
         :param hydroelastic: Whether to plot hydroelastic or point contact forces.
+        :param kIllustration: Whether to use kIllustration or kProximity for meshcat.
         :param sphere_transparency: The alpha value of the sphere in range (0,1].
         """
         super().__init__(
@@ -43,6 +45,7 @@ class SpherePushingContactForceVisualizer(ContactForceVisualizer):
             newtons_per_meter,
             newton_meters_per_meter,
             hydroelastic,
+            kIllustration,
         )
         self._sphere_transparency = sphere_transparency
 

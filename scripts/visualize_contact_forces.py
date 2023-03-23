@@ -15,6 +15,9 @@ def main():
         "--hydroelastic", action="store_true", help="Whether to plot hydroelastic or point contact forces."
     )
     parser.add_argument(
+        "--kIllustration", action="store_true", help="Whether to use kIllustration or kProximity for meshcat."
+    )
+    parser.add_argument(
         "--manipuland",
         default="both",
         type=str,
@@ -50,6 +53,7 @@ def main():
         newtons_per_meter=args.newtons_per_meter,
         newton_meters_per_meter=args.newton_meters_per_meter,
         hydroelastic=args.hydroelastic,
+        kIllustration=args.kIllustration,
     )
     visualizer.setup()
 
