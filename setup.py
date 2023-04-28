@@ -19,5 +19,6 @@ setup(
         "scipy",
         "pyrender",
         "prettytable",
+        "wandb",
     ],
 )
