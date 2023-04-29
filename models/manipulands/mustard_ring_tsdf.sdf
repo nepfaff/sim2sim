@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="ycb_mustard_bottle">
+    <!--
+    Axes:
+      +X - Left, when facing front (smaller dimension)
+      +Y - Towards Bottom (larger dimension)
+      +Z - Towards Front (with label)
+    Origin:
+      (0, 0, 0) at the center of the bottle's bounding box.
+  -->
+    <link name="ycb_mustard_bottle_base_link">
+      <inertial>
+        <mass>0.435</mass>
+        <inertia>
+          <ixx>1.1176e-03</ixx>
+          <ixy>-2.0519e-06</ixy>
+          <ixz>5.1302e-06</ixz>
+          <iyy>9.9144e-04</iyy>
+          <iyz>1.3985e-06</iyz>
+          <izz>2.4789e-04</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>../../data/ycb_mustard_bottle/mustard_ring_tsdf.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>../../data/ycb_mustard_bottle/mustard_ring_tsdf.obj</uri>
+          </mesh>
+        </geometry>
+         <drake:proximity_properties>
+          <drake:rigid_hydroelastic/>
+          <drake:mesh_resolution_hint>0.01</drake:mesh_resolution_hint>
+        </drake:proximity_properties>
+      </collision>
+    </link>
+  </model>
+</sdf>

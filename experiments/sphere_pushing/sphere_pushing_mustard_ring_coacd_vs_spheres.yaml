@@ -52,26 +52,26 @@ inner_image_generator:
 outer_inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
-    mesh_path: ./data/ycb_mustard_bottle/mustard_ring.obj
+    mesh_path: ./data/ycb_mustard_bottle/mustard_ring_tsdf.obj
     mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
 
 inner_inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
-    mesh_path: ./data/ycb_mustard_bottle/mustard_ring.obj
+    mesh_path: ./data/ycb_mustard_bottle/mustard_ring_tsdf.obj
     mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
 
 outer_mesh_processor:
   class: "CoACDMeshProcessor"
   args:
-      mesh_name: ./data/ycb_mustard_bottle/mustard_ring.obj
+      mesh_name: ./data/ycb_mustard_bottle/mustard_ring_tsdf.obj
       mesh_dir: "tmp"
       preview_with_trimesh: false
 
 inner_mesh_processor:
   class: "IdentityPrimitiveMeshProcessor"
   args:
-    primitive_info_path: ./data/ycb_mustard_bottle/mustard_ring_dualsdf_spheres.pkl
+    primitive_info_path: ./data/ycb_mustard_bottle/mustard_ring_tsdf_dualsdf_spheres.pkl
 
 outer_physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
