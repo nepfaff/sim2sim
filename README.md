@@ -103,6 +103,33 @@ approaches. For example, they may have different real2sim pipeline components or
 The experiment description files are ranked based on a weighted combination of the individual errors. The weights are
 hardcoded in `scripts/rank_real2sim_approaches_final_errors.py`.
 
+### Evaluating a primitive representation collection based on errors at the final timestep
+
+The following script can be used for ranking representations in a primitive representation based on translation, rotation,
+and velocity errors at the final timestep.
+
+```bash
+python scripts/evaluate_primitive_representation_collection.py --path representation_collection/ --experiment_description experiments/sphere_pushing/sphere_pushing_mustard_ring_coacd_vs_spheres.yaml
+```
+
+where `representation_collection/` is a folder with the following structure:
+- representation_collection/
+    - representation1/
+        - primitive_info.pkl
+    - representation2/
+        - primitive_info.pkl
+    - ...
+    - representationN/
+        - primitive_info.pkl
+    - physical_properties.yaml
+
+`physical_properties.yaml` must contain a `mass` and a `inertia` field.
+
+The experiment description specifies the experiment and must contain the following components:
+- `IdentityPrimitiveMeshProcessor` for `inner_mesh_processor`
+- `GTPhysicalPropertyEstimator` for `outer_physical_property_estimator`
+- `GTPhysicalPropertyEstimator` for `inner_physical_property_estimator`
+
 ## Generating a mesh dynamic distance dataset
 
 **NOTE:** Currently only the `random_force` experiment is supported.

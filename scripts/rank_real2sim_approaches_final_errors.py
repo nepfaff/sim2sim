@@ -11,6 +11,7 @@ import argparse
 import shutil
 from typing import List
 import time
+from pathlib import Path
 
 import wandb
 
@@ -40,9 +41,11 @@ def main():
     experiment_descriptions_path = args.experiment_descriptions
     logging_path = args.logging_path
 
+    current_time = time.strftime("%Y-%b-%d-%H-%M-%S")
+    experiment_description_folder_name = Path(experiment_descriptions_path).parts[-1]
     wandb.init(
         project="sim2sim_rank_real2sim_approaches_final_errors",
-        name=time.strftime("%Y-%b-%d-%H-%M-%S"),
+        name=f"{experiment_description_folder_name}_{current_time}",
         config=vars(args),
     )
 

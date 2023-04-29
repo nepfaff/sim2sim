@@ -6,7 +6,14 @@ import open3d as o3d
 import trimesh
 import numpy as np
 from scipy.spatial.transform import Rotation as R
-from pydrake.all import MultibodyPlant, Parser, RigidTransform, ContactVisualizerParams, ProximityProperties, Quaternion
+from pydrake.all import (
+    MultibodyPlant,
+    Parser,
+    RigidTransform,
+    ContactVisualizerParams,
+    ProximityProperties,
+    Quaternion,
+)
 from manipulation.scenarios import AddPackagePaths
 from manipulation.meshcat_utils import AddMeshcatTriad
 
@@ -222,7 +229,12 @@ def create_processed_mesh_directive_str(
         )
     else:
         procesed_mesh_sdf_path = create_processed_mesh_sdf_file(
-            mass, inertia, processed_mesh_file_path, sdf_folder, manipuland_base_link_name, hydroelastic
+            mass,
+            inertia,
+            processed_mesh_file_path,
+            sdf_folder,
+            manipuland_base_link_name,
+            hydroelastic,
         )
     processed_mesh_directive = f"""
         directives:
@@ -374,7 +386,13 @@ def create_processed_mesh_primitive_directive_str(
     :param prefix: An optional prefix for the processed mesh sdf file name.
     """
     procesed_mesh_sdf_path = create_processed_mesh_primitive_sdf_file(
-        primitive_info, mass, inertia, sdf_folder, manipuland_base_link_name, hydroelastic, prefix
+        primitive_info,
+        mass,
+        inertia,
+        sdf_folder,
+        manipuland_base_link_name,
+        hydroelastic,
+        prefix,
     )
     processed_mesh_directive = f"""
         directives:
@@ -427,7 +445,8 @@ def get_point_contact_contact_viz_params() -> ContactVisualizerParams:
 
 
 def copy_object_proximity_properties(
-    const_proximity_properties: ProximityProperties, new_proximity_properties: ProximityProperties
+    const_proximity_properties: ProximityProperties,
+    new_proximity_properties: ProximityProperties,
 ) -> None:
     """Copies properties from `const_proximity_properties` to `new_proximity_properties`."""
     for group_name in const_proximity_properties.GetGroupNames():
@@ -436,7 +455,9 @@ def copy_object_proximity_properties(
             if new_proximity_properties.HasProperty(group_name, name):
                 continue
             new_proximity_properties.AddProperty(
-                group_name, name, const_proximity_properties.GetProperty(group_name, name)
+                group_name,
+                name,
+                const_proximity_properties.GetProperty(group_name, name),
             )
 
 
