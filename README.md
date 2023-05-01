@@ -130,6 +130,8 @@ The experiment description specifies the experiment and must contain the followi
 - `GTPhysicalPropertyEstimator` for `outer_physical_property_estimator`
 - `GTPhysicalPropertyEstimator` for `inner_physical_property_estimator`
 
+**NOTE:** Make sure that `inner_env` uses the desired contact model for simulating the representation collection (`point` or `hydroelastic_with_fallback`).
+
 ## Generating a mesh dynamic distance dataset
 
 **NOTE:** Currently only the `random_force` experiment is supported.
