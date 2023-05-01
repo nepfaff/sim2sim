@@ -14,7 +14,7 @@ from pydrake.all import (
     ProximityProperties,
     Quaternion,
 )
-from manipulation.scenarios import AddPackagePaths
+from manipulation.utils import AddPackagePaths
 from manipulation.meshcat_utils import AddMeshcatTriad
 
 
