@@ -13,7 +13,12 @@ script:
     timestep: 0.001
     final_table_angle: 0.7854
     logging_frequency_hz: 100
+    manipuland_directive: "../../models/random_force/random_force_manipuland_directive.yaml"
+    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
+    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.57545]
+    save_raw_mesh: false
     hydroelastic_manipuland: true
+    is_pipeline_comparison: false
 
 # Component specifications
 # 'args' are constructor arguments that are not part of the base class constructors
