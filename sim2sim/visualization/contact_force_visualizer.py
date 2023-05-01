@@ -24,14 +24,22 @@ from pydrake.all import (
     RotationMatrix,
 )
 
-from sim2sim.util import get_parser, vector_pose_to_rigidtransform, get_principal_component
+from sim2sim.util import (
+    get_parser,
+    vector_pose_to_rigidtransform,
+    get_principal_component,
+)
 
 # Meshcat item names
 TIME_SLIDER_NAME = "time"
 TOGGLE_INNER_FORCES_BUTTON_NAME = "Toggle inner forces default visibility"
 TOGGLE_OUTER_FORCES_BUTTON_NAME = "Toggle outer forces default visibility"
-TOGGLE_INNER_GENERALIZED_FORCES_BUTTON_NAME = "Toggle inner generalized forces default visibility"
-TOGGLE_OUTER_GENERALIZED_FORCES_BUTTON_NAME = "Toggle outer generalized forces default visibility"
+TOGGLE_INNER_GENERALIZED_FORCES_BUTTON_NAME = (
+    "Toggle inner generalized forces default visibility"
+)
+TOGGLE_OUTER_GENERALIZED_FORCES_BUTTON_NAME = (
+    "Toggle outer generalized forces default visibility"
+)
 TOGGLE_INNER_MANIPULAND_BUTTON_NAME = "Toggle inner manipuland default visibility"
 TOGGLE_OUTER_MANIPULAND_BUTTON_NAME = "Toggle outer manipuland default visibility"
 
@@ -99,18 +107,32 @@ class ContactForceVisualizer:
 
         # Create Drake environment for visualizing SDF files
         self._builder = DiagramBuilder()
-        self._plant, self._scene_graph = AddMultibodyPlantSceneGraph(self._builder, 1e-3)
+        self._plant, self._scene_graph = AddMultibodyPlantSceneGraph(
+            self._builder, 1e-3
+        )
         self._parser = get_parser(self._plant)
 
         # Extract params from the experiment description
-        experiment_description_path = os.path.join(self._data_path, "experiment_description.yaml")
-        self._experiment_description = yaml.safe_load(open(experiment_description_path, "r"))
-        self._manipuland_name = self._experiment_description["logger"]["args"]["manipuland_name"]
-        self._manipuland_base_link_name = self._experiment_description["logger"]["args"]["manipuland_base_link_name"]
-        self._is_pipeline_comparison = self._experiment_description["script"]["args"]["is_pipeline_comparison"]
+        experiment_description_path = os.path.join(
+            self._data_path, "experiment_description.yaml"
+        )
+        self._experiment_description = yaml.safe_load(
+            open(experiment_description_path, "r")
+        )
+        self._manipuland_name = self._experiment_description["logger"]["args"][
+            "manipuland_name"
+        ]
+        self._manipuland_base_link_name = self._experiment_description["logger"][
+            "args"
+        ]["manipuland_base_link_name"]
+        self._is_pipeline_comparison = self._experiment_description["script"]["args"][
+            "is_pipeline_comparison"
+        ]
 
         # Load data
-        self._times = np.loadtxt(os.path.join(self._log_dir, "outer_manipuland_pose_times.txt"))
+        self._times = np.loadtxt(
+            os.path.join(self._log_dir, "outer_manipuland_pose_times.txt")
+        )
         (
             self._outer_generalized_contact_forces,
             self._outer_hydroelastic_centroids,
@@ -134,37 +156,62 @@ class ContactForceVisualizer:
             separation_direction_vec = self._get_separation_direction_vec(
                 self._outer_manipuland_poses[:, 4:], self._inner_manipuland_poses[:, 4:]
             )
-            separation_direction_vec_unit = separation_direction_vec / np.linalg.norm(separation_direction_vec)
-            self._separation_vec = self._separation_distance / 2.0 * separation_direction_vec_unit
+            separation_direction_vec_unit = separation_direction_vec / np.linalg.norm(
+                separation_direction_vec
+            )
+            self._separation_vec = (
+                self._separation_distance / 2.0 * separation_direction_vec_unit
+            )
 
             self._modify_data_for_side_by_side_visualization()
 
     def _modify_data_for_side_by_side_visualization(self) -> None:
-        add_force_vec = lambda a, vec: np.array([el + vec if np.linalg.norm(el) > 0.0 else el for el in a])
+        add_force_vec = lambda a, vec: np.array(
+            [el + vec if np.linalg.norm(el) > 0.0 else el for el in a]
+        )
 
-        self._outer_hydroelastic_centroids = add_force_vec(self._outer_hydroelastic_centroids, self._separation_vec)
-        self._outer_point_contact_points = add_force_vec(self._outer_point_contact_points, self._separation_vec)
+        self._outer_hydroelastic_centroids = add_force_vec(
+            self._outer_hydroelastic_centroids, self._separation_vec
+        )
+        self._outer_point_contact_points = add_force_vec(
+            self._outer_point_contact_points, self._separation_vec
+        )
         self._outer_manipuland_poses[:, 4:] += self._separation_vec
 
-        self._inner_hydroelastic_centroids = add_force_vec(self._inner_hydroelastic_centroids, -self._separation_vec)
-        self._inner_point_contact_points = add_force_vec(self._inner_point_contact_points, -self._separation_vec)
+        self._inner_hydroelastic_centroids = add_force_vec(
+            self._inner_hydroelastic_centroids, -self._separation_vec
+        )
+        self._inner_point_contact_points = add_force_vec(
+            self._inner_point_contact_points, -self._separation_vec
+        )
         self._inner_manipuland_poses[:, 4:] -= self._separation_vec
 
     def _visualize_manipulands(self) -> None:
         """Visualizes the manipuland(s) at the world origin."""
         if self._manipuland in ["outer", "both"]:
             if self._is_pipeline_comparison:
-                outer_manipuland_sdf_path = os.path.join(self._data_path, "meshes", f"outer_processed_mesh.sdf")
-                self._parser.AddModelFromFile(outer_manipuland_sdf_path, self._manipuland_name)
+                outer_manipuland_sdf_path = os.path.join(
+                    self._data_path, "meshes", f"outer_processed_mesh.sdf"
+                )
+                self._parser.AddModelFromFile(
+                    outer_manipuland_sdf_path, self._manipuland_name
+                )
             else:
                 outer_manipuland_directive_path = os.path.join(
-                    self._data_path, self._experiment_description["script"]["args"]["manipuland_directive"]
+                    self._data_path,
+                    self._experiment_description["script"]["args"][
+                        "manipuland_directive"
+                    ],
                 )
-                outer_manipuland_directive = LoadModelDirectives(outer_manipuland_directive_path)
+                outer_manipuland_directive = LoadModelDirectives(
+                    outer_manipuland_directive_path
+                )
                 ProcessModelDirectives(outer_manipuland_directive, self._parser)
         if self._manipuland in ["inner", "both"]:
             inner_manipuland_sdf_path = os.path.join(
-                self._data_path, "meshes", f"{'inner_' if self._is_pipeline_comparison else ''}processed_mesh.sdf"
+                self._data_path,
+                "meshes",
+                f"{'inner_' if self._is_pipeline_comparison else ''}processed_mesh.sdf",
             )
             self._parser.AddModelFromFile(inner_manipuland_sdf_path, "inner_manipuland")
 
@@ -187,11 +234,15 @@ class ContactForceVisualizer:
             )
 
         # Generalized contact forces
-        generalized_contact_forces = np.loadtxt(os.path.join(log_dir, f"{prefix}_manipuland_contact_forces.txt"))
+        generalized_contact_forces = np.loadtxt(
+            os.path.join(log_dir, f"{prefix}_manipuland_contact_forces.txt")
+        )
 
         # Hydroelastic
         contact_result_force_centroids_raw = np.load(
-            os.path.join(log_dir, f"{prefix}_hydroelastic_contact_result_centroids.npy"),
+            os.path.join(
+                log_dir, f"{prefix}_hydroelastic_contact_result_centroids.npy"
+            ),
             allow_pickle=True,
         )
         hydroelastic_centroids = process_array(contact_result_force_centroids_raw)
@@ -208,16 +259,20 @@ class ContactForceVisualizer:
 
         # Point contact
         point_contact_result_contact_points_raw = np.load(
-            os.path.join(log_dir, f"{prefix}_point_contact_result_contact_points.npy"), allow_pickle=True
+            os.path.join(log_dir, f"{prefix}_point_contact_result_contact_points.npy"),
+            allow_pickle=True,
         )
         point_contact_points = process_array(point_contact_result_contact_points_raw)
         point_contact_result_forces_raw = np.load(
-            os.path.join(log_dir, f"{prefix}_point_contact_result_forces.npy"), allow_pickle=True
+            os.path.join(log_dir, f"{prefix}_point_contact_result_forces.npy"),
+            allow_pickle=True,
         )
         point_contact_forces = process_array(point_contact_result_forces_raw)
 
         # Manipuland poses
-        manipuland_poses = np.loadtxt(os.path.join(log_dir, f"{prefix}_manipuland_poses.txt"))[:, :7]
+        manipuland_poses = np.loadtxt(
+            os.path.join(log_dir, f"{prefix}_manipuland_poses.txt")
+        )[:, :7]
 
         return (
             generalized_contact_forces,
@@ -269,11 +324,18 @@ class ContactForceVisualizer:
 
         # Transform arrow
         self._meshcat.SetTransform(
-            path, RigidTransform(RotationMatrix.MakeFromOneVector(force, 2), contact_point)
+            path,
+            RigidTransform(RotationMatrix.MakeFromOneVector(force, 2), contact_point),
         )  # Arrow starts along z-axis (axis 2)
-        self._meshcat.SetTransform(path + "/head", RigidTransform([0.0, 0.0, -height - arrowhead_height]))
         self._meshcat.SetTransform(
-            path + "/tail", RigidTransform(RotationMatrix.MakeXRotation(np.pi), [0.0, 0.0, height + arrowhead_height])
+            path + "/head", RigidTransform([0.0, 0.0, -height - arrowhead_height])
+        )
+        self._meshcat.SetTransform(
+            path + "/tail",
+            RigidTransform(
+                RotationMatrix.MakeXRotation(np.pi),
+                [0.0, 0.0, height + arrowhead_height],
+            ),
         )
 
     def _add_single_direction_force_arrow(
@@ -330,32 +392,43 @@ class ContactForceVisualizer:
         # Transform force arrow
         if force_magnitude > FORCE_TORQUE_MIN_MAGNITUDE:
             self._meshcat.SetTransform(
-                path + "/force", RigidTransform(RotationMatrix.MakeFromOneVector(force, 2), centroid)
+                path + "/force",
+                RigidTransform(RotationMatrix.MakeFromOneVector(force, 2), centroid),
             )  # Arrow starts along z-axis (axis 2)
             self._meshcat.SetTransform(
                 path + "/force/cylinder", RigidTransform([0.0, 0.0, force_height / 2.0])
             )  # Arrow starts at centroid and goes into single direction
             self._meshcat.SetTransform(
                 path + "/force/head",
-                RigidTransform(RotationMatrix.MakeXRotation(np.pi), [0.0, 0.0, force_height + arrowhead_height]),
+                RigidTransform(
+                    RotationMatrix.MakeXRotation(np.pi),
+                    [0.0, 0.0, force_height + arrowhead_height],
+                ),
             )
 
         # Transform torque arrow
         if torque_magnitude > FORCE_TORQUE_MIN_MAGNITUDE:
             self._meshcat.SetTransform(
-                path + "/torque", RigidTransform(RotationMatrix.MakeFromOneVector(torque, 2), centroid)
+                path + "/torque",
+                RigidTransform(RotationMatrix.MakeFromOneVector(torque, 2), centroid),
             )  # Arrow starts along z-axis (axis 2)
             self._meshcat.SetTransform(
-                path + "/torque/cylinder", RigidTransform([0.0, 0.0, torque_height / 2.0])
+                path + "/torque/cylinder",
+                RigidTransform([0.0, 0.0, torque_height / 2.0]),
             )  # Arrow starts at centroid and goes into single direction
             self._meshcat.SetTransform(
                 path + "/torque/head",
-                RigidTransform(RotationMatrix.MakeXRotation(np.pi), [0.0, 0.0, torque_height + arrowhead_height]),
+                RigidTransform(
+                    RotationMatrix.MakeXRotation(np.pi),
+                    [0.0, 0.0, torque_height + arrowhead_height],
+                ),
             )
 
     @staticmethod
     def _get_separation_direction_vec(
-        outer_translations: np.ndarray, inner_translations: np.ndarray, viz: bool = False
+        outer_translations: np.ndarray,
+        inner_translations: np.ndarray,
+        viz: bool = False,
     ) -> np.ndarray:
         """
         Returns the vector perpendicular to both the manipuland translations and the z-axis where the translations are
@@ -366,7 +439,9 @@ class ContactForceVisualizer:
         :param viz: Whether to visualize the translation points with the principal component and separations vectors.
         :return: The separation vector of shape (3,).
         """
-        combined_translations = np.concatenate([outer_translations, inner_translations], axis=0)
+        combined_translations = np.concatenate(
+            [outer_translations, inner_translations], axis=0
+        )
         principle_component = get_principal_component(combined_translations)
         z_axis = [0.0, 0.0, 1.0]
         separation_vec = np.cross(principle_component, z_axis)
@@ -374,18 +449,33 @@ class ContactForceVisualizer:
         if viz:
             # Visualize the outer translations in green, the inner translations in orange, the principal component in
             # blue, and the separation vector in red
-            outer_pcd = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(outer_translations))
+            outer_pcd = o3d.geometry.PointCloud(
+                o3d.utility.Vector3dVector(outer_translations)
+            )
             outer_pcd.paint_uniform_color([0.0, 1.0, 0.0])
-            inner_pcd = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(inner_translations))
+            inner_pcd = o3d.geometry.PointCloud(
+                o3d.utility.Vector3dVector(inner_translations)
+            )
             inner_pcd.paint_uniform_color([1.0, 0.5, 0.0])  # orange
             lines = o3d.geometry.LineSet()
             lines.points = o3d.utility.Vector3dVector(
-                np.array([-principle_component, principle_component, -separation_vec, separation_vec])
+                np.array(
+                    [
+                        -principle_component,
+                        principle_component,
+                        -separation_vec,
+                        separation_vec,
+                    ]
+                )
             )
             lines.lines = o3d.utility.Vector2iVector(np.array([[0, 1], [2, 3]]))
-            lines.colors = o3d.utility.Vector3dVector(np.array([[0.0, 0.0, 1.0], [1.0, 0.0, 0.0]]))
+            lines.colors = o3d.utility.Vector3dVector(
+                np.array([[0.0, 0.0, 1.0], [1.0, 0.0, 0.0]])
+            )
             world_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.01)
-            o3d.visualization.draw_geometries([outer_pcd, inner_pcd, lines, world_frame])
+            o3d.visualization.draw_geometries(
+                [outer_pcd, inner_pcd, lines, world_frame]
+            )
 
         return separation_vec
 
@@ -395,9 +485,14 @@ class ContactForceVisualizer:
 
         # Add meshcat
         meshcat_params = MeshcatVisualizerParams()
-        meshcat_params.role = Role.kIllustration if self._kIllustration else Role.kProximity
+        meshcat_params.role = (
+            Role.kIllustration if self._kIllustration else Role.kProximity
+        )
         _ = MeshcatVisualizer.AddToBuilder(
-            self._builder, self._scene_graph.get_query_output_port(), self._meshcat, meshcat_params
+            self._builder,
+            self._scene_graph.get_query_output_port(),
+            self._meshcat,
+            meshcat_params,
         )
 
         # Finalize plant
@@ -431,31 +526,49 @@ class ContactForceVisualizer:
 
     def _update_item_visibility(self) -> None:
         """Updates item visibility based on button clicks."""
-        if self._meshcat.GetButtonClicks(TOGGLE_INNER_FORCES_BUTTON_NAME) > self._toggle_inner_forces_button_clicks:
+        if (
+            self._meshcat.GetButtonClicks(TOGGLE_INNER_FORCES_BUTTON_NAME)
+            > self._toggle_inner_forces_button_clicks
+        ):
             self._toggle_inner_forces_button_clicks += 1
             self._inner_forces_visible = not self._inner_forces_visible
-        self._meshcat.SetProperty("contact_forces/inner_sim", "visible", self._inner_forces_visible)
-        if self._meshcat.GetButtonClicks(TOGGLE_OUTER_FORCES_BUTTON_NAME) > self._toggle_outer_forces_button_clicks:
+        self._meshcat.SetProperty(
+            "contact_forces/inner_sim", "visible", self._inner_forces_visible
+        )
+        if (
+            self._meshcat.GetButtonClicks(TOGGLE_OUTER_FORCES_BUTTON_NAME)
+            > self._toggle_outer_forces_button_clicks
+        ):
             self._toggle_outer_forces_button_clicks += 1
             self._outer_forces_visible = not self._outer_forces_visible
-        self._meshcat.SetProperty("contact_forces/outer_sim", "visible", self._outer_forces_visible)
+        self._meshcat.SetProperty(
+            "contact_forces/outer_sim", "visible", self._outer_forces_visible
+        )
         if (
             self._meshcat.GetButtonClicks(TOGGLE_INNER_GENERALIZED_FORCES_BUTTON_NAME)
             > self._toggle_inner_generalized_forces_button_clicks
         ):
             self._toggle_inner_generalized_forces_button_clicks += 1
-            self._inner_generalized_forces_visible = not self._inner_generalized_forces_visible
+            self._inner_generalized_forces_visible = (
+                not self._inner_generalized_forces_visible
+            )
         self._meshcat.SetProperty(
-            "contact_forces/inner_sim_generalized", "visible", self._inner_generalized_forces_visible
+            "contact_forces/inner_sim_generalized",
+            "visible",
+            self._inner_generalized_forces_visible,
         )
         if (
             self._meshcat.GetButtonClicks(TOGGLE_OUTER_GENERALIZED_FORCES_BUTTON_NAME)
             > self._toggle_outer_generalized_forces_button_clicks
         ):
             self._toggle_outer_generalized_forces_button_clicks += 1
-            self._outer_generalized_forces_visible = not self._outer_generalized_forces_visible
+            self._outer_generalized_forces_visible = (
+                not self._outer_generalized_forces_visible
+            )
         self._meshcat.SetProperty(
-            "contact_forces/outer_sim_generalized", "visible", self._outer_generalized_forces_visible
+            "contact_forces/outer_sim_generalized",
+            "visible",
+            self._outer_generalized_forces_visible,
         )
         if (
             self._meshcat.GetButtonClicks(TOGGLE_INNER_MANIPULAND_BUTTON_NAME)
@@ -463,18 +576,29 @@ class ContactForceVisualizer:
         ):
             self._toggle_inner_manipuland_button_clicks += 1
             self._inner_manipuland_visible = not self._inner_manipuland_visible
-        self._meshcat.SetProperty(f"visualizer/inner_manipuland", "visible", self._inner_manipuland_visible)
+        self._meshcat.SetProperty(
+            f"visualizer/inner_manipuland", "visible", self._inner_manipuland_visible
+        )
         if (
             self._meshcat.GetButtonClicks(TOGGLE_OUTER_MANIPULAND_BUTTON_NAME)
             > self._toggle_outer_manipuland_button_clicks
         ):
             self._toggle_outer_manipuland_button_clicks += 1
             self._outer_manipuland_visible = not self._outer_manipuland_visible
-        self._meshcat.SetProperty(f"visualizer/{self._manipuland_name}", "visible", self._outer_manipuland_visible)
+        self._meshcat.SetProperty(
+            f"visualizer/{self._manipuland_name}",
+            "visible",
+            self._outer_manipuland_visible,
+        )
 
     def _visualize_generalized_contact_forces(self, time_idx: int) -> None:
-        outer_generalized_contact_force = self._outer_generalized_contact_forces[time_idx]
-        if np.linalg.norm(outer_generalized_contact_force) > self._force_magnitude_theshold:
+        outer_generalized_contact_force = self._outer_generalized_contact_forces[
+            time_idx
+        ]
+        if (
+            np.linalg.norm(outer_generalized_contact_force)
+            > self._force_magnitude_theshold
+        ):
             self._add_single_direction_force_arrow(
                 path="contact_forces/outer_sim_generalized",
                 force=outer_generalized_contact_force[3:],
@@ -483,8 +607,13 @@ class ContactForceVisualizer:
                 force_rgba=Rgba(0.0, 0.0, 1.0, 1.0),  # blue
                 torque_rgba=Rgba(0.6, 0.6, 1.0, 1.0),  # purple
             )
-        inner_generalized_contact_force = self._inner_generalized_contact_forces[time_idx]
-        if np.linalg.norm(inner_generalized_contact_force) > self._force_magnitude_theshold:
+        inner_generalized_contact_force = self._inner_generalized_contact_forces[
+            time_idx
+        ]
+        if (
+            np.linalg.norm(inner_generalized_contact_force)
+            > self._force_magnitude_theshold
+        ):
             self._add_single_direction_force_arrow(
                 path="contact_forces/inner_sim_generalized",
                 force=inner_generalized_contact_force[3:],
@@ -534,7 +663,10 @@ class ContactForceVisualizer:
                     )
         else:
             for i, (force, point) in enumerate(
-                zip(self._outer_point_contact_forces[time_idx], self._outer_point_contact_points[time_idx])
+                zip(
+                    self._outer_point_contact_forces[time_idx],
+                    self._outer_point_contact_points[time_idx],
+                )
             ):
                 if np.linalg.norm(force) > self._force_magnitude_theshold:
                     self._add_equal_opposite_force_arrow(
@@ -545,7 +677,10 @@ class ContactForceVisualizer:
                     )
 
             for i, (force, point) in enumerate(
-                zip(self._inner_point_contact_forces[time_idx], self._inner_point_contact_points[time_idx])
+                zip(
+                    self._inner_point_contact_forces[time_idx],
+                    self._inner_point_contact_points[time_idx],
+                )
             ):
                 if np.linalg.norm(force) > self._force_magnitude_theshold:
                     self._add_equal_opposite_force_arrow(
@@ -605,7 +740,9 @@ class ContactForceVisualizer:
         """Runs the infinite visualizer loop."""
         assert self._is_setup, "`setup()` must be called before calling `run()`."
 
-        print("Entering infinite loop. Force quit to exit.")  # TODO: Check for user input in non-blocking way
+        print(
+            "Entering infinite loop. Force quit to exit."
+        )  # TODO: Check for user input in non-blocking way
         current_time = -1.0  # Force initial meshcat update
         while True:
             current_time, _ = self._run_loop_iteration(current_time)

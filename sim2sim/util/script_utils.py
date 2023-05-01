@@ -92,8 +92,12 @@ def rank_based_on_final_errors(
         )
 
         time_logs_path = os.path.join(logging_path, "time_logs")
-        outer_states = np.loadtxt(os.path.join(time_logs_path, "outer_manipuland_poses.txt"))
-        inner_states = np.loadtxt(os.path.join(time_logs_path, "inner_manipuland_poses.txt"))
+        outer_states = np.loadtxt(
+            os.path.join(time_logs_path, "outer_manipuland_poses.txt")
+        )
+        inner_states = np.loadtxt(
+            os.path.join(time_logs_path, "inner_manipuland_poses.txt")
+        )
         final_state_error = outer_states[-1] - inner_states[-1]
         quaternion_error = np.linalg.norm(final_state_error[:4])
         translation_error = np.linalg.norm(final_state_error[4:7])

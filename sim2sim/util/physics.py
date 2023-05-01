@@ -7,7 +7,9 @@ import open3d as o3d
 WATER_DENSITY = 997  # Density of water in kg/m^3
 
 
-def calc_mesh_inertia(mesh: o3d.geometry.TriangleMesh, density: int = WATER_DENSITY) -> Tuple[float, np.ndarray]:
+def calc_mesh_inertia(
+    mesh: o3d.geometry.TriangleMesh, density: int = WATER_DENSITY
+) -> Tuple[float, np.ndarray]:
     """
     Given a mesh, calculates its total mass and inertia assuming uniform density.
 
@@ -18,6 +20,8 @@ def calc_mesh_inertia(mesh: o3d.geometry.TriangleMesh, density: int = WATER_DENS
         - moment_of_inertia: Moment of inertia of shape (3,3).
     """
 
-    mesh_trimesh = trimesh.Trimesh(vertices=np.asarray(mesh.vertices), faces=np.asarray(mesh.triangles))
+    mesh_trimesh = trimesh.Trimesh(
+        vertices=np.asarray(mesh.vertices), faces=np.asarray(mesh.triangles)
+    )
     mesh_trimesh.density = density
     return mesh_trimesh.mass, mesh_trimesh.moment_inertia

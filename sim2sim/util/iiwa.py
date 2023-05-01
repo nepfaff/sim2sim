@@ -74,7 +74,9 @@ def add_iiwa_system(
 
     # Export the iiwa "state" outputs
     demux = builder.AddSystem(Demultiplexer(2 * num_iiwa_positions, num_iiwa_positions))
-    builder.Connect(plant.get_state_output_port(iiwa_instance_idx), demux.get_input_port())
+    builder.Connect(
+        plant.get_state_output_port(iiwa_instance_idx), demux.get_input_port()
+    )
     state_estimated_output = plant.get_state_output_port(iiwa_instance_idx)
     position_measured_output = demux.get_output_port(0)
     velocity_estimated_output = demux.get_output_port(1)
@@ -99,7 +101,9 @@ def add_iiwa_system(
             has_reference_acceleration=False,
         )
     )
-    iiwa_inverse_dynamics_controller.set_name(iiwa_instance_name + "_inverse_dynamics_controller")
+    iiwa_inverse_dynamics_controller.set_name(
+        iiwa_instance_name + "_inverse_dynamics_controller"
+    )
     iiwa_stiffness_controller = builder.AddSystem(
         JointStiffnessController(
             iiwa_controller_plant,
@@ -113,7 +117,8 @@ def add_iiwa_system(
         iiwa_inverse_dynamics_controller.get_input_port_estimated_state(),
     )
     builder.Connect(
-        plant.get_state_output_port(iiwa_instance_idx), iiwa_stiffness_controller.get_input_port_estimated_state()
+        plant.get_state_output_port(iiwa_instance_idx),
+        iiwa_stiffness_controller.get_input_port_estimated_state(),
     )
 
     # Use a ports switch to switch between inverse dynamics and stiffness controllers
@@ -122,11 +127,18 @@ def add_iiwa_system(
         iiwa_inverse_dynamics_controller.get_output_port_control(),
         switch.DeclareInputPort("inverse_dynamics"),
     )
-    builder.Connect(iiwa_stiffness_controller.get_output_port_generalized_force(), switch.DeclareInputPort("stiffness"))
+    builder.Connect(
+        iiwa_stiffness_controller.get_output_port_generalized_force(),
+        switch.DeclareInputPort("stiffness"),
+    )
     # Use a PassThrough system to export the control mode port
-    iiwa_control_mode = builder.AddSystem(PassThrough(AbstractValue.Make(InputPortIndex(0))))
+    iiwa_control_mode = builder.AddSystem(
+        PassThrough(AbstractValue.Make(InputPortIndex(0)))
+    )
     iiwa_control_mode_input = iiwa_control_mode.get_input_port()
-    builder.Connect(iiwa_control_mode.get_output_port(), switch.get_port_selector_input_port())
+    builder.Connect(
+        iiwa_control_mode.get_output_port(), switch.get_port_selector_input_port()
+    )
 
     # Add in the feed-forward torque
     adder = builder.AddSystem(Adder(2, num_iiwa_positions))
@@ -134,25 +146,37 @@ def add_iiwa_system(
     # Use a PassThrough to make the port optional (it will provide zero values if not connected)
     torque_passthrough = builder.AddSystem(PassThrough([0] * num_iiwa_positions))
     builder.Connect(torque_passthrough.get_output_port(), adder.get_input_port(1))
-    builder.Connect(adder.get_output_port(), plant.get_actuation_input_port(iiwa_instance_idx))
+    builder.Connect(
+        adder.get_output_port(), plant.get_actuation_input_port(iiwa_instance_idx)
+    )
     feedforward_torque_input = torque_passthrough.get_input_port()
 
     # Add discrete derivative to command velocities
     desired_state_from_position = builder.AddSystem(
-        StateInterpolatorWithDiscreteDerivative(num_iiwa_positions, iiwa_time_step, suppress_initial_transient=True)
+        StateInterpolatorWithDiscreteDerivative(
+            num_iiwa_positions, iiwa_time_step, suppress_initial_transient=True
+        )
     )
-    desired_state_from_position.set_name(iiwa_instance_name + "_desired_state_from_position")
+    desired_state_from_position.set_name(
+        iiwa_instance_name + "_desired_state_from_position"
+    )
     builder.Connect(
-        desired_state_from_position.get_output_port(), iiwa_inverse_dynamics_controller.get_input_port_desired_state()
+        desired_state_from_position.get_output_port(),
+        iiwa_inverse_dynamics_controller.get_input_port_desired_state(),
     )
     builder.Connect(
-        desired_state_from_position.get_output_port(), iiwa_stiffness_controller.get_input_port_desired_state()
+        desired_state_from_position.get_output_port(),
+        iiwa_stiffness_controller.get_input_port_desired_state(),
     )
-    builder.Connect(iiwa_position.get_output_port(), desired_state_from_position.get_input_port())
+    builder.Connect(
+        iiwa_position.get_output_port(), desired_state_from_position.get_input_port()
+    )
 
     # Export commanded torques
     torque_commanded_output = adder.get_output_port()
-    torque_external_output = plant.get_generalized_contact_forces_output_port(iiwa_instance_idx)
+    torque_external_output = plant.get_generalized_contact_forces_output_port(
+        iiwa_instance_idx
+    )
 
     return (
         iiwa_controller_plant,
@@ -186,19 +210,28 @@ def add_wsg_system(
     wsg_instance_name = plant.GetModelInstanceName(wsg_instance_idx)
 
     # WSG controller
-    wsg_controller = builder.AddSystem(SchunkWsgPositionController(time_step=wsg_time_step))
+    wsg_controller = builder.AddSystem(
+        SchunkWsgPositionController(time_step=wsg_time_step)
+    )
     wsg_controller.set_name(wsg_instance_name + "_controller")
 
     builder.Connect(
-        wsg_controller.get_generalized_force_output_port(), plant.get_actuation_input_port(wsg_instance_idx)
+        wsg_controller.get_generalized_force_output_port(),
+        plant.get_actuation_input_port(wsg_instance_idx),
     )
-    builder.Connect(plant.get_state_output_port(wsg_instance_idx), wsg_controller.get_state_input_port())
+    builder.Connect(
+        plant.get_state_output_port(wsg_instance_idx),
+        wsg_controller.get_state_input_port(),
+    )
     position_input = wsg_controller.get_desired_position_input_port()
     force_limit_input = wsg_controller.get_force_limit_input_port()
 
     # Export state
     wsg_mbp_state_to_wsg_state = builder.AddSystem(MakeMultibodyStateToWsgStateSystem())
-    builder.Connect(plant.get_state_output_port(wsg_instance_idx), wsg_mbp_state_to_wsg_state.get_input_port())
+    builder.Connect(
+        plant.get_state_output_port(wsg_instance_idx),
+        wsg_mbp_state_to_wsg_state.get_input_port(),
+    )
     state_measured_output = wsg_mbp_state_to_wsg_state.get_output_port()
     force_measured_output = wsg_controller.get_grip_force_output_port()
 
@@ -378,14 +411,22 @@ class IIWAJointTrajectorySource(LeafSystem):
         :param debug: If true, visualize the path in meshcat.
         :return: The joint trajectory.
         """
-        assert isinstance(time_between_breakpoints, float) or len(time_between_breakpoints) == len(X_WGs)
+        assert isinstance(time_between_breakpoints, float) or len(
+            time_between_breakpoints
+        ) == len(X_WGs)
 
         t = 0.0
         for i, X_WG in enumerate(X_WGs):
             # Use the eef pose at the previous knot point as an initial guess
-            initial_guess = self._q_nominal if len(self._q_knots) == 0 else self._q_knots[-1]
+            initial_guess = (
+                self._q_nominal if len(self._q_knots) == 0 else self._q_knots[-1]
+            )
             q = calc_inverse_kinematics(
-                self._plant, X_WG, initial_guess, ik_position_tolerance, ik_orientation_tolerance
+                self._plant,
+                X_WG,
+                initial_guess,
+                ik_position_tolerance,
+                ik_orientation_tolerance,
             )
             if q is None:
                 if allow_no_ik_sols:
@@ -402,11 +443,15 @@ class IIWAJointTrajectorySource(LeafSystem):
             self._breaks.append(t)
 
             t += (
-                time_between_breakpoints if isinstance(time_between_breakpoints, float) else time_between_breakpoints[i]
+                time_between_breakpoints
+                if isinstance(time_between_breakpoints, float)
+                else time_between_breakpoints[i]
             )
 
             if debug and self._meshcat is not None:
-                AddMeshcatTriad(self._meshcat, f"X_WG{i}", length=0.15, radius=0.006, X_PT=X_WG)
+                AddMeshcatTriad(
+                    self._meshcat, f"X_WG{i}", length=0.15, radius=0.006, X_PT=X_WG
+                )
         self._q_traj = self._calc_q_traj()
 
         return self._q_traj
@@ -500,7 +545,8 @@ class IIWAOptimizedJointTrajectorySource(LeafSystem):
         gripper_frame = self._iiwa_control_plant.GetFrameByName("body")
 
         trajopt = KinematicTrajectoryOptimization(
-            num_positions=self._iiwa_control_plant.num_positions(), num_control_points=num_control_points
+            num_positions=self._iiwa_control_plant.num_positions(),
+            num_control_points=num_control_points,
         )
         prog = trajopt.get_mutable_prog()
 
@@ -510,11 +556,13 @@ class IIWAOptimizedJointTrajectorySource(LeafSystem):
 
         # Add iiwa limits
         trajopt.AddPositionBounds(
-            self._iiwa_control_plant.GetPositionLowerLimits(), self._iiwa_control_plant.GetPositionUpperLimits()
+            self._iiwa_control_plant.GetPositionLowerLimits(),
+            self._iiwa_control_plant.GetPositionUpperLimits(),
         )
         # Enforce slow velocities
         trajopt.AddVelocityBounds(
-            self._iiwa_control_plant.GetVelocityLowerLimits(), self._iiwa_control_plant.GetVelocityUpperLimits() / 5.0
+            self._iiwa_control_plant.GetVelocityLowerLimits(),
+            self._iiwa_control_plant.GetVelocityUpperLimits() / 5.0,
         )
 
         # TODO: This should be an argument
@@ -545,8 +593,12 @@ class IIWAOptimizedJointTrajectorySource(LeafSystem):
             trajopt.AddPathPositionConstraint(constraint=orientation_constraint, s=s)
 
         # start and end with zero velocity
-        trajopt.AddPathVelocityConstraint(lb=np.zeros((num_q, 1)), ub=np.zeros((num_q, 1)), s=0)
-        trajopt.AddPathVelocityConstraint(lb=np.zeros((num_q, 1)), ub=np.zeros((num_q, 1)), s=1)
+        trajopt.AddPathVelocityConstraint(
+            lb=np.zeros((num_q, 1)), ub=np.zeros((num_q, 1)), s=0
+        )
+        trajopt.AddPathVelocityConstraint(
+            lb=np.zeros((num_q, 1)), ub=np.zeros((num_q, 1)), s=1
+        )
 
         trajopt.AddDurationCost(1.0)
 
@@ -586,7 +638,9 @@ class WSGCommandSource(LeafSystem):
 
         self._command_pos = initial_pos
 
-        self._control_output_port = self.DeclareVectorOutputPort("wsg_position", 1, self.CalcOutput)
+        self._control_output_port = self.DeclareVectorOutputPort(
+            "wsg_position", 1, self.CalcOutput
+        )
 
     def set_new_pos_command(self, pos: float) -> None:
         """
@@ -617,7 +671,11 @@ def prune_infeasible_eef_poses(
     X_WG_feasible = []
     for X_WG in X_WGs:
         sol = calc_inverse_kinematics(
-            plant, RigidTransform(X_WG), initial_guess, ik_position_tolerance, ik_orientation_tolerance
+            plant,
+            RigidTransform(X_WG),
+            initial_guess,
+            ik_position_tolerance,
+            ik_orientation_tolerance,
         )
         if sol is not None:
             X_WG_feasible.append(X_WG)
@@ -636,10 +694,14 @@ class IIWAControlModeSource(LeafSystem):
         self._mode = self.ControllerMode.INVERSE_DYNAMICS
 
         self.DeclareAbstractOutputPort(
-            "iiwa_control_mode", lambda: AbstractValue.Make(InputPortIndex(0)), self.CalcControlMode
+            "iiwa_control_mode",
+            lambda: AbstractValue.Make(InputPortIndex(0)),
+            self.CalcControlMode,
         )
 
-    def set_control_mode(self, control_mode: "IIWAControlModeSource.ControllerMode") -> None:
+    def set_control_mode(
+        self, control_mode: "IIWAControlModeSource.ControllerMode"
+    ) -> None:
         self._mode = control_mode
 
     def CalcControlMode(self, context, output):

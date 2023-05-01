@@ -52,13 +52,18 @@ class FuzzyMetaballMeshProcessor(MeshProcessorBase):
         Union[List[Dict[str, Any]], None],
     ]:
         meta_ball = MetaBall.generate_metaballs_from_mesh(
-            self._mesh_path, iter_num=self._num_iter, gmm_init=self._gmm_init, normalized=self._normalize_mesh
+            self._mesh_path,
+            iter_num=self._num_iter,
+            gmm_init=self._gmm_init,
+            normalized=self._normalize_mesh,
         )
 
         if self._visualize:
             meta_ball.vis(idx=0, mesh=open3d_to_trimesh(mesh), remove_outliers=True)
 
-        ellipsoids = meta_ball.to_analytical_ellipsoids(shape_idx=0, remove_outliers=True)
+        ellipsoids = meta_ball.to_analytical_ellipsoids(
+            shape_idx=0, remove_outliers=True
+        )
         primitive_info = []
         for ellipsoid in ellipsoids:
             _, radii, transform = ellipsoid

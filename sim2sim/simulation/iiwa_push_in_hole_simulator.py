@@ -36,7 +36,13 @@ class IIWAPushInHoleSimulator(IIWAJointTrajectorySimulatorBase):
         :param mesh_pose: The manipuland mesh pose of form [roll, pitch, yaw, x, y, z] where angles are in radians.
         """
         super().__init__(
-            outer_builder, outer_scene_graph, inner_builder, inner_scene_graph, logger, is_hydroelastic, mesh_pose
+            outer_builder,
+            outer_scene_graph,
+            inner_builder,
+            inner_scene_graph,
+            logger,
+            is_hydroelastic,
+            mesh_pose,
         )
 
     def simulate(self, duration: float) -> None:
@@ -53,9 +59,18 @@ class IIWAPushInHoleSimulator(IIWAJointTrajectorySimulatorBase):
             {
                 "iiwa_path": [
                     X_WG_initial,
-                    RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), self._mesh_pose[3:] + [0.0, 0.0, 0.3]),
-                    RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), self._mesh_pose[3:] + [0.0, 0.0, 0.20]),
-                    RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), self._mesh_pose[3:] + [0.0, 0.0, 0.15]),
+                    RigidTransform(
+                        RollPitchYaw(-np.pi / 2, 0.0, -np.pi),
+                        self._mesh_pose[3:] + [0.0, 0.0, 0.3],
+                    ),
+                    RigidTransform(
+                        RollPitchYaw(-np.pi / 2, 0.0, -np.pi),
+                        self._mesh_pose[3:] + [0.0, 0.0, 0.20],
+                    ),
+                    RigidTransform(
+                        RollPitchYaw(-np.pi / 2, 0.0, -np.pi),
+                        self._mesh_pose[3:] + [0.0, 0.0, 0.15],
+                    ),
                 ],
                 "iiwa_control_mode": IIWAControlModeSource.ControllerMode.INVERSE_DYNAMICS,
                 "time_between_breakpoints": 0.5,
@@ -64,12 +79,27 @@ class IIWAPushInHoleSimulator(IIWAJointTrajectorySimulatorBase):
             },
             {
                 "iiwa_path": [
-                    RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), self._mesh_pose[3:] + [0.0, 0.0, 0.15]),
-                    RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), self._mesh_pose[3:] + [0.0, 0.0, 0.3]),
-                    RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), self._mesh_pose[3:] + [0.0, 0.0, 0.4]),
-                    RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.25, 0.4, 0.5]),
-                    RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.5, 0.3, 0.5]),
-                    RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.5, 0.3, 0.4]),
+                    RigidTransform(
+                        RollPitchYaw(-np.pi / 2, 0.0, -np.pi),
+                        self._mesh_pose[3:] + [0.0, 0.0, 0.15],
+                    ),
+                    RigidTransform(
+                        RollPitchYaw(-np.pi / 2, 0.0, -np.pi),
+                        self._mesh_pose[3:] + [0.0, 0.0, 0.3],
+                    ),
+                    RigidTransform(
+                        RollPitchYaw(-np.pi / 2, 0.0, -np.pi),
+                        self._mesh_pose[3:] + [0.0, 0.0, 0.4],
+                    ),
+                    RigidTransform(
+                        RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.25, 0.4, 0.5]
+                    ),
+                    RigidTransform(
+                        RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.5, 0.3, 0.5]
+                    ),
+                    RigidTransform(
+                        RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.5, 0.3, 0.4]
+                    ),
                 ],
                 "iiwa_control_mode": IIWAControlModeSource.ControllerMode.INVERSE_DYNAMICS,
                 "time_between_breakpoints": 0.5,
@@ -78,11 +108,21 @@ class IIWAPushInHoleSimulator(IIWAJointTrajectorySimulatorBase):
             },
             {
                 "iiwa_path": [
-                    RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.5, 0.3, 0.4]),
-                    RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.5, 0.3, 0.3]),
-                    RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.5, 0.2, 0.3]),
-                    RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.5, 0.1, 0.3]),
-                    RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.5, 0.0, 0.3]),
+                    RigidTransform(
+                        RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.5, 0.3, 0.4]
+                    ),
+                    RigidTransform(
+                        RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.5, 0.3, 0.3]
+                    ),
+                    RigidTransform(
+                        RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.5, 0.2, 0.3]
+                    ),
+                    RigidTransform(
+                        RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.5, 0.1, 0.3]
+                    ),
+                    RigidTransform(
+                        RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.5, 0.0, 0.3]
+                    ),
                 ],
                 "iiwa_control_mode": IIWAControlModeSource.ControllerMode.STIFFNESS,
                 "time_between_breakpoints": 0.3,

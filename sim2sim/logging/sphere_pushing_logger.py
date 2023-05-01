@@ -46,14 +46,20 @@ class SpherePushingLogger(DynamicLogger):
         self._inner_sphere_poses: np.ndarray = None
         self._inner_sphere_pose_times: np.ndarray = None
 
-    def add_sphere_pose_logging(self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder) -> None:
+    def add_sphere_pose_logging(
+        self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder
+    ) -> None:
         self._outer_sphere_pose_logger = LogVectorOutput(
-            self._outer_plant.get_state_output_port(self._outer_plant.GetModelInstanceByName(self._sphere_name)),
+            self._outer_plant.get_state_output_port(
+                self._outer_plant.GetModelInstanceByName(self._sphere_name)
+            ),
             outer_builder,
             1.0 / self._logging_frequency_hz,
         )
         self._inner_sphere_pose_logger = LogVectorOutput(
-            self._inner_plant.get_state_output_port(self._inner_plant.GetModelInstanceByName(self._sphere_name)),
+            self._inner_plant.get_state_output_port(
+                self._inner_plant.GetModelInstanceByName(self._sphere_name)
+            ),
             inner_builder,
             1.0 / self._logging_frequency_hz,
         )
@@ -76,13 +82,19 @@ class SpherePushingLogger(DynamicLogger):
 
     def save_sphere_pose_logs(self) -> None:
         if self._outer_sphere_poses is not None:
-            np.savetxt(os.path.join(self._time_logs_dir_path, "outer_sphere_poses.txt"), self._outer_sphere_poses)
+            np.savetxt(
+                os.path.join(self._time_logs_dir_path, "outer_sphere_poses.txt"),
+                self._outer_sphere_poses,
+            )
             np.savetxt(
                 os.path.join(self._time_logs_dir_path, "outer_sphere_pose_times.txt"),
                 self._outer_sphere_pose_times,
             )
         if self._inner_sphere_poses is not None:
-            np.savetxt(os.path.join(self._time_logs_dir_path, "inner_sphere_poses.txt"), self._inner_sphere_poses)
+            np.savetxt(
+                os.path.join(self._time_logs_dir_path, "inner_sphere_poses.txt"),
+                self._inner_sphere_poses,
+            )
             np.savetxt(
                 os.path.join(self._time_logs_dir_path, "inner_sphere_pose_times.txt"),
                 self._inner_sphere_pose_times,

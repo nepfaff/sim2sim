@@ -15,7 +15,9 @@ class WaterDensityPhysicalPropertyEstimator(PhysicalPropertyEstimatorBase):
     def __init__(self):
         super().__init__()
 
-    def estimate_physical_properties(self, mesh: o3d.geometry.TriangleMesh) -> Tuple[float, np.ndarray]:
+    def estimate_physical_properties(
+        self, mesh: o3d.geometry.TriangleMesh
+    ) -> Tuple[float, np.ndarray]:
         """
         :param mesh: The mesh to estimate physcial properties for.
         :return: A tuple of (mass, inertia).

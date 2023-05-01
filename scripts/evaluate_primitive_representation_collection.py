@@ -44,7 +44,8 @@ def main():
         "--logging_path",
         required=False,
         type=str,
-        help="The path to log the results to. A temporary folder will be created and " + "deleted if not given.",
+        help="The path to log the results to. A temporary folder will be created and "
+        + "deleted if not given.",
     )
     args = parser.parse_args()
     representation_collection_path = args.path
@@ -69,7 +70,9 @@ def main():
         print(f"Creating folder {logging_path}")
         os.mkdir(logging_path)
 
-    physical_properties_path = os.path.join(representation_collection_path, "physical_properties.yaml")
+    physical_properties_path = os.path.join(
+        representation_collection_path, "physical_properties.yaml"
+    )
     pysical_properties = yaml.safe_load(open(physical_properties_path, "r"))
 
     experiment_specifications: List[dict] = []
@@ -80,21 +83,25 @@ def main():
                 experiment_description["experiment_id"] = path.name
 
                 # Primitive info
-                experiment_description["inner_mesh_processor"]["args"]["primitive_info_path"] = os.path.join(
-                    path.path, "primitive_info.pkl"
-                )
+                experiment_description["inner_mesh_processor"]["args"][
+                    "primitive_info_path"
+                ] = os.path.join(path.path, "primitive_info.pkl")
 
                 # Outer physical properties
-                experiment_description["outer_physical_property_estimator"]["args"]["mass"] = pysical_properties["mass"]
-                experiment_description["outer_physical_property_estimator"]["args"]["inertia"] = pysical_properties[
+                experiment_description["outer_physical_property_estimator"]["args"][
+                    "mass"
+                ] = pysical_properties["mass"]
+                experiment_description["outer_physical_property_estimator"]["args"][
                     "inertia"
-                ]
+                ] = pysical_properties["inertia"]
 
                 # Inner physical properties
-                experiment_description["inner_physical_property_estimator"]["args"]["mass"] = pysical_properties["mass"]
-                experiment_description["inner_physical_property_estimator"]["args"]["inertia"] = pysical_properties[
+                experiment_description["inner_physical_property_estimator"]["args"][
+                    "mass"
+                ] = pysical_properties["mass"]
+                experiment_description["inner_physical_property_estimator"]["args"][
                     "inertia"
-                ]
+                ] = pysical_properties["inertia"]
 
                 experiment_specifications.append(experiment_description)
 

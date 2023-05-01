@@ -53,23 +53,38 @@ def main():
                 inner_hydroelastic_contact_results_path, allow_pickle=True
             )
             num_hydroelastic_contacts = [
-                len(centroids) for centroids in inner_hydroelastic_contact_result_force_centroids_raw
+                len(centroids)
+                for centroids in inner_hydroelastic_contact_result_force_centroids_raw
             ]
             total_num_hydroelastic_contacts.append(sum(num_hydroelastic_contacts))
 
-            inner_point_contact_results_path = os.path.join(time_logs_dir, "inner_point_contact_result_forces.npy")
-            inner_point_contact_result_forces_raw = np.load(inner_point_contact_results_path, allow_pickle=True)
-            num_point_contacts = [len(centroids) for centroids in inner_point_contact_result_forces_raw]
+            inner_point_contact_results_path = os.path.join(
+                time_logs_dir, "inner_point_contact_result_forces.npy"
+            )
+            inner_point_contact_result_forces_raw = np.load(
+                inner_point_contact_results_path, allow_pickle=True
+            )
+            num_point_contacts = [
+                len(centroids) for centroids in inner_point_contact_result_forces_raw
+            ]
             total_num_point_contacts.append(sum(num_point_contacts))
 
             # Final pose error
-            outer_states = np.loadtxt(os.path.join(time_logs_dir, "outer_manipuland_poses.txt"))
-            inner_states = np.loadtxt(os.path.join(time_logs_dir, "inner_manipuland_poses.txt"))
-            final_pose_error_magnitudes.append(final_displacement_error(outer_states, inner_states))
+            outer_states = np.loadtxt(
+                os.path.join(time_logs_dir, "outer_manipuland_poses.txt")
+            )
+            inner_states = np.loadtxt(
+                os.path.join(time_logs_dir, "inner_manipuland_poses.txt")
+            )
+            final_pose_error_magnitudes.append(
+                final_displacement_error(outer_states, inner_states)
+            )
 
         gmm_nums.append(gmm_num)
         mean_times.append(np.mean(times))
-        mean_total_num_hydroelastic_contacts.append(np.mean(total_num_hydroelastic_contacts))
+        mean_total_num_hydroelastic_contacts.append(
+            np.mean(total_num_hydroelastic_contacts)
+        )
         mean_total_num_point_contacts.append(np.mean(total_num_point_contacts))
         mean_final_pose_error_magnitudes.append(np.mean(final_pose_error_magnitudes))
 
@@ -84,21 +99,31 @@ def main():
     plt.title("GMM EM with Random Force Experiment")
     plt.xlabel("Number of ellipsoids")
     plt.ylabel("Total number of hydroelastic contacts")
-    plt.savefig(os.path.join(args.data_path, "total_num_hydroelastic_contacts_per_ellipsoid_num.png"))
+    plt.savefig(
+        os.path.join(
+            args.data_path, "total_num_hydroelastic_contacts_per_ellipsoid_num.png"
+        )
+    )
     plt.close()
 
     plt.plot(gmm_nums, mean_total_num_point_contacts, linestyle="", marker="o")
     plt.title("GMM EM with Random Force Experiment")
     plt.xlabel("Number of ellipsoids")
     plt.ylabel("Total number of point contacts")
-    plt.savefig(os.path.join(args.data_path, "total_num_point_contacts_per_ellipsoid_num.png"))
+    plt.savefig(
+        os.path.join(args.data_path, "total_num_point_contacts_per_ellipsoid_num.png")
+    )
     plt.close()
 
     plt.plot(gmm_nums, mean_final_pose_error_magnitudes, linestyle="", marker="o")
     plt.title("GMM EM with Random Force Experiment")
     plt.xlabel("Number of ellipsoids")
     plt.ylabel("Mean final pose error magnitude of 10 runs")
-    plt.savefig(os.path.join(args.data_path, "mean_final_pose_error_magnitude_per_ellipsoid_num.png"))
+    plt.savefig(
+        os.path.join(
+            args.data_path, "mean_final_pose_error_magnitude_per_ellipsoid_num.png"
+        )
+    )
     plt.close()
 
 

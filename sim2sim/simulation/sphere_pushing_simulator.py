@@ -41,13 +41,22 @@ class SpherePushingSimulator(SimulatorBase):
         :param num_meters_to_move_in_manpuland_direction: The number of meters to move the spere towards the manipuland.
             This is only needed/used if `closed_loop_control` is False.
         """
-        super().__init__(outer_builder, outer_scene_graph, inner_builder, inner_scene_graph, logger, is_hydroelastic)
+        super().__init__(
+            outer_builder,
+            outer_scene_graph,
+            inner_builder,
+            inner_scene_graph,
+            logger,
+            is_hydroelastic,
+        )
 
         self._settling_time = settling_time
         self._manipuland_name = manipuland_name
         self._controll_period = controll_period
         self._closed_loop_control = closed_loop_control
-        self._num_meters_to_move_in_manpuland_direction = num_meters_to_move_in_manpuland_direction
+        self._num_meters_to_move_in_manpuland_direction = (
+            num_meters_to_move_in_manpuland_direction
+        )
 
         self._finalize_and_build_diagrams()
 
@@ -66,9 +75,15 @@ class SpherePushingSimulator(SimulatorBase):
             is_outer=False,
         )
 
-        self._logger.add_manipuland_pose_logging(self._outer_builder, self._inner_builder)
-        self._logger.add_manipuland_contact_force_logging(self._outer_builder, self._inner_builder)
-        self._logger.add_contact_result_logging(self._outer_builder, self._inner_builder)
+        self._logger.add_manipuland_pose_logging(
+            self._outer_builder, self._inner_builder
+        )
+        self._logger.add_manipuland_contact_force_logging(
+            self._outer_builder, self._inner_builder
+        )
+        self._logger.add_contact_result_logging(
+            self._outer_builder, self._inner_builder
+        )
         self._logger.add_sphere_pose_logging(self._outer_builder, self._inner_builder)
 
         self._outer_diagram = self._outer_builder.Build()
@@ -84,7 +99,9 @@ class SpherePushingSimulator(SimulatorBase):
         ):
             simulator = Simulator(diagram)
             context = simulator.get_mutable_context()
-            sphere_state_source: SphereStateSource = diagram.GetSubsystemByName("sphere_state_source")
+            sphere_state_source: SphereStateSource = diagram.GetSubsystemByName(
+                "sphere_state_source"
+            )
 
             # TODO: Move `StartRecording` and `StopRecording` into logger using `with` statement
             visualizer.StartRecording()
@@ -97,31 +114,53 @@ class SpherePushingSimulator(SimulatorBase):
                 plant = diagram.GetSubsystemByName("plant")
                 plant_context = plant.GetMyContextFromRoot(context)
                 total_time = self._settling_time + duration
-                sim_times = np.linspace(self._settling_time, total_time, int(duration / self._controll_period))
+                sim_times = np.linspace(
+                    self._settling_time,
+                    total_time,
+                    int(duration / self._controll_period),
+                )
 
                 if self._closed_loop_control:
                     action_log = []
                     for sim_time in sim_times:
-                        mesh_manipuland_instance = plant.GetModelInstanceByName(self._manipuland_name)
-                        mesh_manipuland_translation = plant.GetPositions(plant_context, mesh_manipuland_instance)[4:]
+                        mesh_manipuland_instance = plant.GetModelInstanceByName(
+                            self._manipuland_name
+                        )
+                        mesh_manipuland_translation = plant.GetPositions(
+                            plant_context, mesh_manipuland_instance
+                        )[4:]
 
-                        sphere_state_source.set_desired_position(mesh_manipuland_translation)
+                        sphere_state_source.set_desired_position(
+                            mesh_manipuland_translation
+                        )
                         action_log.append(mesh_manipuland_translation)
 
                         simulator.AdvanceTo(sim_time)
                 else:
-                    mesh_manipuland_instance = plant.GetModelInstanceByName(self._manipuland_name)
-                    mesh_manipuland_translation = plant.GetPositions(plant_context, mesh_manipuland_instance)[4:]
+                    mesh_manipuland_instance = plant.GetModelInstanceByName(
+                        self._manipuland_name
+                    )
+                    mesh_manipuland_translation = plant.GetPositions(
+                        plant_context, mesh_manipuland_instance
+                    )[4:]
                     sphere_instance = plant.GetModelInstanceByName("sphere")
-                    sphere_translation = plant.GetPositions(plant_context, sphere_instance)
+                    sphere_translation = plant.GetPositions(
+                        plant_context, sphere_instance
+                    )
 
                     # Move sphere along vector connecting sphere starting position and manipuland position
                     push_direction = mesh_manipuland_translation - sphere_translation
-                    push_direction_unit = push_direction / np.linalg.norm(push_direction)
+                    push_direction_unit = push_direction / np.linalg.norm(
+                        push_direction
+                    )
                     action_log = (
                         sphere_translation
                         + (
-                            np.linspace(0.0, self._num_meters_to_move_in_manpuland_direction, len(sim_times))
+                            np.linspace(
+                                0.0,
+                                self._num_meters_to_move_in_manpuland_direction,
+                                len(sim_times),
+                            )
                             * push_direction_unit[:, np.newaxis]
                         ).T
                     )
@@ -145,7 +184,12 @@ class SpherePushingSimulator(SimulatorBase):
 
             # TODO: Move this to the logger
             html = meshcat.StaticHtml()
-            with open(os.path.join(self._logger._logging_path, f"{'outer' if i == 0 else 'inner'}.html"), "w") as f:
+            with open(
+                os.path.join(
+                    self._logger._logging_path, f"{'outer' if i == 0 else 'inner'}.html"
+                ),
+                "w",
+            ) as f:
                 f.write(html)
 
             context = simulator.get_mutable_context()

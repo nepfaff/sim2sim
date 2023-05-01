@@ -40,7 +40,9 @@ def main():
     meshcat = StartMeshcat()
     meshcat_params = MeshcatVisualizerParams()
     meshcat_params.role = Role.kProximity if args.kProximity else Role.kIllustration
-    _ = MeshcatVisualizer.AddToBuilder(builder, scene_graph.get_query_output_port(), meshcat, meshcat_params)
+    _ = MeshcatVisualizer.AddToBuilder(
+        builder, scene_graph.get_query_output_port(), meshcat, meshcat_params
+    )
 
     plant.Finalize()
     diagram = builder.Build()

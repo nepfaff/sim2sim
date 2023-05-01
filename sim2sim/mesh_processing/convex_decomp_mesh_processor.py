@@ -11,7 +11,9 @@ from sim2sim.logging import DynamicLogger
 class ConvexDecompMeshProcessor(MeshProcessorBase):
     """Convex decomposition using https://github.com/kmammou/v-hacd."""
 
-    def __init__(self, logger: DynamicLogger, mesh_name: str, preview_with_trimesh: bool):
+    def __init__(
+        self, logger: DynamicLogger, mesh_name: str, preview_with_trimesh: bool
+    ):
         """
         :param target_sphere_num: The number of spheres that the simplified mesh should contain.
         """
@@ -53,7 +55,9 @@ class ConvexDecompMeshProcessor(MeshProcessorBase):
             for part in convex_pieces:
                 scene.add_geometry(part)
 
-            print(f"Showing mesh convex decomp into {len(convex_pieces)} parts. Close window to proceed.")
+            print(
+                f"Showing mesh convex decomp into {len(convex_pieces)} parts. Close window to proceed."
+            )
             scene.set_camera(angles=(1, 0, 0), distance=0.3, center=(0, 0, 0))
             scene.show()
 

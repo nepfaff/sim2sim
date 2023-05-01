@@ -90,7 +90,9 @@ class TableAngleSource(LeafSystem):
         self._start_time = None
         self._no_command_time = no_command_time
 
-        self._control_output_port = self.DeclareVectorOutputPort("table_angle", BasicVector(2), self.CalcOutput)
+        self._control_output_port = self.DeclareVectorOutputPort(
+            "table_angle", BasicVector(2), self.CalcOutput
+        )
 
     def CalcOutput(self, context, output):
         if context.get_time() < self._no_command_time:
@@ -128,11 +130,15 @@ def create_env(
         directive = LoadModelDirectivesFromString(directive_str)
         ProcessModelDirectives(directive, parser)
 
-    plant.SetDefaultFreeBodyPose(plant.GetBodyByName(manipuland_base_link_name), manipuland_pose)
+    plant.SetDefaultFreeBodyPose(
+        plant.GetBodyByName(manipuland_base_link_name), manipuland_pose
+    )
     plant.Finalize()
 
     # Table controller
-    pid_controller = builder.AddSystem(PidController(kp=np.array([10.0]), ki=np.array([1.0]), kd=np.array([1.0])))
+    pid_controller = builder.AddSystem(
+        PidController(kp=np.array([10.0]), ki=np.array([1.0]), kd=np.array([1.0]))
+    )
     pid_controller.set_name("pid_controller")
 
     # Now "wire up" the controller to the plant
@@ -146,7 +152,9 @@ def create_env(
         plant.get_actuation_input_port(table_instance),
     )
 
-    table_angle_source = builder.AddSystem(TableAngleSource(final_table_angle, no_command_time=no_command_time))
+    table_angle_source = builder.AddSystem(
+        TableAngleSource(final_table_angle, no_command_time=no_command_time)
+    )
     table_angle_source.set_name("table_angle_source")
     builder.Connect(
         table_angle_source.get_output_port(),
@@ -194,7 +202,11 @@ def run_pipeline(
         builder=camera_builder,
         scene_graph=camera_scene_graph,
         logger=logger,
-        **(params[image_generator_name]["args"] if params[image_generator_name]["args"] is not None else {}),
+        **(
+            params[image_generator_name]["args"]
+            if params[image_generator_name]["args"] is not None
+            else {}
+        ),
     )
 
     (
@@ -210,7 +222,11 @@ def run_pipeline(
     inverse_graphics_name = f"{prefix}inverse_graphics"
     inverse_graphics_class = INVERSE_GRAPHICS[params[inverse_graphics_name]["class"]]
     inverse_graphics = inverse_graphics_class(
-        **(params[inverse_graphics_name]["args"] if params[inverse_graphics_name]["args"] is not None else {}),
+        **(
+            params[inverse_graphics_name]["args"]
+            if params[inverse_graphics_name]["args"] is not None
+            else {}
+        ),
         images=images,
         intrinsics=intrinsics,
         extrinsics=extrinsics,
@@ -226,7 +242,11 @@ def run_pipeline(
     mesh_processor_class = MESH_PROCESSORS[params[mesh_processor_name]["class"]]
     mesh_processor = mesh_processor_class(
         logger=logger,
-        **(params[mesh_processor_name]["args"] if params[mesh_processor_name]["args"] is not None else {}),
+        **(
+            params[mesh_processor_name]["args"]
+            if params[mesh_processor_name]["args"] is not None
+            else {}
+        ),
     )
     (
         is_primitive,
@@ -238,7 +258,9 @@ def run_pipeline(
 
     # Compute mesh inertia and mass
     physical_porperty_estimator_name = f"{prefix}physical_property_estimator"
-    physical_property_estimator_class = PHYSICAL_PROPERTY_ESTIMATOR[params[physical_porperty_estimator_name]["class"]]
+    physical_property_estimator_class = PHYSICAL_PROPERTY_ESTIMATOR[
+        params[physical_porperty_estimator_name]["class"]
+    ]
     physical_porperty_estimator = physical_property_estimator_class(
         **(
             params[physical_porperty_estimator_name]["args"]
@@ -246,16 +268,26 @@ def run_pipeline(
             else {}
         ),
     )
-    mass, inertia = physical_porperty_estimator.estimate_physical_properties(processed_mesh)
-    print(f"Finished estimating physical properties{f' for {prefix}' if prefix else ''}.")
-    logger.log_manipuland_estimated_physics(manipuland_mass_estimated=mass, manipuland_inertia_estimated=inertia)
+    mass, inertia = physical_porperty_estimator.estimate_physical_properties(
+        processed_mesh
+    )
+    print(
+        f"Finished estimating physical properties{f' for {prefix}' if prefix else ''}."
+    )
+    logger.log_manipuland_estimated_physics(
+        manipuland_mass_estimated=mass, manipuland_inertia_estimated=inertia
+    )
 
     # Save mesh data to create SDF files that can be added to a new simulation environment
     if save_raw_mesh:
         logger.log(raw_mesh=raw_mesh)
-    logger.log(processed_mesh=processed_mesh, processed_mesh_piece=processed_mesh_pieces)
+    logger.log(
+        processed_mesh=processed_mesh, processed_mesh_piece=processed_mesh_pieces
+    )
     _, processed_mesh_file_path = logger.save_mesh_data(prefix=prefix)
-    processed_mesh_file_path = os.path.join(pathlib.Path(__file__).parent.resolve(), "../..", processed_mesh_file_path)
+    processed_mesh_file_path = os.path.join(
+        pathlib.Path(__file__).parent.resolve(), "../..", processed_mesh_file_path
+    )
 
     # Create a directive for processed_mesh manipuland
     if is_primitive:
@@ -289,7 +321,9 @@ def run_pipeline(
         no_command_time=no_command_time,
         directive_files=[scene_directive_path],
         directive_strs=[processed_mesh_directive],
-        manipuland_pose=RigidTransform(RollPitchYaw(*raw_mesh_pose[:3]), raw_mesh_pose[3:]),
+        manipuland_pose=RigidTransform(
+            RollPitchYaw(*raw_mesh_pose[:3]), raw_mesh_pose[3:]
+        ),
     )
 
     return builder, scene_graph, plant
@@ -328,8 +362,12 @@ def run_table_pid(
         inner manipuland.
     :param is_pipeline_comparison: Whether it is a sim2sim pipeline comparison experiment.
     """
-    scene_directive_path = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
-    manipuland_directive_path = os.path.join(pathlib.Path(__file__).parent.resolve(), manipuland_directive)
+    scene_directive_path = os.path.join(
+        pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE
+    )
+    manipuland_directive_path = os.path.join(
+        pathlib.Path(__file__).parent.resolve(), manipuland_directive
+    )
 
     logger_class = LOGGERS[params["logger"]["class"]]
     logger = logger_class(
@@ -339,7 +377,9 @@ def run_table_pid(
     )
     logger.log(experiment_description=params)
 
-    manipuland_default_pose = RigidTransform(RollPitchYaw(*manipuland_default_pose[:3]), manipuland_default_pose[3:])
+    manipuland_default_pose = RigidTransform(
+        RollPitchYaw(*manipuland_default_pose[:3]), manipuland_default_pose[3:]
+    )
     if is_pipeline_comparison:
         outer_builder, outer_scene_graph, outer_plant = run_pipeline(
             prefix="outer",
@@ -405,9 +445,15 @@ def run_table_pid(
         inner_builder=inner_builder,
         inner_scene_graph=inner_scene_graph,
         logger=logger,
-        is_hydroelastic=params[f"{'inner_' if is_pipeline_comparison else ''}env"]["contact_model"]
+        is_hydroelastic=params[f"{'inner_' if is_pipeline_comparison else ''}env"][
+            "contact_model"
+        ]
         != "point",  # Visualize outer contact forces if inner/outer use different contact engines
-        **(params["simulator"]["args"] if params["simulator"]["args"] is not None else {}),
+        **(
+            params["simulator"]["args"]
+            if params["simulator"]["args"] is not None
+            else {}
+        ),
     )
     simulator.simulate(sim_duration)
     print("Finished simulating.")

@@ -38,7 +38,9 @@ class SphereMeshProcessor(MeshProcessorBase):
         # subsampled_pts = pointnet2_utils.furthest_point_sample(points, self._target_sphere_num)
         subsampled_pts = pointnet2_utils.gather_operation(
             points.transpose(1, 2).contiguous(),
-            pointnet2_utils.furthest_point_sample(points[..., :3].contiguous(), self._target_sphere_num),
+            pointnet2_utils.furthest_point_sample(
+                points[..., :3].contiguous(), self._target_sphere_num
+            ),
         ).contiguous()
         avg_point_num = points.shape[1] // self._target_sphere_num
 

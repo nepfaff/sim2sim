@@ -6,7 +6,9 @@ from pytorch3d.renderer import look_at_view_transform
 from scipy.spatial.transform import Rotation as R
 
 
-def generate_camera_locations_circle(center: np.ndarray, radius: float, num_points: int, xz: bool = True) -> np.ndarray:
+def generate_camera_locations_circle(
+    center: np.ndarray, radius: float, num_points: int, xz: bool = True
+) -> np.ndarray:
     """
     Generate camera locations on the circumference of a circle (xz or xy horizontal plane).
 
@@ -18,15 +20,24 @@ def generate_camera_locations_circle(center: np.ndarray, radius: float, num_poin
     """
     angles = np.linspace(0.0, 2.0 * np.pi, num_points)
     camera_locations = (
-        np.vstack([radius * np.sin(angles), np.zeros_like(angles), radius * np.cos(angles)])
+        np.vstack(
+            [radius * np.sin(angles), np.zeros_like(angles), radius * np.cos(angles)]
+        )
         if xz
-        else np.vstack([radius * np.cos(angles), radius * np.sin(angles), np.zeros_like(angles)])
+        else np.vstack(
+            [radius * np.cos(angles), radius * np.sin(angles), np.zeros_like(angles)]
+        )
     ).T + center
     return camera_locations
 
 
 def generate_camera_locations_sphere(
-    center: np.ndarray, radius: float, num_phi: int, num_theta: int, half: bool = False, viz: bool = False
+    center: np.ndarray,
+    radius: float,
+    num_phi: int,
+    num_theta: int,
+    half: bool = False,
+    viz: bool = False,
 ) -> np.ndarray:
     """
     Generate camera locations on a sphere (xy horizontal plane).
@@ -52,13 +63,19 @@ def generate_camera_locations_sphere(
     if viz:
         viz_geoms = []
         for location in camera_locations:
-            viz_geoms.append(o3d.geometry.TriangleMesh.create_sphere(radius / 40.0).translate(location))
+            viz_geoms.append(
+                o3d.geometry.TriangleMesh.create_sphere(radius / 40.0).translate(
+                    location
+                )
+            )
         o3d.visualization.draw_geometries(viz_geoms)
 
     return camera_locations
 
 
-def get_look_at_views(points: np.ndarray, look_at_points: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def get_look_at_views(
+    points: np.ndarray, look_at_points: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Compute the world2cam rotation 'R' and translation 'T' using the camera locations 'points' and the
     look_at_points. Use the look_at_view_transform to get the R and T.
@@ -73,7 +90,9 @@ def get_look_at_views(points: np.ndarray, look_at_points: np.ndarray) -> Tuple[n
     return R.numpy(), T.numpy()
 
 
-def pytorch3d_world2cam_to_opencv_world2cam(R_pt3d: np.ndarray, t_pt3d: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def pytorch3d_world2cam_to_opencv_world2cam(
+    R_pt3d: np.ndarray, t_pt3d: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray]:
     """Convert the pytorch3d camera poses to opencv.
 
     :param R_pt3d: Rotation matrices for the world2cam matrix in Pytorch3d convention.
@@ -101,7 +120,10 @@ def pytorch3d_world2cam_to_opencv_world2cam(R_pt3d: np.ndarray, t_pt3d: np.ndarr
 
 
 def generate_camera_pose_circle(
-    look_at_point: np.ndarray, camera_location_center: np.ndarray, radius: float, num_cam_poses: int
+    look_at_point: np.ndarray,
+    camera_location_center: np.ndarray,
+    radius: float,
+    num_cam_poses: int,
 ) -> np.ndarray:
     """
     Generates a camera pose circle on the xy horizontal plane.
@@ -120,7 +142,9 @@ def generate_camera_pose_circle(
     look_at_point = look_at_point @ rot_inv
     camera_location_center = camera_location_center @ rot_inv
 
-    points = generate_camera_locations_circle(camera_location_center, radius, num_cam_poses, xz=True)
+    points = generate_camera_locations_circle(
+        camera_location_center, radius, num_cam_poses, xz=True
+    )
     R_pt3d, T_pt3d = get_look_at_views(points, np.zeros_like(points) + look_at_point)
     R_cv, t_cv = pytorch3d_world2cam_to_opencv_world2cam(R_pt3d, T_pt3d)
 

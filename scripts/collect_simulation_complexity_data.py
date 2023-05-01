@@ -38,7 +38,10 @@ def main():
         help="How many random force experiments to run per perturbation.",
     )
     parser.add_argument(
-        "--num_perturbations", default=40, type=int, help="The number of different perturbations (GMM nums) to run."
+        "--num_perturbations",
+        default=40,
+        type=int,
+        help="The number of different perturbations (GMM nums) to run.",
     )
     args = parser.parse_args()
 
@@ -49,11 +52,15 @@ def main():
 
     gmm_num = 1
     for _ in tqdm(range(args.num_perturbations)):
-        perturb_path = os.path.join(args.logging_path, f"{PERTURBATION_DIR_BASENAME}{gmm_num:06d}")
+        perturb_path = os.path.join(
+            args.logging_path, f"{PERTURBATION_DIR_BASENAME}{gmm_num:06d}"
+        )
         os.mkdir(perturb_path)
 
         # Perturb GMM num
-        experiment_specification["mesh_processor"]["args"]["gmm_em_params"]["n_components"] = gmm_num
+        experiment_specification["mesh_processor"]["args"]["gmm_em_params"][
+            "n_components"
+        ] = gmm_num
 
         for i in range(args.num_runs_per_perturbation):
             experiment_specification["simulator"]["args"]["random_seed"] = RANDOM_SEED

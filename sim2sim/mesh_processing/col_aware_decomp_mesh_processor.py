@@ -17,7 +17,13 @@ class CoACDMeshProcessor(MeshProcessorBase):
     Search [SIGGRAPH2022] from https://github.com/SarahWeiii/CoACD.
     """
 
-    def __init__(self, logger: DynamicLogger, mesh_name: str, mesh_dir: str, preview_with_trimesh: bool):
+    def __init__(
+        self,
+        logger: DynamicLogger,
+        mesh_name: str,
+        mesh_dir: str,
+        preview_with_trimesh: bool,
+    ):
         """
         :param target_sphere_num: The number of spheres that the simplified mesh should contain.
         :param mesh_dir: The temporary folder to write the convex mesh parts to.
@@ -89,7 +95,9 @@ class CoACDMeshProcessor(MeshProcessorBase):
             for part in convex_pieces:
                 scene.add_geometry(part)
 
-            logging.info(f"Showing mesh convex decomp into {len(convex_pieces)} parts. Close window to proceed.")
+            logging.info(
+                f"Showing mesh convex decomp into {len(convex_pieces)} parts. Close window to proceed."
+            )
             scene.set_camera(angles=(1, 0, 0), distance=0.3, center=(0, 0, 0))
             scene.show()
 

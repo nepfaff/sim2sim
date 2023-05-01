@@ -12,10 +12,14 @@ def main():
         help="Path to the experiment data folder.",
     )
     parser.add_argument(
-        "--hydroelastic", action="store_true", help="Whether to plot hydroelastic or point contact forces."
+        "--hydroelastic",
+        action="store_true",
+        help="Whether to plot hydroelastic or point contact forces.",
     )
     parser.add_argument(
-        "--kIllustration", action="store_true", help="Whether to use kIllustration or kProximity for meshcat."
+        "--kIllustration",
+        action="store_true",
+        help="Whether to use kIllustration or kProximity for meshcat.",
     )
     parser.add_argument(
         "--manipuland",
@@ -43,9 +47,14 @@ def main():
         + "This only has an effect if `--manipuland` is 'both'.",
     )
     parser.add_argument(
-        "--sphere_transparency", default=1.0, type=float, help="The alpha value of the sphere in range (0,1]."
+        "--sphere_transparency",
+        default=1.0,
+        type=float,
+        help="The alpha value of the sphere in range (0,1].",
     )
-    parser.add_argument("--save_html", action="store_true", help="Whether to save the meshcat HTML.")
+    parser.add_argument(
+        "--save_html", action="store_true", help="Whether to save the meshcat HTML."
+    )
     args = parser.parse_args()
 
     visualizer = SpherePushingContactForceVisualizer(

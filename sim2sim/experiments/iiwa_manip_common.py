@@ -29,7 +29,11 @@ from sim2sim.util import (
     WSGCommandSource,
     IIWAControlModeSource,
 )
-from sim2sim.images import NoneImageGenerator, SphereImageGenerator, IIWAWristSphereImageGenerator
+from sim2sim.images import (
+    NoneImageGenerator,
+    SphereImageGenerator,
+    IIWAWristSphereImageGenerator,
+)
 from sim2sim.inverse_graphics import IdentityInverseGraphics
 from sim2sim.mesh_processing import (
     IdentityMeshProcessor,
@@ -42,10 +46,15 @@ from sim2sim.simulation import (
     IIWARearrangementSimulator,
     IIWAPushInHoleSimulator,
 )
-from sim2sim.physical_property_estimator import WaterDensityPhysicalPropertyEstimator, GTPhysicalPropertyEstimator
+from sim2sim.physical_property_estimator import (
+    WaterDensityPhysicalPropertyEstimator,
+    GTPhysicalPropertyEstimator,
+)
 
 SCENE_DIRECTIVE = "../../models/iiwa_manip/iiwa_manip_scene_directive.yaml"
-IIWA_Q_NOMINAL = np.array([1.5, -0.4, 0.0, -1.75, 0.0, 1.5, 0.0])  # iiwa joint angles in radians
+IIWA_Q_NOMINAL = np.array(
+    [1.5, -0.4, 0.0, -1.75, 0.0, 1.5, 0.0]
+)  # iiwa joint angles in radians
 
 LOGGERS = {
     "DynamicLogger": DynamicLogger,
@@ -101,7 +110,9 @@ def create_env(
         directive = LoadModelDirectivesFromString(directive_str)
         ProcessModelDirectives(directive, parser)
 
-    plant.SetDefaultFreeBodyPose(plant.GetBodyByName(manipuland_base_link_name), manipuland_pose)
+    plant.SetDefaultFreeBodyPose(
+        plant.GetBodyByName(manipuland_base_link_name), manipuland_pose
+    )
     plant.Finalize()
 
     # Add iiwa controller
@@ -117,15 +128,29 @@ def create_env(
         iiwa_torque_commanded_output,
         iiwa_torque_external_output,
     ) = add_iiwa_system(
-        builder=builder, plant=plant, iiwa_instance_idx=plant.GetModelInstanceByName("iiwa"), iiwa_time_step=timestep
+        builder=builder,
+        plant=plant,
+        iiwa_instance_idx=plant.GetModelInstanceByName("iiwa"),
+        iiwa_time_step=timestep,
     )
     iiwa_control_mode_source = builder.AddSystem(IIWAControlModeSource())
     iiwa_control_mode_source.set_name("iiwa_control_mode_source")
-    builder.Connect(iiwa_control_mode_source.GetOutputPort("iiwa_control_mode"), iiwa_control_mode_input)
+    builder.Connect(
+        iiwa_control_mode_source.GetOutputPort("iiwa_control_mode"),
+        iiwa_control_mode_input,
+    )
 
     # Add wsg controller
-    (wsg_position_input, wsg_force_limit_input, wsg_state_measured_output, wsg_force_measured_output,) = add_wsg_system(
-        builder=builder, plant=plant, wsg_instance_idx=plant.GetModelInstanceByName("wsg"), wsg_time_step=timestep
+    (
+        wsg_position_input,
+        wsg_force_limit_input,
+        wsg_state_measured_output,
+        wsg_force_measured_output,
+    ) = add_wsg_system(
+        builder=builder,
+        plant=plant,
+        wsg_instance_idx=plant.GetModelInstanceByName("wsg"),
+        wsg_time_step=timestep,
     )
 
     add_cameras(
@@ -146,7 +171,9 @@ def create_env(
     )
     iiwa_joint_trajectory_source.set_name("iiwa_joint_trajectory_source")
     demux = builder.AddSystem(Demultiplexer(14, 7))  # Assume 7 iiwa joint positions
-    builder.Connect(iiwa_joint_trajectory_source.get_output_port(), demux.get_input_port())
+    builder.Connect(
+        iiwa_joint_trajectory_source.get_output_port(), demux.get_input_port()
+    )
     builder.Connect(demux.get_output_port(0), iiwa_position_input)
 
     # Add wsg position source
@@ -185,7 +212,9 @@ def run_iiwa_manip(
     :param hydroelastic_manipuland: Whether to use hydroelastic or point contact for the inner manipuland.
     """
 
-    scene_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
+    scene_directive = os.path.join(
+        pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE
+    )
 
     logger_class = LOGGERS[params["logger"]["class"]]
     logger = logger_class(
@@ -214,15 +243,30 @@ def run_iiwa_manip(
         builder=builder_camera,
         scene_graph=scene_graph_camera,
         logger=logger,
-        **(params["image_generator"]["args"] if params["image_generator"]["args"] is not None else {}),
+        **(
+            params["image_generator"]["args"]
+            if params["image_generator"]["args"] is not None
+            else {}
+        ),
     )
 
-    images, intrinsics, extrinsics, depths, labels, masks = image_generator.generate_images()
+    (
+        images,
+        intrinsics,
+        extrinsics,
+        depths,
+        labels,
+        masks,
+    ) = image_generator.generate_images()
     print("Finished generating images.")
 
     inverse_graphics_class = INVERSE_GRAPHICS[params["inverse_graphics"]["class"]]
     inverse_graphics = inverse_graphics_class(
-        **(params["inverse_graphics"]["args"] if params["inverse_graphics"]["args"] is not None else {}),
+        **(
+            params["inverse_graphics"]["args"]
+            if params["inverse_graphics"]["args"] is not None
+            else {}
+        ),
         images=images,
         intrinsics=intrinsics,
         extrinsics=extrinsics,
@@ -236,14 +280,25 @@ def run_iiwa_manip(
     mesh_processor_class = MESH_PROCESSORS[params["mesh_processor"]["class"]]
     mesh_processor = mesh_processor_class(
         logger=logger,
-        **(params["mesh_processor"]["args"] if params["mesh_processor"]["args"] is not None else {}),
+        **(
+            params["mesh_processor"]["args"]
+            if params["mesh_processor"]["args"] is not None
+            else {}
+        ),
     )
     # TODO: Also support mesh pieces output
-    is_primitive, processed_mesh, processed_mesh_piece, primitive_info = mesh_processor.process_mesh(raw_mesh)
+    (
+        is_primitive,
+        processed_mesh,
+        processed_mesh_piece,
+        primitive_info,
+    ) = mesh_processor.process_mesh(raw_mesh)
     print("Finished mesh processing.")
 
     # Compute mesh inertia and mass assuming constant density of water
-    physical_property_estimator_class = PHYSICAL_PROPERTY_ESTIMATOR[params["physical_property_estimator"]["class"]]
+    physical_property_estimator_class = PHYSICAL_PROPERTY_ESTIMATOR[
+        params["physical_property_estimator"]["class"]
+    ]
     physical_porperty_estimator = physical_property_estimator_class(
         **(
             params["physical_property_estimator"]["args"]
@@ -251,14 +306,20 @@ def run_iiwa_manip(
             else {}
         ),
     )
-    mass, inertia = physical_porperty_estimator.estimate_physical_properties(processed_mesh)
+    mass, inertia = physical_porperty_estimator.estimate_physical_properties(
+        processed_mesh
+    )
     print("Finished estimating physical properties.")
-    logger.log_manipuland_estimated_physics(manipuland_mass_estimated=mass, manipuland_inertia_estimated=inertia)
+    logger.log_manipuland_estimated_physics(
+        manipuland_mass_estimated=mass, manipuland_inertia_estimated=inertia
+    )
 
     # Save mesh data to create SDF files that can be added to a new simulation environment
     logger.log(raw_mesh=raw_mesh, processed_mesh=processed_mesh)
     _, processed_mesh_file_path = logger.save_mesh_data()
-    processed_mesh_file_path = os.path.join(pathlib.Path(__file__).parent.resolve(), "../..", processed_mesh_file_path)
+    processed_mesh_file_path = os.path.join(
+        pathlib.Path(__file__).parent.resolve(), "../..", processed_mesh_file_path
+    )
 
     # Create a directive for processed_mesh manipuland
     if is_primitive:
@@ -284,7 +345,9 @@ def run_iiwa_manip(
 
     builder_inner, scene_graph_inner, inner_plant = create_env(
         timestep=timestep,
-        manipuland_pose=RigidTransform(RollPitchYaw(*raw_mesh_pose[:3]), raw_mesh_pose[3:]),
+        manipuland_pose=RigidTransform(
+            RollPitchYaw(*raw_mesh_pose[:3]), raw_mesh_pose[3:]
+        ),
         manipuland_base_link_name=manipuland_base_link_name,
         directive_files=[scene_directive],
         directive_strs=[processed_mesh_directive],
@@ -301,7 +364,11 @@ def run_iiwa_manip(
         inner_scene_graph=scene_graph_inner,
         logger=logger,
         is_hydroelastic=params["env"]["contact_model"] != "point",
-        **(params["simulator"]["args"] if params["simulator"]["args"] is not None else {}),
+        **(
+            params["simulator"]["args"]
+            if params["simulator"]["args"] is not None
+            else {}
+        ),
     )
     simulator.simulate(sim_duration)
     print("Finished simulating.")

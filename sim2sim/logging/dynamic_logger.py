@@ -24,7 +24,10 @@ from pydrake.all import (
 from PIL import Image
 from matplotlib import pyplot as plt
 
-from sim2sim.util import get_hydroelastic_contact_viz_params, get_point_contact_contact_viz_params
+from sim2sim.util import (
+    get_hydroelastic_contact_viz_params,
+    get_point_contact_contact_viz_params,
+)
 from .abstract_value_logger import AbstractValueLogger
 
 
@@ -87,7 +90,9 @@ class DynamicLogger:
         ]
         self._create_data_directories()
         self._meta_data_file_path = os.path.join(logging_path, "meta_data.yaml")
-        self._experiment_description_file_path = os.path.join(logging_path, "experiment_description.yaml")
+        self._experiment_description_file_path = os.path.join(
+            logging_path, "experiment_description.yaml"
+        )
 
         # Camera logs
         self._camera_poses: List[np.ndarray] = []
@@ -159,7 +164,10 @@ class DynamicLogger:
 
     @staticmethod
     def _add_contact_visualizer(
-        builder: DiagramBuilder, meshcat: Meshcat, plant: MultibodyPlant, is_hydroelastic: bool
+        builder: DiagramBuilder,
+        meshcat: Meshcat,
+        plant: MultibodyPlant,
+        is_hydroelastic: bool,
     ) -> None:
         """
         Adds a contact visualizer to `builder`.
@@ -169,11 +177,19 @@ class DynamicLogger:
         :param plant: The plant for which we want to visualize contact forces.
         :param is_hydroelastic: Whether to use the hydroelastic or point contact configs.
         """
-        cparams = get_hydroelastic_contact_viz_params() if is_hydroelastic else get_point_contact_contact_viz_params()
+        cparams = (
+            get_hydroelastic_contact_viz_params()
+            if is_hydroelastic
+            else get_point_contact_contact_viz_params()
+        )
         _ = ContactVisualizer.AddToBuilder(builder, plant, meshcat, cparams)
 
     def add_visualizers(
-        self, builder: DiagramBuilder, scene_graph: SceneGraph, is_hydroelastic: bool, is_outer: bool
+        self,
+        builder: DiagramBuilder,
+        scene_graph: SceneGraph,
+        is_hydroelastic: bool,
+        is_outer: bool,
     ) -> Tuple[MeshcatVisualizer, Meshcat]:
         """
         Add visualizers.
@@ -183,35 +199,52 @@ class DynamicLogger:
         :param is_outer: Whether it is the outer or inner simulation.
         :return: A tuple of (visualizer, meshcat).
         """
-        visualizer, meshcat = self.add_meshcat_visualizer(builder, scene_graph, self._kProximity)
+        visualizer, meshcat = self.add_meshcat_visualizer(
+            builder, scene_graph, self._kProximity
+        )
         if self._inner_plant is not None and self._outer_plant is not None:
             self._add_contact_visualizer(
-                builder, meshcat, self._outer_plant if is_outer else self._inner_plant, is_hydroelastic
+                builder,
+                meshcat,
+                self._outer_plant if is_outer else self._inner_plant,
+                is_hydroelastic,
             )
         return visualizer, meshcat
 
-    def add_plants(self, outer_plant: MultibodyPlant, inner_plant: MultibodyPlant) -> None:
+    def add_plants(
+        self, outer_plant: MultibodyPlant, inner_plant: MultibodyPlant
+    ) -> None:
         """Add finalized plants."""
         self._outer_plant = outer_plant
         self._inner_plant = inner_plant
 
-    def add_scene_graphs(self, outer_scene_graph: SceneGraph, inner_scene_graph: SceneGraph) -> None:
+    def add_scene_graphs(
+        self, outer_scene_graph: SceneGraph, inner_scene_graph: SceneGraph
+    ) -> None:
         self._outer_scene_graph = outer_scene_graph
         self._inner_scene_graph = inner_scene_graph
 
-    def add_manipuland_pose_logging(self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder) -> None:
+    def add_manipuland_pose_logging(
+        self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder
+    ) -> None:
         self._outer_manipuland_pose_logger = LogVectorOutput(
-            self._outer_plant.get_state_output_port(self._outer_plant.GetModelInstanceByName(self._manipuland_name)),
+            self._outer_plant.get_state_output_port(
+                self._outer_plant.GetModelInstanceByName(self._manipuland_name)
+            ),
             outer_builder,
             1.0 / self._logging_frequency_hz,
         )
         self._inner_manipuland_pose_logger = LogVectorOutput(
-            self._inner_plant.get_state_output_port(self._inner_plant.GetModelInstanceByName(self._manipuland_name)),
+            self._inner_plant.get_state_output_port(
+                self._inner_plant.GetModelInstanceByName(self._manipuland_name)
+            ),
             inner_builder,
             1.0 / self._logging_frequency_hz,
         )
 
-    def add_contact_result_logging(self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder) -> None:
+    def add_contact_result_logging(
+        self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder
+    ) -> None:
         self._outer_contact_result_logger = outer_builder.AddSystem(
             AbstractValueLogger(ContactResults(), self._logging_frequency_hz)
         )
@@ -229,7 +262,10 @@ class DynamicLogger:
 
     def log_manipuland_poses(self, context: Context, is_outer: bool) -> None:
         # NOTE: This really logs state which is both pose (7,) and spatial velocity (6,)
-        assert self._outer_manipuland_pose_logger is not None and self._inner_manipuland_pose_logger is not None
+        assert (
+            self._outer_manipuland_pose_logger is not None
+            and self._inner_manipuland_pose_logger is not None
+        )
 
         if is_outer:
             log = self._outer_manipuland_pose_logger.FindLog(context)
@@ -292,12 +328,18 @@ class DynamicLogger:
             - times
         """
         logs: Tuple[List[ContactResults], List[float]] = (
-            self._outer_contact_result_logger.get_logs() if is_outer else self._inner_contact_result_logger.get_logs()
+            self._outer_contact_result_logger.get_logs()
+            if is_outer
+            else self._inner_contact_result_logger.get_logs()
         )
         contact_results, times = logs
         plant = self._outer_plant if is_outer else self._inner_plant
 
-        inspector = self._outer_scene_graph.model_inspector() if is_outer else self._inner_scene_graph.model_inspector()
+        inspector = (
+            self._outer_scene_graph.model_inspector()
+            if is_outer
+            else self._inner_scene_graph.model_inspector()
+        )
 
         point_contact_contact_result_contact_points = []
         point_contact_contact_result_forces = []
@@ -321,8 +363,12 @@ class DynamicLogger:
                     contact_force = contact_info_i.contact_force()
                     point_contact_contact_result_force.append(contact_force)
 
-            point_contact_contact_result_contact_points.append(point_contact_contact_result_contact_point)
-            point_contact_contact_result_forces.append(point_contact_contact_result_force)
+            point_contact_contact_result_contact_points.append(
+                point_contact_contact_result_contact_point
+            )
+            point_contact_contact_result_forces.append(
+                point_contact_contact_result_force
+            )
 
             hydroelastic_contact_result_centroid = []
             hydroelastic_contact_result_force = []
@@ -337,7 +383,10 @@ class DynamicLogger:
                 body_ib_geometry_id = contact_surface.id_N()
                 body_ib_frame_id = inspector.GetFrameId(body_ib_geometry_id)
                 body_ib = plant.GetBodyFromFrameId(body_ib_frame_id)
-                if body_of_interest == body_ia.name() or body_of_interest == body_ib.name():
+                if (
+                    body_of_interest == body_ia.name()
+                    or body_of_interest == body_ib.name()
+                ):
                     contact_point = contact_surface.centroid()
                     hydroelastic_contact_result_centroid.append(contact_point)
 
@@ -347,9 +396,13 @@ class DynamicLogger:
                     contact_torque = contact_spatial_force.rotational()
                     hydroelastic_contact_result_torque.append(contact_torque)
 
-            hydroelastic_contact_result_centroids.append(hydroelastic_contact_result_centroid)
+            hydroelastic_contact_result_centroids.append(
+                hydroelastic_contact_result_centroid
+            )
             hydroelastic_contact_result_forces.append(hydroelastic_contact_result_force)
-            hydroelastic_contact_result_torques.append(hydroelastic_contact_result_torque)
+            hydroelastic_contact_result_torques.append(
+                hydroelastic_contact_result_torque
+            )
 
         return (
             point_contact_contact_result_contact_points,
@@ -406,7 +459,10 @@ class DynamicLogger:
 
     def _create_time_series_plots(self) -> None:
         # Create pose error plots
-        if self._outer_manipuland_poses is not None and self._inner_manipuland_poses is not None:
+        if (
+            self._outer_manipuland_poses is not None
+            and self._inner_manipuland_poses is not None
+        ):
             state_error = self._outer_manipuland_poses - self._inner_manipuland_poses
             times = self._outer_manipuland_pose_times
             orientation_error = state_error[:, :4]  # Quaternions
@@ -417,50 +473,86 @@ class DynamicLogger:
             plt.plot(times, np.linalg.norm(translation_error, axis=1))
             plt.xlabel("Time (s)")
             plt.ylabel("Translation error magnitude (m)")
-            plt.savefig(os.path.join(self._time_logs_dir_path, "translation_error_magnitude.png"))
+            plt.savefig(
+                os.path.join(
+                    self._time_logs_dir_path, "translation_error_magnitude.png"
+                )
+            )
             plt.close()
 
             plt.plot(times, np.linalg.norm(orientation_error, axis=1))
             plt.xlabel("Time (s)")
             plt.ylabel("Orientation error magnitude (quaternions)")
-            plt.savefig(os.path.join(self._time_logs_dir_path, "orientation_error_magnitude.png"))
+            plt.savefig(
+                os.path.join(
+                    self._time_logs_dir_path, "orientation_error_magnitude.png"
+                )
+            )
             plt.close()
 
             plt.plot(times, np.linalg.norm(translational_velocity_error, axis=1))
             plt.xlabel("Time (s)")
             plt.ylabel("Translational velocity error magnitude (m/s)")
-            plt.savefig(os.path.join(self._time_logs_dir_path, "translational_velocity_error_magnitude.png"))
+            plt.savefig(
+                os.path.join(
+                    self._time_logs_dir_path,
+                    "translational_velocity_error_magnitude.png",
+                )
+            )
             plt.close()
 
             plt.plot(times, np.linalg.norm(angular_velocity_error, axis=1))
             plt.xlabel("Time (s)")
             plt.ylabel("Angular velocity error magnitude (rad/s)")
-            plt.savefig(os.path.join(self._time_logs_dir_path, "angular_velocity_error_magnitude.png"))
+            plt.savefig(
+                os.path.join(
+                    self._time_logs_dir_path, "angular_velocity_error_magnitude.png"
+                )
+            )
             plt.close()
 
         # Create contact force error plots
-        if self._outer_manipuland_contact_forces is not None and self._inner_manipuland_contact_forces is not None:
-            contact_force_error = self._outer_manipuland_contact_forces - self._inner_manipuland_contact_forces
+        if (
+            self._outer_manipuland_contact_forces is not None
+            and self._inner_manipuland_contact_forces is not None
+        ):
+            contact_force_error = (
+                self._outer_manipuland_contact_forces
+                - self._inner_manipuland_contact_forces
+            )
             contact_force_error_angular = contact_force_error[:, :3]
             contact_force_error_translational = contact_force_error[:, 3:]
 
             plt.plot(times, np.linalg.norm(contact_force_error, axis=1))
             plt.xlabel("Time (s)")
             plt.ylabel("Generalized contact force error magnitude (N)")
-            plt.savefig(os.path.join(self._time_logs_dir_path, "generalized_contact_force_error_magnitude.png"))
+            plt.savefig(
+                os.path.join(
+                    self._time_logs_dir_path,
+                    "generalized_contact_force_error_magnitude.png",
+                )
+            )
             plt.close()
 
             plt.plot(times, np.linalg.norm(contact_force_error_angular, axis=1))
             plt.xlabel("Time (s)")
             plt.ylabel("Gemeralized angular contact force error magnitude (N)")
-            plt.savefig(os.path.join(self._time_logs_dir_path, "generalized_angular_contact_force_error_magnitude.png"))
+            plt.savefig(
+                os.path.join(
+                    self._time_logs_dir_path,
+                    "generalized_angular_contact_force_error_magnitude.png",
+                )
+            )
             plt.close()
 
             plt.plot(times, np.linalg.norm(contact_force_error_translational, axis=1))
             plt.xlabel("Time (s)")
             plt.ylabel("Generalized translational contact force error magnitude (N)")
             plt.savefig(
-                os.path.join(self._time_logs_dir_path, "generalized_translational_contact_force_error_magnitude.png")
+                os.path.join(
+                    self._time_logs_dir_path,
+                    "generalized_translational_contact_force_error_magnitude.png",
+                )
             )
             plt.close()
 
@@ -482,10 +574,22 @@ class DynamicLogger:
             _,
         ) = self._get_contact_result_forces(False, self._manipuland_base_link_name)
 
-        def create_spatial_force_error_plot(outer_forces, inner_forces, ylabel, file_name):
+        def create_spatial_force_error_plot(
+            outer_forces, inner_forces, ylabel, file_name
+        ):
             if len(outer_forces) > 0 and len(inner_forces) > 0:
-                outer_forces = np.array([forces[0] if forces else [0.0, 0.0, 0.0] for forces in outer_forces])
-                inner_forces = np.array([forces[0] if forces else [0.0, 0.0, 0.0] for forces in inner_forces])
+                outer_forces = np.array(
+                    [
+                        forces[0] if forces else [0.0, 0.0, 0.0]
+                        for forces in outer_forces
+                    ]
+                )
+                inner_forces = np.array(
+                    [
+                        forces[0] if forces else [0.0, 0.0, 0.0]
+                        for forces in inner_forces
+                    ]
+                )
                 force_error = outer_forces - inner_forces
 
             plt.plot(times, np.linalg.norm(force_error, axis=1))
@@ -525,51 +629,72 @@ class DynamicLogger:
         if self._raw_mesh:
             o3d.io.write_triangle_mesh(raw_mesh_file_path, self._raw_mesh)
         if self._processed_mesh:
-            processed_mesh_file_path = os.path.join(self._mesh_dir_path, f"{processed_mesh_name}.obj")
+            processed_mesh_file_path = os.path.join(
+                self._mesh_dir_path, f"{processed_mesh_name}.obj"
+            )
             o3d.io.write_triangle_mesh(processed_mesh_file_path, self._processed_mesh)
         if self._processed_meshes:
-            processed_mesh_file_path = os.path.join(self._mesh_dir_path, f"{processed_mesh_name}_pieces")
+            processed_mesh_file_path = os.path.join(
+                self._mesh_dir_path, f"{processed_mesh_name}_pieces"
+            )
             if not os.path.exists(processed_mesh_file_path):
                 os.mkdir(processed_mesh_file_path)
             for idx, mesh in enumerate(self._processed_meshes):
-                o3d.io.write_triangle_mesh(os.path.join(processed_mesh_file_path, f"mesh_piece_{idx}.obj"), mesh)
+                o3d.io.write_triangle_mesh(
+                    os.path.join(processed_mesh_file_path, f"mesh_piece_{idx}.obj"),
+                    mesh,
+                )
         return raw_mesh_file_path, processed_mesh_file_path
 
     def save_manipuland_pose_logs(self) -> None:
         if self._outer_manipuland_poses is not None:
             np.savetxt(
-                os.path.join(self._time_logs_dir_path, "outer_manipuland_poses.txt"), self._outer_manipuland_poses
+                os.path.join(self._time_logs_dir_path, "outer_manipuland_poses.txt"),
+                self._outer_manipuland_poses,
             )
             np.savetxt(
-                os.path.join(self._time_logs_dir_path, "outer_manipuland_pose_times.txt"),
+                os.path.join(
+                    self._time_logs_dir_path, "outer_manipuland_pose_times.txt"
+                ),
                 self._outer_manipuland_pose_times,
             )
         if self._inner_manipuland_poses is not None:
             np.savetxt(
-                os.path.join(self._time_logs_dir_path, "inner_manipuland_poses.txt"), self._inner_manipuland_poses
+                os.path.join(self._time_logs_dir_path, "inner_manipuland_poses.txt"),
+                self._inner_manipuland_poses,
             )
             np.savetxt(
-                os.path.join(self._time_logs_dir_path, "inner_manipuland_pose_times.txt"),
+                os.path.join(
+                    self._time_logs_dir_path, "inner_manipuland_pose_times.txt"
+                ),
                 self._inner_manipuland_pose_times,
             )
 
     def save_manipuland_contact_force_logs(self) -> None:
         if self._outer_manipuland_contact_forces is not None:
             np.savetxt(
-                os.path.join(self._time_logs_dir_path, "outer_manipuland_contact_forces.txt"),
+                os.path.join(
+                    self._time_logs_dir_path, "outer_manipuland_contact_forces.txt"
+                ),
                 self._outer_manipuland_contact_forces,
             )
             np.savetxt(
-                os.path.join(self._time_logs_dir_path, "outer_manipuland_contact_force_times.txt"),
+                os.path.join(
+                    self._time_logs_dir_path, "outer_manipuland_contact_force_times.txt"
+                ),
                 self._outer_manipuland_contact_force_times,
             )
         if self._inner_manipuland_contact_forces is not None:
             np.savetxt(
-                os.path.join(self._time_logs_dir_path, "inner_manipuland_contact_forces.txt"),
+                os.path.join(
+                    self._time_logs_dir_path, "inner_manipuland_contact_forces.txt"
+                ),
                 self._inner_manipuland_contact_forces,
             )
             np.savetxt(
-                os.path.join(self._time_logs_dir_path, "inner_manipuland_contact_force_times.txt"),
+                os.path.join(
+                    self._time_logs_dir_path, "inner_manipuland_contact_force_times.txt"
+                ),
                 self._inner_manipuland_contact_force_times,
             )
 
@@ -584,27 +709,45 @@ class DynamicLogger:
         ) = self._get_contact_result_forces(True, body_name)
         if len(outer_contact_result_times) > 0:
             np.save(
-                os.path.join(self._time_logs_dir_path, "outer_point_contact_result_contact_points.npy"),
-                np.array(outer_point_contact_contact_result_contact_points, dtype=object),
+                os.path.join(
+                    self._time_logs_dir_path,
+                    "outer_point_contact_result_contact_points.npy",
+                ),
+                np.array(
+                    outer_point_contact_contact_result_contact_points, dtype=object
+                ),
             )
             np.save(
-                os.path.join(self._time_logs_dir_path, "outer_point_contact_result_forces.npy"),
+                os.path.join(
+                    self._time_logs_dir_path, "outer_point_contact_result_forces.npy"
+                ),
                 np.array(outer_point_contact_contact_result_forces, dtype=object),
             )
             np.save(
-                os.path.join(self._time_logs_dir_path, "outer_hydroelastic_contact_result_centroids.npy"),
+                os.path.join(
+                    self._time_logs_dir_path,
+                    "outer_hydroelastic_contact_result_centroids.npy",
+                ),
                 np.array(outer_hydroelastic_contact_result_centroids, dtype=object),
             )
             np.save(
-                os.path.join(self._time_logs_dir_path, "outer_hydroelastic_contact_result_forces.npy"),
+                os.path.join(
+                    self._time_logs_dir_path,
+                    "outer_hydroelastic_contact_result_forces.npy",
+                ),
                 np.array(outer_hydroelastic_contact_result_forces, dtype=object),
             )
             np.save(
-                os.path.join(self._time_logs_dir_path, "outer_hydroelastic_contact_result_torques.npy"),
+                os.path.join(
+                    self._time_logs_dir_path,
+                    "outer_hydroelastic_contact_result_torques.npy",
+                ),
                 np.array(outer_hydroelastic_contact_result_torques, dtype=object),
             )
             np.save(
-                os.path.join(self._time_logs_dir_path, "outer_contact_result_times.npy"),
+                os.path.join(
+                    self._time_logs_dir_path, "outer_contact_result_times.npy"
+                ),
                 np.array(outer_contact_result_times),
             )
         (
@@ -617,27 +760,45 @@ class DynamicLogger:
         ) = self._get_contact_result_forces(False, body_name)
         if len(inner_contact_result_times) > 0:
             np.save(
-                os.path.join(self._time_logs_dir_path, "inner_point_contact_result_contact_points.npy"),
-                np.array(inner_point_contact_contact_result_contact_points, dtype=object),
+                os.path.join(
+                    self._time_logs_dir_path,
+                    "inner_point_contact_result_contact_points.npy",
+                ),
+                np.array(
+                    inner_point_contact_contact_result_contact_points, dtype=object
+                ),
             )
             np.save(
-                os.path.join(self._time_logs_dir_path, "inner_point_contact_result_forces.npy"),
+                os.path.join(
+                    self._time_logs_dir_path, "inner_point_contact_result_forces.npy"
+                ),
                 np.array(inner_point_contact_contact_result_forces, dtype=object),
             )
             np.save(
-                os.path.join(self._time_logs_dir_path, "inner_hydroelastic_contact_result_centroids.npy"),
+                os.path.join(
+                    self._time_logs_dir_path,
+                    "inner_hydroelastic_contact_result_centroids.npy",
+                ),
                 np.array(inner_hydroelastic_contact_result_centroids, dtype=object),
             )
             np.save(
-                os.path.join(self._time_logs_dir_path, "inner_hydroelastic_contact_result_forces.npy"),
+                os.path.join(
+                    self._time_logs_dir_path,
+                    "inner_hydroelastic_contact_result_forces.npy",
+                ),
                 np.array(inner_hydroelastic_contact_result_forces, dtype=object),
             )
             np.save(
-                os.path.join(self._time_logs_dir_path, "inner_hydroelastic_contact_result_torques.npy"),
+                os.path.join(
+                    self._time_logs_dir_path,
+                    "inner_hydroelastic_contact_result_torques.npy",
+                ),
                 np.array(inner_hydroelastic_contact_result_torques, dtype=object),
             )
             np.save(
-                os.path.join(self._time_logs_dir_path, "inner_contact_result_times.npy"),
+                os.path.join(
+                    self._time_logs_dir_path, "inner_contact_result_times.npy"
+                ),
                 np.array(inner_contact_result_times),
             )
 
@@ -668,14 +829,28 @@ class DynamicLogger:
             len(self._labels),
             len(self._masks),
         ]
-        assert all(l == lengths[0] for l in lengths), f"All camera data must have the same length. Lengths: {lengths}"
+        assert all(
+            l == lengths[0] for l in lengths
+        ), f"All camera data must have the same length. Lengths: {lengths}"
 
         for i, (pose, intrinsics, image, depth, labels, masks) in enumerate(
-            zip(self._camera_poses, self._intrinsics, self._images, self._depths, self._labels, self._masks)
+            zip(
+                self._camera_poses,
+                self._intrinsics,
+                self._images,
+                self._depths,
+                self._labels,
+                self._masks,
+            )
         ):
 
-            np.savetxt(os.path.join(self._camera_poses_dir_path, f"pose{i:04d}.txt"), pose)
-            np.savetxt(os.path.join(self._intrinsics_dir_path, f"intrinsics{i:04d}.txt"), intrinsics)
+            np.savetxt(
+                os.path.join(self._camera_poses_dir_path, f"pose{i:04d}.txt"), pose
+            )
+            np.savetxt(
+                os.path.join(self._intrinsics_dir_path, f"intrinsics{i:04d}.txt"),
+                intrinsics,
+            )
             np.savetxt(os.path.join(self._depths_dir_path, f"depth{i:04d}.txt"), depth)
 
             image_pil = Image.fromarray(image)

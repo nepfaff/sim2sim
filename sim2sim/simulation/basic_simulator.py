@@ -23,7 +23,14 @@ class BasicSimulator(SimulatorBase):
         logger: DynamicLogger,
         is_hydroelastic: bool,
     ):
-        super().__init__(outer_builder, outer_scene_graph, inner_builder, inner_scene_graph, logger, is_hydroelastic)
+        super().__init__(
+            outer_builder,
+            outer_scene_graph,
+            inner_builder,
+            inner_scene_graph,
+            logger,
+            is_hydroelastic,
+        )
         self._finalize_and_build_diagrams()
 
     def _finalize_and_build_diagrams(self) -> None:
@@ -42,9 +49,15 @@ class BasicSimulator(SimulatorBase):
             is_outer=False,
         )
 
-        self._logger.add_manipuland_pose_logging(self._outer_builder, self._inner_builder)
-        self._logger.add_manipuland_contact_force_logging(self._outer_builder, self._inner_builder)
-        self._logger.add_contact_result_logging(self._outer_builder, self._inner_builder)
+        self._logger.add_manipuland_pose_logging(
+            self._outer_builder, self._inner_builder
+        )
+        self._logger.add_manipuland_contact_force_logging(
+            self._outer_builder, self._inner_builder
+        )
+        self._logger.add_contact_result_logging(
+            self._outer_builder, self._inner_builder
+        )
 
         self._outer_diagram = self._outer_builder.Build()
         self._inner_diagram = self._inner_builder.Build()
@@ -78,7 +91,12 @@ class BasicSimulator(SimulatorBase):
 
             # TODO: Move this to the logger
             html = meshcat.StaticHtml()
-            with open(os.path.join(self._logger._logging_path, f"{'inner' if i else 'outer'}.html"), "w") as f:
+            with open(
+                os.path.join(
+                    self._logger._logging_path, f"{'inner' if i else 'outer'}.html"
+                ),
+                "w",
+            ) as f:
                 f.write(html)
 
             context = simulator.get_mutable_context()

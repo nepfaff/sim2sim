@@ -26,7 +26,12 @@ class NoneImageGenerator(ImageGeneratorBase):
     def generate_images(
         self,
     ) -> Tuple[
-        List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray]
+        List[np.ndarray],
+        List[np.ndarray],
+        List[np.ndarray],
+        List[np.ndarray],
+        List[np.ndarray],
+        List[np.ndarray],
     ]:
         camera_poses = []
         intrinsics = []

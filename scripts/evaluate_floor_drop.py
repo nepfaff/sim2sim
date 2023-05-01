@@ -75,7 +75,9 @@ def main():
         mesh_name = os.path.split(mesh_path)[-1][:-4]
         print(f"\nEvaluating {mesh_name}:")
 
-        experiment_specification = yaml.safe_load(open(args.experiment_description, "r"))
+        experiment_specification = yaml.safe_load(
+            open(args.experiment_description, "r")
+        )
         experiment_specification["inverse_graphics"]["args"]["mesh_path"] = mesh_path
 
         mesh_processor_name = experiment_specification["mesh_processor"]["class"]
@@ -87,8 +89,12 @@ def main():
             experiment_specification["mesh_processor"]["args"]["mesh_path"] = mesh_path
         elif mesh_processor_name == "IdentityPrimitiveMeshProcessor":
             primitive_info_file_path = mesh_path[:-4] + ".pkl"
-            assert os.path.exists(primitive_info_file_path), f"Mesh {mesh_name} has no associated primitive info file."
-            experiment_specification["mesh_processor"]["args"]["primitive_info_path"] = primitive_info_file_path
+            assert os.path.exists(
+                primitive_info_file_path
+            ), f"Mesh {mesh_name} has no associated primitive info file."
+            experiment_specification["mesh_processor"]["args"][
+                "primitive_info_path"
+            ] = primitive_info_file_path
 
         logging_path = os.path.join(args.logging_path, mesh_name)
         run_floor_drop(
@@ -98,8 +104,12 @@ def main():
         )
 
         time_logs_path = os.path.join(logging_path, "time_logs")
-        outer_states = np.loadtxt(os.path.join(time_logs_path, "outer_manipuland_poses.txt"))
-        inner_states = np.loadtxt(os.path.join(time_logs_path, "inner_manipuland_poses.txt"))
+        outer_states = np.loadtxt(
+            os.path.join(time_logs_path, "outer_manipuland_poses.txt")
+        )
+        inner_states = np.loadtxt(
+            os.path.join(time_logs_path, "inner_manipuland_poses.txt")
+        )
         final_state_error = outer_states[-1] - inner_states[-1]
         quaternion_error = np.linalg.norm(final_state_error[:4])
         translation_error = np.linalg.norm(final_state_error[4:7])

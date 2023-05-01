@@ -58,10 +58,20 @@ class SphereImageGenerator(ImageGeneratorBase):
         ), "'z_distances', 'radii', and 'num_poses' must have the same length."
 
         self._simulate_time = simulate_time
-        self._look_at_point = look_at_point if isinstance(look_at_point, np.ndarray) else np.asarray(look_at_point)
-        self._z_distances = z_distances if isinstance(z_distances, np.ndarray) else np.asarray(z_distances)
+        self._look_at_point = (
+            look_at_point
+            if isinstance(look_at_point, np.ndarray)
+            else np.asarray(look_at_point)
+        )
+        self._z_distances = (
+            z_distances
+            if isinstance(z_distances, np.ndarray)
+            else np.asarray(z_distances)
+        )
         self._radii = radii if isinstance(radii, np.ndarray) else np.asarray(radii)
-        self._num_poses = num_poses if isinstance(num_poses, np.ndarray) else np.asarray(num_poses)
+        self._num_poses = (
+            num_poses if isinstance(num_poses, np.ndarray) else np.asarray(num_poses)
+        )
 
         self._min_depth_range = 0.1
         self._max_depth_range = 10.0
@@ -71,7 +81,9 @@ class SphereImageGenerator(ImageGeneratorBase):
         :return: Homogenous world2cam transforms of shape (n,4,4) where n is the number of camera poses. OpenCV convention.
         """
         camera_poses = []
-        for z_dist, radius, num_poses in zip(self._z_distances, self._radii, self._num_poses):
+        for z_dist, radius, num_poses in zip(
+            self._z_distances, self._radii, self._num_poses
+        ):
             X_CWs = generate_camera_pose_circle(
                 look_at_point=self._look_at_point,
                 camera_location_center=self._look_at_point + [0.0, 0.0, z_dist],
@@ -85,12 +97,16 @@ class SphereImageGenerator(ImageGeneratorBase):
             import open3d as o3d
 
             viz_geometries = [
-                o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.1).transform(np.linalg.inv(X_CW))
+                o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.1).transform(
+                    np.linalg.inv(X_CW)
+                )
                 for X_CW in X_CWs
             ]
 
             # World frame
-            viz_geometries.append(o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.2))
+            viz_geometries.append(
+                o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.2)
+            )
 
             o3d.visualization.draw_geometries(viz_geometries)
 
@@ -109,7 +125,9 @@ class SphereImageGenerator(ImageGeneratorBase):
                 RenderCameraCore(
                     self._renderer,
                     camera_info,
-                    ClippingRange(near=self._min_depth_range, far=self._max_depth_range),
+                    ClippingRange(
+                        near=self._min_depth_range, far=self._max_depth_range
+                    ),
                     RigidTransform(),
                 ),
                 DepthRange(self._min_depth_range, self._max_depth_range),
@@ -122,30 +140,45 @@ class SphereImageGenerator(ImageGeneratorBase):
                     show_window=False,
                 )
             )
-            self._builder.Connect(self._scene_graph.get_query_output_port(), rgbd.query_object_input_port())
+            self._builder.Connect(
+                self._scene_graph.get_query_output_port(),
+                rgbd.query_object_input_port(),
+            )
 
             # Export the camera outputs
             self._builder.ExportOutput(rgbd.color_image_output_port(), f"{i}_rgb_image")
-            self._builder.ExportOutput(rgbd.depth_image_32F_output_port(), f"{i}_depth_image")
-            self._builder.ExportOutput(rgbd.label_image_output_port(), f"{i}_label_image")
+            self._builder.ExportOutput(
+                rgbd.depth_image_32F_output_port(), f"{i}_depth_image"
+            )
+            self._builder.ExportOutput(
+                rgbd.label_image_output_port(), f"{i}_label_image"
+            )
 
     def _get_camera_data(
         self, camera_name: str, context: Context
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[np.ndarray]]:
         # Need to make a copy as the original value changes with the simulation
-        rgba_image = copy.deepcopy(self._diagram.GetOutputPort(f"{camera_name}_rgb_image").Eval(context).data)
+        rgba_image = copy.deepcopy(
+            self._diagram.GetOutputPort(f"{camera_name}_rgb_image").Eval(context).data
+        )
         rgb_image = rgba_image[:, :, :3]
 
         depth_image = copy.deepcopy(
-            self._diagram.GetOutputPort(f"{camera_name}_depth_image").Eval(context).data.squeeze()
+            self._diagram.GetOutputPort(f"{camera_name}_depth_image")
+            .Eval(context)
+            .data.squeeze()
         )
         depth_image[depth_image == np.inf] = self._max_depth_range
 
         label_image = copy.deepcopy(
-            self._diagram.GetOutputPort(f"{camera_name}_label_image").Eval(context).data.squeeze()
+            self._diagram.GetOutputPort(f"{camera_name}_label_image")
+            .Eval(context)
+            .data.squeeze()
         )
         object_labels = np.unique(label_image)
-        masks = [np.uint8(np.where(label_image == label, 255, 0)) for label in object_labels]
+        masks = [
+            np.uint8(np.where(label_image == label, 255, 0)) for label in object_labels
+        ]
 
         return rgb_image, depth_image, object_labels, masks
 
@@ -154,7 +187,9 @@ class SphereImageGenerator(ImageGeneratorBase):
         camera_poses: np.ndarray,
     ) -> Tuple[List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray]]:
         """Simulates before taking camera data."""
-        assert self._diagram is not None, "Must build the diagram before generating image data."
+        assert (
+            self._diagram is not None
+        ), "Must build the diagram before generating image data."
 
         # Simulate before generating image data
         simulator = Simulator(self._diagram)
@@ -163,7 +198,9 @@ class SphereImageGenerator(ImageGeneratorBase):
 
         images, depths, labels, masks = [], [], [], []
         for i in range(len(camera_poses)):
-            image, depth_image, object_labels, object_masks = self._get_camera_data(str(i), context)
+            image, depth_image, object_labels, object_masks = self._get_camera_data(
+                str(i), context
+            )
             images.append(image)
             depths.append(depth_image)
             labels.append(object_labels)
@@ -179,7 +216,12 @@ class SphereImageGenerator(ImageGeneratorBase):
     def generate_images(
         self,
     ) -> Tuple[
-        List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray], List[np.ndarray]
+        List[np.ndarray],
+        List[np.ndarray],
+        List[np.ndarray],
+        List[np.ndarray],
+        List[np.ndarray],
+        List[np.ndarray],
     ]:
         X_CW = self._generate_camera_poses()
         camera_info = CameraInfo(width=1920, height=1440, fov_y=np.pi / 4.0)

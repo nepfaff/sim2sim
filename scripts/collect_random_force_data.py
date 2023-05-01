@@ -41,7 +41,10 @@ def main():
         help="How many random force experiments to run per mesh perturbation.",
     )
     parser.add_argument(
-        "--num_perturbations", default=1000, type=int, help="The number of different perturbations to run."
+        "--num_perturbations",
+        default=1000,
+        type=int,
+        help="The number of different perturbations to run.",
     )
     parser.add_argument(
         "--use_random_seed",
@@ -66,7 +69,9 @@ def main():
     for _ in tqdm(range(args.num_perturbations)):
         perturb_num += 1
 
-        perturb_path = os.path.join(args.logging_path, f"{PERTURBATION_DIR_BASENAME}{perturb_num:06d}")
+        perturb_path = os.path.join(
+            args.logging_path, f"{PERTURBATION_DIR_BASENAME}{perturb_num:06d}"
+        )
         os.mkdir(perturb_path)
 
         # Random perturbation
@@ -75,14 +80,18 @@ def main():
             "tol": perturbation_rng.uniform(0.0, 0.01),
             "max_iter": int(perturbation_rng.normal(100, 15)),
             "n_init": 1 + int(perturbation_rng.choice(5)),
-            "init_params": str(perturbation_rng.choice(["kmeans", "k-means++", "random_from_data"])),
+            "init_params": str(
+                perturbation_rng.choice(["kmeans", "k-means++", "random_from_data"])
+            ),
         }
 
         random_seed = START_RANDOM_SEED
         processes = []
         for i in range(args.num_runs_per_perturbation):
             if args.use_random_seed:
-                experiment_specification["simulator"]["args"]["random_seed"] = random_seed
+                experiment_specification["simulator"]["args"][
+                    "random_seed"
+                ] = random_seed
                 random_seed += 1
             kwargs = {
                 "logging_path": os.path.join(perturb_path, f"run_{i:04d}"),

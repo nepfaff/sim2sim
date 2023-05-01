@@ -37,7 +37,14 @@ class IIWAJointTrajectorySimulatorBase(SimulatorBase):
         :param mesh_pose: The manipuland mesh pose of form [roll, pitch, yaw, x, y, z] where angles are in radians.
         """
 
-        super().__init__(outer_builder, outer_scene_graph, inner_builder, inner_scene_graph, logger, is_hydroelastic)
+        super().__init__(
+            outer_builder,
+            outer_scene_graph,
+            inner_builder,
+            inner_scene_graph,
+            logger,
+            is_hydroelastic,
+        )
         self._finalize_and_build_diagrams()
 
         self._mesh_pose = np.array(mesh_pose)
@@ -58,17 +65,25 @@ class IIWAJointTrajectorySimulatorBase(SimulatorBase):
             is_outer=False,
         )
 
-        self._logger.add_manipuland_pose_logging(self._outer_builder, self._inner_builder)
-        self._logger.add_manipuland_contact_force_logging(self._outer_builder, self._inner_builder)
-        self._logger.add_contact_result_logging(self._outer_builder, self._inner_builder)
+        self._logger.add_manipuland_pose_logging(
+            self._outer_builder, self._inner_builder
+        )
+        self._logger.add_manipuland_contact_force_logging(
+            self._outer_builder, self._inner_builder
+        )
+        self._logger.add_contact_result_logging(
+            self._outer_builder, self._inner_builder
+        )
 
         self._outer_diagram = self._outer_builder.Build()
         self._inner_diagram = self._inner_builder.Build()
 
-    def _make_low_level_command_sequence(self, command_sequence: List[dict]) -> List[dict]:
+    def _make_low_level_command_sequence(
+        self, command_sequence: List[dict]
+    ) -> List[dict]:
         # Use inner diagram for planning
-        iiwa_trajectory_source: IIWAJointTrajectorySource = self._inner_diagram.GetSubsystemByName(
-            "iiwa_joint_trajectory_source"
+        iiwa_trajectory_source: IIWAJointTrajectorySource = (
+            self._inner_diagram.GetSubsystemByName("iiwa_joint_trajectory_source")
         )
 
         # Add lower level info to command sequence
@@ -97,7 +112,9 @@ class IIWAJointTrajectorySimulatorBase(SimulatorBase):
         return low_level_command_sequence
 
     def _simulate(self, command_sequence: List[dict]) -> None:
-        low_level_command_sequence = self._make_low_level_command_sequence(command_sequence)
+        low_level_command_sequence = self._make_low_level_command_sequence(
+            command_sequence
+        )
 
         for i, (diagram, visualizer, meshcat) in enumerate(
             zip(
@@ -107,8 +124,8 @@ class IIWAJointTrajectorySimulatorBase(SimulatorBase):
             )
         ):
             # Get required systems
-            iiwa_trajectory_source: IIWAJointTrajectorySource = diagram.GetSubsystemByName(
-                "iiwa_joint_trajectory_source"
+            iiwa_trajectory_source: IIWAJointTrajectorySource = (
+                diagram.GetSubsystemByName("iiwa_joint_trajectory_source")
             )
             wsg_command_source = diagram.GetSubsystemByName("wsg_command_source")
 
@@ -122,19 +139,27 @@ class IIWAJointTrajectorySimulatorBase(SimulatorBase):
 
             for command in low_level_command_sequence:
                 # Chose controller
-                iiwa_control_mode_source: IIWAControlModeSource = diagram.GetSubsystemByName("iiwa_control_mode_source")
+                iiwa_control_mode_source: IIWAControlModeSource = (
+                    diagram.GetSubsystemByName("iiwa_control_mode_source")
+                )
                 iiwa_control_mode_source.set_control_mode(command["iiwa_control_mode"])
 
                 # Execute iiwa trajectory
-                iiwa_trajectory_source.set_trajectory(command["iiwa_traj"], context.get_time())
-                simulator.AdvanceTo(context.get_time() + command["iiwa_traj"].end_time())
+                iiwa_trajectory_source.set_trajectory(
+                    command["iiwa_traj"], context.get_time()
+                )
+                simulator.AdvanceTo(
+                    context.get_time() + command["iiwa_traj"].end_time()
+                )
 
                 # Command wsg
                 wsg_command_source.set_new_pos_command(command["wsg_position"])
                 simulator.AdvanceTo(context.get_time() + 0.1)
 
                 # Simulate for some more
-                simulator.AdvanceTo(context.get_time() + command["time_to_simulate_after"])
+                simulator.AdvanceTo(
+                    context.get_time() + command["time_to_simulate_after"]
+                )
 
             time_taken_to_simulate = time.time() - start_time
             if i == 0:
@@ -148,7 +173,12 @@ class IIWAJointTrajectorySimulatorBase(SimulatorBase):
 
             # TODO: Move this to the logger
             html = meshcat.StaticHtml()
-            with open(os.path.join(self._logger._logging_path, f"{'inner' if i else 'outer'}.html"), "w") as f:
+            with open(
+                os.path.join(
+                    self._logger._logging_path, f"{'inner' if i else 'outer'}.html"
+                ),
+                "w",
+            ) as f:
                 f.write(html)
 
             self._logger.log_manipuland_poses(context, is_outer=(i == 0))

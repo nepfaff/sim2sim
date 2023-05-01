@@ -7,7 +7,9 @@ def _ade(outer_traj: np.ndarray, inner_traj: np.ndarray) -> float:
     return ade
 
 
-def average_displacement_error(outer_state_trajectory: np.ndarray, inner_state_trajectory: np.ndarray) -> float:
+def average_displacement_error(
+    outer_state_trajectory: np.ndarray, inner_state_trajectory: np.ndarray
+) -> float:
     """
     Average Displacement Error (ADE) metric that considers final translation and orientation (velocities not
     considered).
@@ -43,7 +45,9 @@ def _fde(outer_traj: np.ndarray, inner_traj: np.ndarray) -> float:
     return fde
 
 
-def final_displacement_error(outer_state_trajectory: np.ndarray, inner_state_trajectory: np.ndarray) -> float:
+def final_displacement_error(
+    outer_state_trajectory: np.ndarray, inner_state_trajectory: np.ndarray
+) -> float:
     """
     Final Displacement Error (FDE) metric that considers final translation and orientation (velocities not
     considered).
@@ -74,7 +78,10 @@ def final_displacement_error_translation_only(
 
 
 def trajectory_IoU(
-    outer_state_trajectory: np.ndarray, inner_state_trajectory: np.ndarray, margin: float, num_samples: int
+    outer_state_trajectory: np.ndarray,
+    inner_state_trajectory: np.ndarray,
+    margin: float,
+    num_samples: int,
 ) -> float:
     """
     Trajectory Intersection over Unions (TIOU) metric that considers final translation (orientations and velocities not
@@ -95,13 +102,18 @@ def trajectory_IoU(
 
     def within_margin(traj_point: np.ndarray, sample: np.ndarray) -> bool:
         def within_1d(idx: int) -> bool:
-            return sample[idx] < traj_point[idx] + margin and sample[idx] > traj_point[idx] - margin
+            return (
+                sample[idx] < traj_point[idx] + margin
+                and sample[idx] > traj_point[idx] - margin
+            )
 
         return np.all([within_1d(i) for i in range(len(traj_point))])
 
     intersection = 0
     union = 0
-    for outer_point, inner_point in zip(outer_state_trajectory[:, 4:7], inner_state_trajectory[:, 4:7]):
+    for outer_point, inner_point in zip(
+        outer_state_trajectory[:, 4:7], inner_state_trajectory[:, 4:7]
+    ):
         aabb = np.min([outer_point - margin, inner_point - margin], axis=0), np.max(
             [outer_point + margin, inner_point + margin], axis=0
         )  # [minx, miny, minz], [maxx, maxy, maxz]

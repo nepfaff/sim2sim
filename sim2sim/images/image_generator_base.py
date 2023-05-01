@@ -15,7 +15,9 @@ from sim2sim.logging import DynamicLogger
 class ImageGeneratorBase(ABC):
     """The image generator responsible for placing cameras and generating camera data."""
 
-    def __init__(self, builder: DiagramBuilder, scene_graph: SceneGraph, logger: DynamicLogger):
+    def __init__(
+        self, builder: DiagramBuilder, scene_graph: SceneGraph, logger: DynamicLogger
+    ):
         """
         :param builder: The diagram builder.
         :param scene_graph: The scene graph.
@@ -29,7 +31,9 @@ class ImageGeneratorBase(ABC):
         # Add renderer
         self._renderer = "ImageGeneratorRenderer"
         if not self._scene_graph.HasRenderer(self._renderer):
-            self._scene_graph.AddRenderer(self._renderer, MakeRenderEngineGl(RenderEngineGlParams()))
+            self._scene_graph.AddRenderer(
+                self._renderer, MakeRenderEngineGl(RenderEngineGlParams())
+            )
 
     @abstractmethod
     def generate_images(

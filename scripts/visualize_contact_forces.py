@@ -12,10 +12,14 @@ def main():
         help="Path to the experiment data folder.",
     )
     parser.add_argument(
-        "--hydroelastic", action="store_true", help="Whether to plot hydroelastic or point contact forces."
+        "--hydroelastic",
+        action="store_true",
+        help="Whether to plot hydroelastic or point contact forces.",
     )
     parser.add_argument(
-        "--kIllustration", action="store_true", help="Whether to use kIllustration or kProximity for meshcat."
+        "--kIllustration",
+        action="store_true",
+        help="Whether to use kIllustration or kProximity for meshcat.",
     )
     parser.add_argument(
         "--manipuland",
@@ -42,7 +46,9 @@ def main():
         help="The distance in meters that the outer and inner manipuland should be separated from each other. "
         + "This only has an effect if `--manipuland` is 'both'.",
     )
-    parser.add_argument("--save_html", action="store_true", help="Whether to save the meshcat HTML.")
+    parser.add_argument(
+        "--save_html", action="store_true", help="Whether to save the meshcat HTML."
+    )
     args = parser.parse_args()
 
     visualizer = ContactForceVisualizer(

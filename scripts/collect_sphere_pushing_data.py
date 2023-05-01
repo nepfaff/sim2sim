@@ -43,7 +43,10 @@ def main():
         help="How many random force experiments to run per mesh perturbation.",
     )
     parser.add_argument(
-        "--num_perturbations", default=1000, type=int, help="The number of different perturbations to run."
+        "--num_perturbations",
+        default=1000,
+        type=int,
+        help="The number of different perturbations to run.",
     )
     parser.add_argument(
         "--viz_starting_locations",
@@ -65,7 +68,9 @@ def main():
         os.mkdir(args.logging_path)
 
     sphere_start_locations = []
-    for z_distance, radius, num_locations in zip([0.06, 0.12, 0.18], [0.3, 0.25, 0.2], [10, 10, 10]):
+    for z_distance, radius, num_locations in zip(
+        [0.06, 0.12, 0.18], [0.3, 0.25, 0.2], [10, 10, 10]
+    ):
         locations = generate_camera_locations_circle(
             center=[0.0, 0.0, z_distance],
             radius=radius,
@@ -78,14 +83,18 @@ def main():
     if args.viz_starting_locations:
         viz_geoms = []
         for location in sphere_start_locations:
-            viz_geoms.append(o3d.geometry.TriangleMesh.create_sphere(0.01).translate(location))
+            viz_geoms.append(
+                o3d.geometry.TriangleMesh.create_sphere(0.01).translate(location)
+            )
         o3d.visualization.draw_geometries(viz_geoms)
 
     perturbation_rng = np.random.default_rng(PERTURBATION_RANDOM_SEED)
     for _ in tqdm(range(args.num_perturbations)):
         perturb_num += 1
 
-        perturb_path = os.path.join(args.logging_path, f"{PERTURBATION_DIR_BASENAME}{perturb_num:06d}")
+        perturb_path = os.path.join(
+            args.logging_path, f"{PERTURBATION_DIR_BASENAME}{perturb_num:06d}"
+        )
         os.mkdir(perturb_path)
 
         # Random perturbation
@@ -94,15 +103,21 @@ def main():
             "tol": perturbation_rng.uniform(0.0, 0.01),
             "max_iter": int(perturbation_rng.normal(100, 15)),
             "n_init": 1 + int(perturbation_rng.choice(5)),
-            "init_params": str(perturbation_rng.choice(["kmeans", "k-means++", "random_from_data"])),
+            "init_params": str(
+                perturbation_rng.choice(["kmeans", "k-means++", "random_from_data"])
+            ),
         }
 
         random_seed = START_RANDOM_SEED
         processes = []
         for i in range(args.num_runs_per_perturbation):
             rng = np.random.default_rng(random_seed)
-            sphere_start_location = sphere_start_locations[rng.choice(len(sphere_start_locations))]
-            experiment_specification["script"]["args"]["sphere_starting_position"] = sphere_start_location
+            sphere_start_location = sphere_start_locations[
+                rng.choice(len(sphere_start_locations))
+            ]
+            experiment_specification["script"]["args"][
+                "sphere_starting_position"
+            ] = sphere_start_location
             random_seed += 1
 
             kwargs = {

@@ -16,7 +16,13 @@ DIV_EPSILON = 1e-9
 class GMMMeshProcessor(MeshProcessorBase):
     """Replaces the mesh with spheres obtained from fitting GMMs using Expectation Maximization."""
 
-    def __init__(self, logger: DynamicLogger, visualize: bool, gmm_em_params: Dict[str, Any], threshold_std: float):
+    def __init__(
+        self,
+        logger: DynamicLogger,
+        visualize: bool,
+        gmm_em_params: Dict[str, Any],
+        threshold_std: float,
+    ):
         """
         :param logger: The logger.
         :param visualize: Whether to visualize the fitted spheres.
@@ -59,7 +65,9 @@ class GMMMeshProcessor(MeshProcessorBase):
             radius.append(r_i)
             rot_mat = np.eye(4)
             rot_mat[:3, :3] = rotation_matrix[idx]
-            ellipsoid = Ellipsoid(center=c_i, radius=r_i * self._threshold_std, scale=1, transform=rot_mat)
+            ellipsoid = Ellipsoid(
+                center=c_i, radius=r_i * self._threshold_std, scale=1, transform=rot_mat
+            )
             ellipsoids.append(ellipsoid)
 
         if self._visualize:

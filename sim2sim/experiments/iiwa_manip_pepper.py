@@ -5,10 +5,14 @@ from pydrake.all import RigidTransform, RollPitchYaw
 
 from sim2sim.experiments import run_iiwa_manip
 
-MANIPULAND_DIRECTIVE = "../../models/iiwa_manip/iiwa_manip_pepper_manipuland_directive.yaml"
+MANIPULAND_DIRECTIVE = (
+    "../../models/iiwa_manip/iiwa_manip_pepper_manipuland_directive.yaml"
+)
 MANIPULAND_NAME = "pepper"
 MANIPULAND_BASE_LINK_NAME = "pepper_base_link"
-MANIPULANT_DEFAULT_POSE = RigidTransform(RollPitchYaw(0.0, 0.0, 0.0), [0.0, 0.45, 0.035])  # X_WManipuland
+MANIPULANT_DEFAULT_POSE = RigidTransform(
+    RollPitchYaw(0.0, 0.0, 0.0), [0.0, 0.45, 0.035]
+)  # X_WManipuland
 
 
 def run_iiwa_manip_pepper(
@@ -30,7 +34,9 @@ def run_iiwa_manip_pepper(
     :param hydroelastic_manipuland: Whether to use hydroelastic or point contact for the inner manipuland.
     """
 
-    manipuland_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), MANIPULAND_DIRECTIVE)
+    manipuland_directive = os.path.join(
+        pathlib.Path(__file__).parent.resolve(), MANIPULAND_DIRECTIVE
+    )
 
     run_iiwa_manip(
         logging_path,

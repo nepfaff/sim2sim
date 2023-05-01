@@ -49,7 +49,9 @@ class SpherePushingContactForceVisualizer(ContactForceVisualizer):
         )
         self._sphere_transparency = sphere_transparency
 
-        self._sphere_radius = self._experiment_description["script"]["args"]["sphere_radius"]
+        self._sphere_radius = self._experiment_description["script"]["args"][
+            "sphere_radius"
+        ]
 
         # Meshcat button data
         self._toggle_inner_sphere_button_clicks = 0
@@ -58,8 +60,12 @@ class SpherePushingContactForceVisualizer(ContactForceVisualizer):
         self._outer_sphere_visible = True
 
         # Load sphere data
-        self._outer_sphere_translations = np.loadtxt(os.path.join(self._log_dir, f"outer_sphere_poses.txt"))[:, :3]
-        self._inner_sphere_translations = np.loadtxt(os.path.join(self._log_dir, f"inner_sphere_poses.txt"))[:, :3]
+        self._outer_sphere_translations = np.loadtxt(
+            os.path.join(self._log_dir, f"outer_sphere_poses.txt")
+        )[:, :3]
+        self._inner_sphere_translations = np.loadtxt(
+            os.path.join(self._log_dir, f"inner_sphere_poses.txt")
+        )[:, :3]
 
         if self._manipuland == "both" and self._separation_distance > 0.0:
             self._modify_sphere_data_for_side_by_side_visualization()
@@ -88,21 +94,33 @@ class SpherePushingContactForceVisualizer(ContactForceVisualizer):
 
     def _update_sphere_poses(self, time_idx: int) -> None:
         self._meshcat.SetTransform(
-            f"visualizer/outer_sphere", RigidTransform(p=self._outer_sphere_translations[time_idx])
+            f"visualizer/outer_sphere",
+            RigidTransform(p=self._outer_sphere_translations[time_idx]),
         )
         self._meshcat.SetTransform(
-            f"visualizer/inner_sphere", RigidTransform(p=self._inner_sphere_translations[time_idx])
+            f"visualizer/inner_sphere",
+            RigidTransform(p=self._inner_sphere_translations[time_idx]),
         )
 
     def _update_item_visibility(self) -> None:
-        if self._meshcat.GetButtonClicks(TOGGLE_INNER_SPHERE_BUTTON_NAME) > self._toggle_inner_sphere_button_clicks:
+        if (
+            self._meshcat.GetButtonClicks(TOGGLE_INNER_SPHERE_BUTTON_NAME)
+            > self._toggle_inner_sphere_button_clicks
+        ):
             self._toggle_inner_sphere_button_clicks += 1
             self._inner_sphere_visible = not self._inner_sphere_visible
-        self._meshcat.SetProperty(f"visualizer/inner_sphere", "visible", self._inner_sphere_visible)
-        if self._meshcat.GetButtonClicks(TOGGLE_OUTER_SPHERE_BUTTON_NAME) > self._toggle_outer_sphere_button_clicks:
+        self._meshcat.SetProperty(
+            f"visualizer/inner_sphere", "visible", self._inner_sphere_visible
+        )
+        if (
+            self._meshcat.GetButtonClicks(TOGGLE_OUTER_SPHERE_BUTTON_NAME)
+            > self._toggle_outer_sphere_button_clicks
+        ):
             self._toggle_outer_sphere_button_clicks += 1
             self._outer_sphere_visible = not self._outer_sphere_visible
-        self._meshcat.SetProperty(f"visualizer/outer_sphere", "visible", self._outer_sphere_visible)
+        self._meshcat.SetProperty(
+            f"visualizer/outer_sphere", "visible", self._outer_sphere_visible
+        )
 
         super()._update_item_visibility()
 

@@ -37,7 +37,7 @@ system overview diagram. The second one is for comparing two different sim2sim p
 them is run instead of the hand-crafted 'outer'/ real-world manipuland. This is particularly useful for evaluating how
 two different sim2sim pipelines differ from each other (e.g. by using the contact force visualizer).
 
-**NOTE:** The sim2im pipeline comparison experiment type is currently only supported by the `sphere_pushing` experiment.
+**NOTE:** The sim2im pipeline comparison experiment type is currently only supported by the `sphere_pushing` and `table_pid` experiments.
 
 The sim2sim pipeline comparison experiment type is shown in the image below:
 ![pipeline_comparison_diagram](pipeline_comparison_diagram.png)

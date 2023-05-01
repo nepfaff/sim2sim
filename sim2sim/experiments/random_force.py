@@ -21,7 +21,11 @@ from pydrake.all import (
 )
 from manipulation.scenarios import AddShape
 
-from sim2sim.simulation import BasicSimulator, BasicInnerOnlySimulator, RandomForceSimulator
+from sim2sim.simulation import (
+    BasicSimulator,
+    BasicInnerOnlySimulator,
+    RandomForceSimulator,
+)
 from sim2sim.logging import DynamicLogger
 from sim2sim.util import (
     get_parser,
@@ -41,7 +45,10 @@ from sim2sim.mesh_processing import (
     FuzzyMetaballMeshProcessor,
     IdentityPrimitiveMeshProcessor,
 )
-from sim2sim.physical_property_estimator import WaterDensityPhysicalPropertyEstimator, GTPhysicalPropertyEstimator
+from sim2sim.physical_property_estimator import (
+    WaterDensityPhysicalPropertyEstimator,
+    GTPhysicalPropertyEstimator,
+)
 
 SCENE_DIRECTIVE = "../../models/random_force/random_force_directive.yaml"
 
@@ -77,25 +84,50 @@ SIMULATORS = {
 }
 
 
-def add_point_finger(plant: MultibodyPlant, radius: float = 0.01, position: List[float] = [0.0, 0.0, -1.0]) -> None:
+def add_point_finger(
+    plant: MultibodyPlant,
+    radius: float = 0.01,
+    position: List[float] = [0.0, 0.0, -1.0],
+) -> None:
     finger = AddShape(plant, Sphere(radius), "point_finger", color=[0.9, 0.5, 0.5, 1.0])
-    _ = plant.AddRigidBody("false_body1", finger, SpatialInertia(0, [0, 0, 0], UnitInertia(0, 0, 0)))
+    _ = plant.AddRigidBody(
+        "false_body1", finger, SpatialInertia(0, [0, 0, 0], UnitInertia(0, 0, 0))
+    )
     finger_x = plant.AddJoint(
-        PrismaticJoint("finger_x", plant.world_frame(), plant.GetFrameByName("false_body1"), [1, 0, 0], -1.0, 1.0)
+        PrismaticJoint(
+            "finger_x",
+            plant.world_frame(),
+            plant.GetFrameByName("false_body1"),
+            [1, 0, 0],
+            -1.0,
+            1.0,
+        )
     )
     finger_x.set_default_translation(position[0])
     plant.AddJointActuator("finger_x", finger_x)
-    _ = plant.AddRigidBody("false_body2", finger, SpatialInertia(0, [0, 0, 0], UnitInertia(0, 0, 0)))
+    _ = plant.AddRigidBody(
+        "false_body2", finger, SpatialInertia(0, [0, 0, 0], UnitInertia(0, 0, 0))
+    )
     finger_y = plant.AddJoint(
         PrismaticJoint(
-            "finger_y", plant.GetFrameByName("false_body1"), plant.GetFrameByName("false_body2"), [0, 1, 0], -1.0, 1.0
+            "finger_y",
+            plant.GetFrameByName("false_body1"),
+            plant.GetFrameByName("false_body2"),
+            [0, 1, 0],
+            -1.0,
+            1.0,
         )
     )
     finger_y.set_default_translation(position[1])
     plant.AddJointActuator("finger_y", finger_y)
     finger_z = plant.AddJoint(
         PrismaticJoint(
-            "finger_z", plant.GetFrameByName("false_body2"), plant.GetFrameByName("point_finger"), [0, 0, 1], -1.0, 1.0
+            "finger_z",
+            plant.GetFrameByName("false_body2"),
+            plant.GetFrameByName("point_finger"),
+            [0, 0, 1],
+            -1.0,
+            1.0,
         )
     )
     finger_z.set_default_translation(position[2])
@@ -146,11 +178,17 @@ def create_env(
     add_point_finger(plant)
     point_finger_controller = builder.AddSystem(PointFingerForceControl(plant))
 
-    plant.SetDefaultFreeBodyPose(plant.GetBodyByName(manipuland_base_link_name), manipuland_pose)
+    plant.SetDefaultFreeBodyPose(
+        plant.GetBodyByName(manipuland_base_link_name), manipuland_pose
+    )
     plant.Finalize()
 
-    builder.Connect(point_finger_controller.get_output_port(), plant.get_actuation_input_port())
-    builder.ExportInput(point_finger_controller.get_input_port(), "desired_contact_force")
+    builder.Connect(
+        point_finger_controller.get_output_port(), plant.get_actuation_input_port()
+    )
+    builder.ExportInput(
+        point_finger_controller.get_input_port(), "desired_contact_force"
+    )
 
     external_force_system = builder.AddSystem(
         ExternalForceSystem(plant.GetBodyByName(manipuland_base_link_name).index())
@@ -191,8 +229,12 @@ def run_random_force(
     :param save_raw_mesh: Whether to save the raw mesh from inverse graphics.
     :param hydroelastic_manipuland: Whether to use hydroelastic or point contact for the inner manipuland.
     """
-    scene_directive = os.path.join(pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE)
-    manipuland_directive_path = os.path.join(pathlib.Path(__file__).parent.resolve(), manipuland_directive)
+    scene_directive = os.path.join(
+        pathlib.Path(__file__).parent.resolve(), SCENE_DIRECTIVE
+    )
+    manipuland_directive_path = os.path.join(
+        pathlib.Path(__file__).parent.resolve(), manipuland_directive
+    )
 
     logger_class = LOGGERS[params["logger"]["class"]]
     logger = logger_class(
@@ -226,15 +268,30 @@ def run_random_force(
         builder=builder_camera,
         scene_graph=scene_graph_camera,
         logger=logger,
-        **(params["image_generator"]["args"] if params["image_generator"]["args"] is not None else {}),
+        **(
+            params["image_generator"]["args"]
+            if params["image_generator"]["args"] is not None
+            else {}
+        ),
     )
 
-    images, intrinsics, extrinsics, depths, labels, masks = image_generator.generate_images()
+    (
+        images,
+        intrinsics,
+        extrinsics,
+        depths,
+        labels,
+        masks,
+    ) = image_generator.generate_images()
     print("Finished generating images.")
 
     inverse_graphics_class = INVERSE_GRAPHICS[params["inverse_graphics"]["class"]]
     inverse_graphics = inverse_graphics_class(
-        **(params["inverse_graphics"]["args"] if params["inverse_graphics"]["args"] is not None else {}),
+        **(
+            params["inverse_graphics"]["args"]
+            if params["inverse_graphics"]["args"] is not None
+            else {}
+        ),
         images=images,
         intrinsics=intrinsics,
         extrinsics=extrinsics,
@@ -249,13 +306,24 @@ def run_random_force(
     mesh_processor_class = MESH_PROCESSORS[params["mesh_processor"]["class"]]
     mesh_processor = mesh_processor_class(
         logger=logger,
-        **(params["mesh_processor"]["args"] if params["mesh_processor"]["args"] is not None else {}),
+        **(
+            params["mesh_processor"]["args"]
+            if params["mesh_processor"]["args"] is not None
+            else {}
+        ),
     )
-    is_primitive, processed_mesh, processed_mesh_piece, primitive_info = mesh_processor.process_mesh(raw_mesh)
+    (
+        is_primitive,
+        processed_mesh,
+        processed_mesh_piece,
+        primitive_info,
+    ) = mesh_processor.process_mesh(raw_mesh)
     print("Finished mesh processing.")
 
     # Compute mesh inertia and mass assuming constant density of water
-    physical_property_estimator_class = PHYSICAL_PROPERTY_ESTIMATOR[params["physical_property_estimator"]["class"]]
+    physical_property_estimator_class = PHYSICAL_PROPERTY_ESTIMATOR[
+        params["physical_property_estimator"]["class"]
+    ]
     physical_porperty_estimator = physical_property_estimator_class(
         **(
             params["physical_property_estimator"]["args"]
@@ -263,16 +331,22 @@ def run_random_force(
             else {}
         ),
     )
-    mass, inertia = physical_porperty_estimator.estimate_physical_properties(processed_mesh)
+    mass, inertia = physical_porperty_estimator.estimate_physical_properties(
+        processed_mesh
+    )
     print("Finished estimating physical properties.")
-    logger.log_manipuland_estimated_physics(manipuland_mass_estimated=mass, manipuland_inertia_estimated=inertia)
+    logger.log_manipuland_estimated_physics(
+        manipuland_mass_estimated=mass, manipuland_inertia_estimated=inertia
+    )
 
     # Save mesh data to create SDF files that can be added to a new simulation environment
     if save_raw_mesh:
         logger.log(raw_mesh=raw_mesh)
     logger.log(processed_mesh=processed_mesh, processed_mesh_piece=processed_mesh_piece)
     _, processed_mesh_file_path = logger.save_mesh_data()
-    processed_mesh_file_path = os.path.join(pathlib.Path(__file__).parent.resolve(), "../..", processed_mesh_file_path)
+    processed_mesh_file_path = os.path.join(
+        pathlib.Path(__file__).parent.resolve(), "../..", processed_mesh_file_path
+    )
 
     # Create a directive for processed_mesh manipuland
     if is_primitive:
@@ -302,7 +376,9 @@ def run_random_force(
         manipuland_base_link_name=manipuland_base_link_name,
         directive_files=[scene_directive],
         directive_strs=[processed_mesh_directive],
-        manipuland_pose=RigidTransform(RollPitchYaw(*raw_mesh_pose[:3]), raw_mesh_pose[3:]),
+        manipuland_pose=RigidTransform(
+            RollPitchYaw(*raw_mesh_pose[:3]), raw_mesh_pose[3:]
+        ),
     )
 
     logger.add_plants(outer_plant, inner_plant)
@@ -316,7 +392,11 @@ def run_random_force(
         inner_scene_graph=scene_graph_inner,
         logger=logger,
         is_hydroelastic=params["env"]["contact_model"] != "point",
-        **(params["simulator"]["args"] if params["simulator"]["args"] is not None else {}),
+        **(
+            params["simulator"]["args"]
+            if params["simulator"]["args"] is not None
+            else {}
+        ),
     )
     simulator.simulate(sim_duration)
     print("Finished simulating.")

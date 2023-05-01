@@ -13,7 +13,9 @@ class ExternalForceSystem(LeafSystem):
         self._target_body_index = target_body_idx
 
         self.DeclareAbstractOutputPort(
-            "spatial_forces_vector", lambda: Value[List[ExternallyAppliedSpatialForce]](), self.DoCalcAbstractOutput
+            "spatial_forces_vector",
+            lambda: Value[List[ExternallyAppliedSpatialForce]](),
+            self.DoCalcAbstractOutput,
         )
 
         self._wrench = np.zeros(6)
