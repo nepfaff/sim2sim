@@ -15,12 +15,7 @@ import copy
 
 import wandb
 
-from sim2sim.util.script_utils import rank_based_on_final_errors
-
-QUATERNION_ERROR_WEIGHT = 2.0
-TRANSLATION_ERROR_WEIGHT = 5.0
-ANGULAR_VELOCITY_ERROR_WEIGHT = 1.0
-TRANSLATIONAL_VELOCITY_ERROR_WEIGHT = 1.0
+from sim2sim.util.script_utils import rank_based_on_metrics
 
 
 def main():
@@ -47,6 +42,15 @@ def main():
         help="The path to log the results to. A temporary folder will be created and "
         + "deleted if not given.",
     )
+    parser.add_argument(
+        "--num_trajectory_iou_samples",
+        default=500,
+        type=int,
+        help="The number of samples to use per trajectory state for trajectory IoU "
+        + "metric computation. More samples results in more accurate metrics but is "
+        + "slower to compute.",
+    )
+
     args = parser.parse_args()
     representation_collection_path = args.path
     experiment_description_path = args.experiment_description
@@ -105,13 +109,10 @@ def main():
 
                 experiment_specifications.append(experiment_description)
 
-    rank_based_on_final_errors(
+    rank_based_on_metrics(
         experiment_specifications,
         logging_path,
-        quaternion_error_weight=QUATERNION_ERROR_WEIGHT,
-        translation_error_weight=TRANSLATION_ERROR_WEIGHT,
-        angular_velocity_error_weight=ANGULAR_VELOCITY_ERROR_WEIGHT,
-        translational_velocity_error_weight=TRANSLATION_ERROR_WEIGHT,
+        num_trajectory_iou_samples=args.num_trajectory_iou_samples,
         log_wandb=True,
     )
 
