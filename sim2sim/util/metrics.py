@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.spatial.transform import Rotation
 
 
 def _ade(outer_traj: np.ndarray, inner_traj: np.ndarray) -> float:
@@ -134,3 +135,93 @@ def trajectory_IoU(
 
     iou = intersection / union
     return iou
+
+
+def _states_to_poses(states: np.ndarray) -> np.ndarray:
+    """
+    :param states: States of shape (N,13) where N is the number of trajectory points.
+        Each point has the form [q1, q2, q3, q4, tx, ty, tz, wx, wy, wz, vx, vy, tz],
+        where q are quaternions, t are translations, w are angular velocities, and v are
+        translational velocities.
+    :return: Homogenous transformation matrices of shape (N,4,4).
+    """
+    poses = np.eye(4)[np.newaxis, :].repeat(len(states), axis=0)
+    # Drake used (qw, qx, qy, qz) and scipy uses (qx, qy, qz, qw)
+    poses[:, :3, :3] = Rotation.from_quat(
+        np.concatenate((states[:, 1:4], states[:, :1]), axis=-1)
+    ).as_matrix()
+    poses[:, :3, 3] = states[:, 4:7]
+    return poses
+
+
+def orientation_considered_final_displacement_error(
+    outer_state_trajectory: np.ndarray, inner_state_trajectory: np.ndarray
+) -> float:
+    """
+    Final Displacement Error (FDE) metric that consideres orientation by sampling points
+    relative to the object pose and taking the mean displacement error of these points.
+
+    :param outer_state_trajectory: The trajectory of outer manipuland states of shape
+        (N,13) where N is the number of trajectory points. Each point has the form
+        [q1, q2, q3, q4, tx, ty, tz, wx, wy, wz, vx, vy, tz], where q are quaternions,
+        t are translations, w are angular velocities, and v are translational velocities.
+    :param inner_state_trajectory: The trajectory of the inner manipuland states of same
+        shape as `outer_state_trajectory`.
+    """
+    final_state_outer = outer_state_trajectory[-1][np.newaxis, :]
+    final_state_inner = inner_state_trajectory[-1][np.newaxis, :]
+
+    final_pose_outer = _states_to_poses(final_state_outer).squeeze(0)
+    final_pose_inner = _states_to_poses(final_state_inner).squeeze(0)
+
+    # Sample 3 points in object frame to completely define the orientation
+    points_object_frame = np.eye(3)
+    points_outer_world_frame = (
+        points_object_frame @ final_pose_outer[:3, :3].T + final_pose_outer[:3, 3]
+    )
+    points_inner_world_frame = (
+        points_object_frame @ final_pose_inner[:3, :3].T + final_pose_inner[:3, 3]
+    )
+
+    pointwise_error = np.linalg.norm(
+        points_outer_world_frame - points_inner_world_frame, axis=-1
+    )
+    mean_error = np.mean(pointwise_error)
+    return mean_error
+
+
+def orientation_considered_average_displacement_error(
+    outer_state_trajectory: np.ndarray, inner_state_trajectory: np.ndarray
+) -> float:
+    """
+    Average Displacement Error (ADE) metric that consideres orientation by sampling points
+    relative to the object pose and taking the mean average displacement error of these
+    points.
+
+    :param outer_state_trajectory: The trajectory of outer manipuland states of shape
+        (N,13) where N is the number of trajectory points. Each point has the form
+        [q1, q2, q3, q4, tx, ty, tz, wx, wy, wz, vx, vy, tz], where q are quaternions,
+        t are translations, w are angular velocities, and v are translational velocities.
+    :param inner_state_trajectory: The trajectory of the inner manipuland states of same
+        shape as `outer_state_trajectory`.
+    """
+    poses_outer = _states_to_poses(outer_state_trajectory)  # Shape (N,4,4)
+    poses_inner = _states_to_poses(inner_state_trajectory)  # Shape (N,4,4)
+
+    # Sample 3 points in object frame to completely define the orientation
+    points_object_frame = np.eye(3)
+    points_outer_world_frame = (
+        points_object_frame @ poses_outer[:, :3, :3].transpose((0, 2, 1))
+        + poses_outer[:, :3, 3][:, np.newaxis, :]
+    )  # Shape (N,3,3)
+    points_inner_world_frame = (
+        points_object_frame @ poses_inner[:, :3, :3].transpose((0, 2, 1))
+        + poses_inner[:, :3, 3][:, np.newaxis, :]
+    )  # Shape (N,3,3)
+
+    pointwise_error = np.linalg.norm(
+        points_outer_world_frame - points_inner_world_frame, axis=-1
+    )  # Shape (N,3)
+    mean_error = np.mean(pointwise_error, axis=-1)  # Shape (N,)
+    ade = np.mean(mean_error)
+    return ade

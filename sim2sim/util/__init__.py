@@ -30,4 +30,6 @@ from .metrics import (
     final_displacement_error,
     final_displacement_error_translation_only,
     trajectory_IoU,
+    orientation_considered_average_displacement_error,
+    orientation_considered_final_displacement_error,
 )
