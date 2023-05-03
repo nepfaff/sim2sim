@@ -62,7 +62,10 @@ def main():
     wandb.init(
         project="sim2sim_evaluate_representation_collection",
         name=f"{base_experiment_description['experiment_id']}_{current_time}",
-        config=vars(args),
+        config={
+            "args": vars(args),
+            "base_experiment_description": base_experiment_description,
+        },
     )
 
     logging_path_is_tmp = False
