@@ -50,6 +50,13 @@ def main():
         + "metric computation. More samples results in more accurate metrics but is "
         + "slower to compute.",
     )
+    parser.add_argument(
+        "--eval_contact_model",
+        action="store_true",
+        help="Whether to evaluate both 'hydroelastic_with_fallback' and 'point' contact "
+        + "models for the primitive-based representations. Otherwise, the one from the "
+        + "experiment description will be used.",
+    )
 
     args = parser.parse_args()
     representation_collection_path = args.path
@@ -116,7 +123,28 @@ def main():
                     "center_of_mass"
                 ] = pysical_properties["com"]
 
-                experiment_specifications.append(experiment_description)
+                if args.eval_contact_model:
+                    hydroelastic_experiment_description = copy.deepcopy(
+                        experiment_description
+                    )
+                    hydroelastic_experiment_description[
+                        "experiment_id"
+                    ] += "_hydroelastic"
+                    hydroelastic_experiment_description["inner_env"][
+                        "contact_model"
+                    ] = "hydroelastic_with_fallback"
+                    experiment_specifications.append(
+                        hydroelastic_experiment_description
+                    )
+
+                    point_experiment_description = copy.deepcopy(experiment_description)
+                    point_experiment_description["experiment_id"] += "_point"
+                    point_experiment_description["inner_env"]["contact_model"] = "point"
+                    experiment_specifications.append(point_experiment_description)
+                else:
+                    experiment_specifications.append(experiment_description)
+
+    print(f"Running {len(experiment_specifications)} experiments.")
 
     rank_based_on_metrics(
         experiment_specifications,
