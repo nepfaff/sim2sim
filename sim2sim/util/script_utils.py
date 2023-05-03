@@ -3,6 +3,7 @@
 import os
 from typing import List, Dict, Union
 import time
+import yaml
 
 import numpy as np
 from prettytable import PrettyTable
@@ -152,6 +153,8 @@ def rank_based_on_metrics(
         orientation_considered_average_error: float,
         final_translation_error: float,
         average_translation_error: float,
+        simulation_time: float,
+        simulation_time_ratio: float,  # inner_time / outer_time
     ) -> Dict[str, Union[str, float]]:
         return {
             "name": name,
@@ -161,6 +164,8 @@ def rank_based_on_metrics(
             "orientation_considered_average_error": orientation_considered_average_error,
             "final_translation_error": final_translation_error,
             "average_translation_error": average_translation_error,
+            "simulation_time": simulation_time,
+            "simulation_time_ratio": simulation_time_ratio,
         }
 
     # TODO: Add options to parallelize this
@@ -187,6 +192,9 @@ def rank_based_on_metrics(
         inner_states = np.loadtxt(
             os.path.join(time_logs_path, "inner_manipuland_poses.txt")
         )
+
+        meta_data_path = os.path.join(logging_path, "meta_data.yaml")
+        meta_data = yaml.safe_load(open(meta_data_path))
 
         start_time = time.time()
         errors = create_table_dict(
@@ -215,6 +223,9 @@ def rank_based_on_metrics(
             average_translation_error=average_displacement_error_translation_only(
                 outer_states, inner_states
             ),
+            simulation_time=meta_data["time_taken_to_simulate_inner_s"],
+            simulation_time_ratio=meta_data["time_taken_to_simulate_inner_s"]
+            / meta_data["time_taken_to_simulate_outer_s"],
         )
         eval_data.append(errors)
 
