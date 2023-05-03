@@ -136,6 +136,7 @@ class DynamicLogger:
         # Manipuland physics
         self._manipuland_mass_estimated: float = None
         self._manipuland_inertia_estimated: List[float] = None
+        self._manipuland_com_estimated: List[float] = None
 
     def _create_data_directories(self) -> None:
         for path in self._data_directory_paths:
@@ -310,10 +311,14 @@ class DynamicLogger:
             self._inner_manipuland_contact_forces = log.data().T  # Shape (t, 6)
 
     def log_manipuland_estimated_physics(
-        self, manipuland_mass_estimated: float, manipuland_inertia_estimated: np.ndarray
+        self,
+        manipuland_mass_estimated: float,
+        manipuland_inertia_estimated: np.ndarray,
+        manipuland_com_estimated: np.ndarray,
     ) -> None:
         self._manipuland_mass_estimated = float(manipuland_mass_estimated)
         self._manipuland_inertia_estimated = manipuland_inertia_estimated.tolist()
+        self._manipuland_com_estimated = manipuland_com_estimated.tolist()
 
     def _get_contact_result_forces(
         self, is_outer: bool, body_of_interest: str
@@ -809,6 +814,7 @@ class DynamicLogger:
             "logging_timestamp": str(datetime.datetime.now()),
             "manipuland_mass_estimated": self._manipuland_mass_estimated,
             "manipuland_inertia_estimated": self._manipuland_inertia_estimated,
+            "manipuland_com_estimated": self._manipuland_com_estimated,
             "time_taken_to_simulate_outer_s": self._outer_simulation_time,
             "time_taken_to_simulate_inner_s": self._inner_simulation_time,
         }

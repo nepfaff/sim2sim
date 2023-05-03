@@ -98,6 +98,9 @@ def main():
                 experiment_description["outer_physical_property_estimator"]["args"][
                     "inertia"
                 ] = pysical_properties["inertia"]
+                experiment_description["outer_physical_property_estimator"]["args"][
+                    "center_of_mass"
+                ] = pysical_properties["com"]
 
                 # Inner physical properties
                 experiment_description["inner_physical_property_estimator"]["args"][
@@ -106,6 +109,9 @@ def main():
                 experiment_description["inner_physical_property_estimator"]["args"][
                     "inertia"
                 ] = pysical_properties["inertia"]
+                experiment_description["inner_physical_property_estimator"]["args"][
+                    "center_of_mass"
+                ] = pysical_properties["com"]
 
                 experiment_specifications.append(experiment_description)
 

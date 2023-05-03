@@ -61,6 +61,7 @@ physical_property_estimator:
       [-2.0519e-06,  9.9144e-04,  1.3985e-06],
       [5.1302e-06,  1.3985e-06,  2.4789e-04]
     ]
+    center_of_mass: [0.0, 0.0, 0.0]
 
 simulator:
   class: "SpherePushingSimulator"

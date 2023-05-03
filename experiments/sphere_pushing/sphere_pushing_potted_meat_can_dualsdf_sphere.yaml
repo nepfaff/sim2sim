@@ -55,6 +55,7 @@ physical_property_estimator:
   args:
     mass: 0.370
     inertia: [[0.000317, 0.0, 0.0], [0.0, 0.000421, 0.0], [0.0, 0.0, 0.000533]]
+    center_of_mass: [0.0, 0.0, 0.0]
 
 simulator:
   class: "SpherePushingSimulator"

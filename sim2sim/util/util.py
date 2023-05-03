@@ -34,6 +34,7 @@ def visualize_poses(poses: List[RigidTransform], meshcat) -> None:
 def create_processed_mesh_sdf_file(
     mass: float,
     inertia: np.ndarray,
+    center_of_mass: np.ndarray,
     processed_mesh_file_path: str,
     tmp_folder: str,
     manipuland_base_link_name: str,
@@ -44,6 +45,8 @@ def create_processed_mesh_sdf_file(
 
     :param mass: The object mass in kg.
     :param inertia: The moment of inertia matrix of shape (3,3).
+    :param center_of_mass: The object's center of mass that the inertia is about in the
+        object frame of shape (3,).
     :param processed_mesh_file_path: The path to the processed mesh obj file.
     :param tmp_folder: The folder to write the sdf file to.
     :param hydroelastic: Whether to make the body rigid hydroelastic.
@@ -64,6 +67,7 @@ def create_processed_mesh_sdf_file(
                             <izz>{inertia[2,2]}</izz>
                         </inertia>
                         <mass>{mass}</mass>
+                        <pose>{center_of_mass[0]} {center_of_mass[1]} {center_of_mass[2]} 0 0 0</pose>
                     </inertial>
 
                     <visual name="visual">
@@ -108,6 +112,7 @@ def create_processed_mesh_sdf_file(
 def create_decomposition_processed_mesh_sdf_file(
     mass: float,
     inertia: np.ndarray,
+    center_of_mass: np.ndarray,
     processed_mesh_file_path: str,
     mesh_pieces: List[str],
     sdf_folder: str,
@@ -121,6 +126,8 @@ def create_decomposition_processed_mesh_sdf_file(
 
     :param mass: The object mass in kg.
     :param inertia: The moment of inertia matrix of shape (3,3).
+    :param center_of_mass: The object's center of mass that the inertia is about in the
+        object frame of shape (3,).
     :param processed_mesh_file_path: The path to the processed mesh obj file.
     :param mesh_pieces: A list of mesh piece paths.
     :param sdf_folder: The folder to write the sdf file to.
@@ -142,6 +149,7 @@ def create_decomposition_processed_mesh_sdf_file(
                             <izz>{inertia[2,2]}</izz>
                         </inertia>
                         <mass>{mass}</mass>
+                        <pose>{center_of_mass[0]} {center_of_mass[1]} {center_of_mass[2]} 0 0 0</pose>
                     </inertial>
     """
 
@@ -193,6 +201,7 @@ def create_decomposition_processed_mesh_sdf_file(
 def create_processed_mesh_directive_str(
     mass: float,
     inertia: np.ndarray,
+    center_of_mass: np.ndarray,
     processed_mesh_file_path: str,
     sdf_folder: str,
     model_name: str,
@@ -205,6 +214,8 @@ def create_processed_mesh_directive_str(
 
     :param mass: The object mass in kg.
     :param inertia: The moment of inertia matrix of shape (3,3).
+    :param center_of_mass: The object's center of mass that the inertia is about in the
+        object frame of shape (3,).
     :param processed_mesh_file_path: The path to the processed mesh obj file.
     :param sdf_folder: The folder to write the sdf file to.
     :param model_name: The name of the directive model.
@@ -220,6 +231,7 @@ def create_processed_mesh_directive_str(
         procesed_mesh_sdf_path = create_decomposition_processed_mesh_sdf_file(
             mass,
             inertia,
+            center_of_mass,
             processed_mesh_file_path + ".obj",
             listed_files,
             sdf_folder,
@@ -231,6 +243,7 @@ def create_processed_mesh_directive_str(
         procesed_mesh_sdf_path = create_processed_mesh_sdf_file(
             mass,
             inertia,
+            center_of_mass,
             processed_mesh_file_path,
             sdf_folder,
             manipuland_base_link_name,
@@ -249,6 +262,7 @@ def create_processed_mesh_primitive_sdf_file(
     primitive_info: List[Dict[str, Any]],
     mass: float,
     inertia: np.ndarray,
+    center_of_mass: np.ndarray,
     sdf_folder: str,
     manipuland_base_link_name: str,
     hydroelastic: bool,
@@ -262,6 +276,8 @@ def create_processed_mesh_primitive_sdf_file(
         params are primitive dependent but must be sufficient to construct that primitive.
     :param mass: The object mass in kg.
     :param inertia: The moment of inertia matrix of shape (3,3).
+    :param center_of_mass: The object's center of mass that the inertia is about in the
+        object frame of shape (3,).
     :param sdf_folder: The folder to write the sdf file to.
     :param hydroelastic: Whether to make the body rigid hydroelastic.
     :param prefix: An optional prefix for the processed mesh sdf file name.
@@ -281,6 +297,7 @@ def create_processed_mesh_primitive_sdf_file(
                             <izz>{inertia[2,2]}</izz>
                         </inertia>
                         <mass>{mass}</mass>
+                        <pose>{center_of_mass[0]} {center_of_mass[1]} {center_of_mass[2]} 0 0 0</pose>
                     </inertial>
     """
 
@@ -366,6 +383,7 @@ def create_processed_mesh_primitive_directive_str(
     primitive_info: List[Dict[str, Any]],
     mass: float,
     inertia: np.ndarray,
+    center_of_mass: np.ndarray,
     sdf_folder: str,
     model_name: str,
     manipuland_base_link_name: str,
@@ -380,6 +398,8 @@ def create_processed_mesh_primitive_directive_str(
         construct that primitive.
     :param mass: The object mass in kg.
     :param inertia: The moment of inertia matrix of shape (3,3).
+    :param center_of_mass: The object's center of mass that the inertia is about in the
+        object frame of shape (3,).
     :param sdf_folder: The folder to write the sdf file to.
     :param model_name: The name of the directive model.
     :param hydroelastic: Whether to make the body rigid hydroelastic.
@@ -389,6 +409,7 @@ def create_processed_mesh_primitive_directive_str(
         primitive_info,
         mass,
         inertia,
+        center_of_mass,
         sdf_folder,
         manipuland_base_link_name,
         hydroelastic,

@@ -268,14 +268,18 @@ def run_pipeline(
             else {}
         ),
     )
-    mass, inertia = physical_porperty_estimator.estimate_physical_properties(
-        processed_mesh
-    )
+    (
+        mass,
+        inertia,
+        center_of_mass,
+    ) = physical_porperty_estimator.estimate_physical_properties(processed_mesh)
     print(
         f"Finished estimating physical properties{f' for {prefix}' if prefix else ''}."
     )
     logger.log_manipuland_estimated_physics(
-        manipuland_mass_estimated=mass, manipuland_inertia_estimated=inertia
+        manipuland_mass_estimated=mass,
+        manipuland_inertia_estimated=inertia,
+        manipuland_com_estimated=center_of_mass,
     )
 
     # Save mesh data to create SDF files that can be added to a new simulation environment
@@ -295,6 +299,7 @@ def run_pipeline(
             primitive_info,
             mass,
             inertia,
+            center_of_mass,
             logger._mesh_dir_path,
             params[f"{prefix}env"]["obj_name"],
             manipuland_base_link_name,
@@ -305,6 +310,7 @@ def run_pipeline(
         processed_mesh_directive = create_processed_mesh_directive_str(
             mass,
             inertia,
+            center_of_mass,
             processed_mesh_file_path,
             logger._mesh_dir_path,
             params[f"{prefix}env"]["obj_name"],

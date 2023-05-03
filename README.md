@@ -123,7 +123,7 @@ where `representation_collection/` is a folder with the following structure:
         - primitive_info.pkl
     - physical_properties.yaml
 
-`physical_properties.yaml` must contain a `mass` and a `inertia` field.
+`physical_properties.yaml` must contain a `mass`, `inertia`, and `com` field.
 
 The experiment description specifies the experiment and must contain the following components:
 - `IdentityPrimitiveMeshProcessor` for `inner_mesh_processor`

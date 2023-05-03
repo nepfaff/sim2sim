@@ -17,11 +17,12 @@ class PhysicalPropertyEstimatorBase(ABC):
     @abstractmethod
     def estimate_physical_properties(
         self, mesh: o3d.geometry.TriangleMesh
-    ) -> Tuple[float, np.ndarray]:
+    ) -> Tuple[float, np.ndarray, np.ndarray]:
         """
         :param mesh: The mesh to estimate physcial properties for.
-        :return: A tuple of (mass, inertia).
+        :return: A tuple of (mass, inertia, center_of_mass).
             - mass: Mass in kg.
             - inertia: Moment of inertia of shape (3,3).
+            - center_of_mass: The center of mass that the inertia is about of shape (3,).
         """
         raise NotImplementedError
