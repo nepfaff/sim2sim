@@ -7,3 +7,4 @@ from .basic_inner_only_simulator import BasicInnerOnlySimulator
 from .random_force_simulator import RandomForceSimulator
 from .sphere_pushing_simulator import SpherePushingSimulator
 from .equation_error_basic_simulator import EquationErrorBasicSimulator
+from .equation_error_sphere_pushing_simulator import EquationErrorSpherePushingSimulator

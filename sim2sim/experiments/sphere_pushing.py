@@ -24,7 +24,11 @@ from pydrake.all import (
 )
 from manipulation.scenarios import AddShape
 
-from sim2sim.simulation import BasicSimulator, SpherePushingSimulator
+from sim2sim.simulation import (
+    BasicSimulator,
+    SpherePushingSimulator,
+    EquationErrorSpherePushingSimulator,
+)
 from sim2sim.logging import SpherePushingLogger
 from sim2sim.util import (
     get_parser,
@@ -83,6 +87,7 @@ PHYSICAL_PROPERTY_ESTIMATOR = {
 SIMULATORS = {
     "BasicSimulator": BasicSimulator,
     "SpherePushingSimulator": SpherePushingSimulator,
+    "EquationErrorSpherePushingSimulator": EquationErrorSpherePushingSimulator,
 }
 
 
