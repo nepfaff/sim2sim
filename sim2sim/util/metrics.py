@@ -100,6 +100,9 @@ def trajectory_IoU(
     :param num_samples: The number of samples to take for each trajectory point. Total number of samples =
         num_samples * N.
     """
+    if num_samples < 1:
+        print("Not enough samples to compute trajectory IoU metric. Returning -1.")
+        return -1.0
 
     def within_margin(traj_point: np.ndarray, sample: np.ndarray) -> bool:
         def within_1d(idx: int) -> bool:
