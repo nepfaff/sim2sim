@@ -85,5 +85,5 @@ inner_physical_property_estimator:
 simulator:
   class: "EquationErrorBasicSimulator"
   args:
-    manipuland_base_link_name: "ycb_mustard_bottle_base_link"
+    manipuland_name: "ycb_mustard_bottle"
     reset_seconds: 0.1

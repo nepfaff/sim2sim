@@ -10,13 +10,13 @@ from pydrake.all import (
 )
 
 from sim2sim.logging import DynamicLogger
-from sim2sim.simulation import SimulatorBase
+from sim2sim.simulation import BasicSimulator
 
 
-class EquationErrorBasicSimulator(SimulatorBase):
+class EquationErrorBasicSimulator(BasicSimulator):
     """
     A simulator that simulates the scene for `duration` seconds. It sets the inner
-    manipuland pose equal to the outer manipuland pose every K seconds.
+    manipuland state equal to the outer manipuland state every K seconds.
     """
 
     def __init__(
@@ -27,12 +27,12 @@ class EquationErrorBasicSimulator(SimulatorBase):
         inner_scene_graph: SceneGraph,
         logger: DynamicLogger,
         is_hydroelastic: bool,
-        manipuland_base_link_name: str,
+        manipuland_name: str,
         reset_seconds: float,
     ):
         """
-        :param reset_seconds: The inner manipuland pose is set equal to the outer
-            manipuland pose every `reset_seconds` seconds.
+        :param reset_seconds: The inner manipuland state is set equal to the outer
+            manipuland state every `reset_seconds` seconds.
         """
         super().__init__(
             outer_builder,
@@ -43,43 +43,12 @@ class EquationErrorBasicSimulator(SimulatorBase):
             is_hydroelastic,
         )
 
-        self._manipuland_base_link_name = manipuland_base_link_name
+        self._manipuland_name = manipuland_name
         self._reset_seconds = reset_seconds
-
-        self._finalize_and_build_diagrams()
-
-    def _finalize_and_build_diagrams(self) -> None:
-        """Adds visualization systems to the outer and inner diagrams and builds them."""
-
-        self._outer_visualizer, self._outer_meshcat = self._logger.add_visualizers(
-            self._outer_builder,
-            self._outer_scene_graph,
-            self._is_hydroelastic,
-            is_outer=True,
-        )
-        self._inner_visualizer, self._inner_meshcat = self._logger.add_visualizers(
-            self._inner_builder,
-            self._inner_scene_graph,
-            self._is_hydroelastic,
-            is_outer=False,
-        )
-
-        self._logger.add_manipuland_pose_logging(
-            self._outer_builder, self._inner_builder
-        )
-        self._logger.add_manipuland_contact_force_logging(
-            self._outer_builder, self._inner_builder
-        )
-        self._logger.add_contact_result_logging(
-            self._outer_builder, self._inner_builder
-        )
-
-        self._outer_diagram = self._outer_builder.Build()
-        self._inner_diagram = self._inner_builder.Build()
 
     def simulate(self, duration: float) -> None:
         # For storing the outer manipuland pose every 'reset_seconds' seconds
-        outer_manipuland_poses = []
+        outer_manipuland_states = []
 
         for i, (diagram, visualizer, meshcat) in enumerate(
             zip(
@@ -96,19 +65,21 @@ class EquationErrorBasicSimulator(SimulatorBase):
             context = simulator.get_mutable_context()
             plant: MultibodyPlant = diagram.GetSubsystemByName("plant")
             plant_context = plant.GetMyMutableContextFromRoot(context)
-            manipuland = plant.GetBodyByName(self._manipuland_base_link_name)
+            manipuland_instance = plant.GetModelInstanceByName(self._manipuland_name)
 
             start_time = time.time()
 
             for j, t in enumerate(np.arange(0.0, duration, self._reset_seconds)):
                 if i == 0:  # Outer
-                    pose = plant.GetFreeBodyPose(plant_context, manipuland)
-                    outer_manipuland_poses.append(pose)
+                    state = plant.GetPositionsAndVelocities(
+                        plant_context, manipuland_instance
+                    )
+                    outer_manipuland_states.append(state)
                 else:  # Inner
-                    plant.SetFreeBodyPose(
+                    plant.SetPositionsAndVelocities(
                         plant_context,
-                        manipuland,
-                        outer_manipuland_poses[j],
+                        manipuland_instance,
+                        outer_manipuland_states[j],
                     )
                 simulator.AdvanceTo(t)
 
