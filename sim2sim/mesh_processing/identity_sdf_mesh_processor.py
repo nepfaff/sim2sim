@@ -28,4 +28,4 @@ class IdentitySDFMeshProcessor(MeshProcessorBase):
         Union[List[Dict[str, Any]], None],
         Union[str, None],
     ]:
-        return False, mesh, [], None, self._sdf_path
+        return False, None, [], None, self._sdf_path

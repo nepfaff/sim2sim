@@ -12,10 +12,33 @@ import shutil
 from typing import List
 import time
 import copy
+import json
 
 import wandb
 
 from sim2sim.util.script_utils import rank_based_on_metrics
+
+
+def make_outer_deterministic(
+    experiment_specifications: List[dict],
+    experiment_description: dict,
+    logging_path: str,
+) -> dict:
+    """
+    Ensure that the outer sim is deterministic by re-using the SDFormat file from the
+    first experiment.
+    """
+    first_experiment_name = experiment_specifications[0]["experiment_id"]
+    outer_sdf_path = os.path.join(
+        logging_path,
+        first_experiment_name,
+        "meshes/outer_processed_mesh.sdf",
+    )
+    experiment_description["outer_mesh_processor"]["class"] = "IdentitySDFMeshProcessor"
+    experiment_description["outer_mesh_processor"]["args"] = {
+        "sdf_path": outer_sdf_path
+    }
+    return experiment_description
 
 
 def main():
@@ -57,6 +80,16 @@ def main():
         + "models for the primitive-based representations. Otherwise, the one from the "
         + "experiment description will be used.",
     )
+    parser.add_argument(
+        "--additional_experiment_descriptions",
+        required=False,
+        default=None,
+        type=json.loads,
+        help="The paths to additional experiment descriptions to include in the "
+        + "evaluation. These experiment descriptions will be added without modifications "
+        + "(apart from making the outer sim deterministic). Hence, they should be "
+        + "similar enough to '--experiment_description' to allow for fair comparison.",
+    )
 
     start_time = time.time()
 
@@ -64,6 +97,7 @@ def main():
     representation_collection_path = args.path
     experiment_description_path = args.experiment_description
     logging_path = args.logging_path
+    additional_experiment_descriptions = args.additional_experiment_descriptions
 
     base_experiment_description = yaml.safe_load(open(experiment_description_path, "r"))
 
@@ -91,30 +125,31 @@ def main():
     )
     pysical_properties = yaml.safe_load(open(physical_properties_path, "r"))
 
+    # Add additional experiment descriptions
     experiment_specifications: List[dict] = []
+    if additional_experiment_descriptions is not None:
+        for i, additional_description_path in enumerate(
+            additional_experiment_descriptions
+        ):
+            additional_description = yaml.safe_load(
+                open(additional_description_path, "r")
+            )
+            if i > 0:
+                additional_description = make_outer_deterministic(
+                    experiment_specifications, additional_description, logging_path
+                )
+            experiment_specifications.append(additional_description)
+
     with os.scandir(representation_collection_path) as paths:
         for path in paths:
             if path.is_dir():
                 experiment_description = copy.deepcopy(base_experiment_description)
                 experiment_description["experiment_id"] = path.name
 
-                # Ensure that the outer sim is deterministic by re-using the SDFormat
-                # file from the first experiment
                 if len(experiment_specifications) > 0:
-                    first_experiment_name = experiment_specifications[0][
-                        "experiment_id"
-                    ]
-                    outer_sdf_path = os.path.join(
-                        logging_path,
-                        first_experiment_name,
-                        "meshes/outer_processed_mesh.sdf",
+                    experiment_description = make_outer_deterministic(
+                        experiment_specifications, experiment_description, logging_path
                     )
-                    experiment_description["outer_mesh_processor"][
-                        "class"
-                    ] = "IdentitySDFMeshProcessor"
-                    experiment_description["outer_mesh_processor"]["args"] = {
-                        "sdf_path": outer_sdf_path
-                    }
 
                 # Primitive info
                 experiment_description["inner_mesh_processor"]["args"][
