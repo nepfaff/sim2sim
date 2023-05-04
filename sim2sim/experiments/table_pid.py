@@ -25,6 +25,7 @@ from sim2sim.util import (
     get_parser,
     create_processed_mesh_directive_str,
     create_processed_mesh_primitive_directive_str,
+    create_directive_str_for_sdf_path,
 )
 from sim2sim.images import SphereImageGenerator, NoneImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
@@ -37,6 +38,7 @@ from sim2sim.mesh_processing import (
     CoACDMeshProcessor,
     FuzzyMetaballMeshProcessor,
     IdentityPrimitiveMeshProcessor,
+    IdentitySDFMeshProcessor,
 )
 from sim2sim.physical_property_estimator import (
     WaterDensityPhysicalPropertyEstimator,
@@ -65,6 +67,7 @@ MESH_PROCESSORS = {
     "CoACDMeshProcessor": CoACDMeshProcessor,
     "FuzzyMetaballMeshProcessor": FuzzyMetaballMeshProcessor,
     "IdentityPrimitiveMeshProcessor": IdentityPrimitiveMeshProcessor,
+    "IdentitySDFMeshProcessor": IdentitySDFMeshProcessor,
 }
 PHYSICAL_PROPERTY_ESTIMATOR = {
     "WaterDensityPhysicalPropertyEstimator": WaterDensityPhysicalPropertyEstimator,
@@ -253,6 +256,7 @@ def run_pipeline(
         processed_mesh,
         processed_mesh_pieces,
         primitive_info,
+        mesh_sdf_path,
     ) = mesh_processor.process_mesh(raw_mesh)
     print(f"Finished mesh processing{f' for {prefix}' if prefix else ''}.")
 
@@ -294,7 +298,11 @@ def run_pipeline(
     )
 
     # Create a directive for processed_mesh manipuland
-    if is_primitive:
+    if mesh_sdf_path is not None:
+        processed_mesh_directive = create_directive_str_for_sdf_path(
+            mesh_sdf_path, params[f"{prefix}env"]["obj_name"]
+        )
+    elif is_primitive:
         processed_mesh_directive = create_processed_mesh_primitive_directive_str(
             primitive_info,
             mass,

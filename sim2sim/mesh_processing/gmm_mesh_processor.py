@@ -45,6 +45,7 @@ class GMMMeshProcessor(MeshProcessorBase):
         Union[o3d.geometry.TriangleMesh, None],
         List[o3d.geometry.TriangleMesh],
         Union[List[Dict[str, Any]], None],
+        Union[str, None],
     ]:
         tmesh = open3d_to_trimesh(mesh)
         pts = trimesh.sample.sample_surface_even(tmesh, 10000)[0]
@@ -92,4 +93,4 @@ class GMMMeshProcessor(MeshProcessorBase):
                 }
             )
 
-        return True, None, [], analytical_ellipsoids
+        return True, None, [], analytical_ellipsoids, None

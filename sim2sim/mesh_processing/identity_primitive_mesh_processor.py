@@ -22,8 +22,9 @@ class IdentityPrimitiveMeshProcessor(MeshProcessorBase):
         Union[o3d.geometry.TriangleMesh, None],
         List[o3d.geometry.TriangleMesh],
         Union[List[Dict[str, Any]], None],
+        Union[str, None],
     ]:
         with open(self._primitive_info_path, "rb") as f:
             primitive_info = pickle.load(f)
 
-        return True, None, [], primitive_info
+        return True, None, [], primitive_info, None

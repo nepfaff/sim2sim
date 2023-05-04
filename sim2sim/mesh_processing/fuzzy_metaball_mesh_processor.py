@@ -50,6 +50,7 @@ class FuzzyMetaballMeshProcessor(MeshProcessorBase):
         Union[o3d.geometry.TriangleMesh, None],
         List[o3d.geometry.TriangleMesh],
         Union[List[Dict[str, Any]], None],
+        Union[str, None],
     ]:
         meta_ball = MetaBall.generate_metaballs_from_mesh(
             self._mesh_path,
@@ -75,4 +76,4 @@ class FuzzyMetaballMeshProcessor(MeshProcessorBase):
                 }
             )
 
-        return True, None, [], primitive_info
+        return True, None, [], primitive_info, None

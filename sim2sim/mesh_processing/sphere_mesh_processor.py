@@ -30,6 +30,7 @@ class SphereMeshProcessor(MeshProcessorBase):
         Union[o3d.geometry.TriangleMesh, None],
         List[o3d.geometry.TriangleMesh],
         Union[List[Dict[str, Any]], None],
+        Union[str, None],
     ]:
         tmesh = open3d_to_trimesh(mesh)
         points = np.array(trimesh.sample.sample_surface_even(tmesh, 10000)[0])
@@ -90,4 +91,4 @@ class SphereMeshProcessor(MeshProcessorBase):
             viewer.run()
             viewer.destroy_window()
 
-        return False, None, output_meshes, None
+        return False, None, output_meshes, None, None

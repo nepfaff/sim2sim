@@ -41,6 +41,7 @@ class CoACDMeshProcessor(MeshProcessorBase):
         Union[o3d.geometry.TriangleMesh, None],
         List[o3d.geometry.TriangleMesh],
         Union[List[Dict[str, Any]], None],
+        Union[str, None],
     ]:
         """
         Given a mesh, performs a convex decomposition of it with
@@ -106,4 +107,4 @@ class CoACDMeshProcessor(MeshProcessorBase):
         for part in convex_pieces:
             open3d_part = part.as_open3d
             output_meshes.append(open3d_part)
-        return False, None, output_meshes, None
+        return False, None, output_meshes, None, None

@@ -26,6 +26,7 @@ class MeshProcessorBase(ABC):
         Union[o3d.geometry.TriangleMesh, None],
         List[o3d.geometry.TriangleMesh],
         Union[List[Dict[str, Any]], None],
+        Union[str, None],
     ]:
         """
         :param mesh: The mesh to process.
@@ -37,5 +38,6 @@ class MeshProcessorBase(ABC):
                 example be sphere, ellipsoid, box, etc. and "transform" which is a homogenous transformation matrix. The
                 other params are primitive dependent but must be sufficient to construct that primitive. TODO: Create an
                 enum type for "name".
+            - sdf_path: A path to an SDFormat file to use directly. The presence of this overrides everything else.
         """
         raise NotImplementedError

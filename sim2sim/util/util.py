@@ -379,6 +379,19 @@ def create_processed_mesh_primitive_sdf_file(
     return procesed_mesh_sdf_path
 
 
+def create_directive_str_for_sdf_path(
+    sdf_path: str,
+    model_name: str,
+):
+    directive_str = f"""
+        directives:
+        - add_model:
+            name: {model_name}
+            file: package://sim2sim/{sdf_path}
+    """
+    return directive_str
+
+
 def create_processed_mesh_primitive_directive_str(
     primitive_info: List[Dict[str, Any]],
     mass: float,

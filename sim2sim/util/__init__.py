@@ -2,6 +2,7 @@ from .util import (
     get_parser,
     visualize_poses,
     create_processed_mesh_directive_str,
+    create_directive_str_for_sdf_path,
     open3d_to_trimesh,
     create_processed_mesh_primitive_directive_str,
     get_hydroelastic_contact_viz_params,

@@ -22,6 +22,7 @@ from sim2sim.util import (
     get_parser,
     create_processed_mesh_directive_str,
     create_processed_mesh_primitive_directive_str,
+    create_directive_str_for_sdf_path,
     add_iiwa_system,
     add_cameras,
     add_wsg_system,
@@ -39,6 +40,7 @@ from sim2sim.mesh_processing import (
     IdentityMeshProcessor,
     QuadricDecimationMeshProcessor,
     IdentityPrimitiveMeshProcessor,
+    IdentitySDFMeshProcessor,
 )
 from sim2sim.simulation import (
     BasicSimulator,
@@ -71,6 +73,7 @@ MESH_PROCESSORS = {
     "IdentityMeshProcessor": IdentityMeshProcessor,
     "QuadricDecimationMeshProcessor": QuadricDecimationMeshProcessor,
     "IdentityPrimitiveMeshProcessor": IdentityPrimitiveMeshProcessor,
+    "IdentitySDFMeshProcessor": IdentitySDFMeshProcessor,
 }
 PHYSICAL_PROPERTY_ESTIMATOR = {
     "WaterDensityPhysicalPropertyEstimator": WaterDensityPhysicalPropertyEstimator,
@@ -310,6 +313,7 @@ def run_iiwa_manip(
         mass,
         inertia,
         center_of_mass,
+        mesh_sdf_path,
     ) = physical_porperty_estimator.estimate_physical_properties(processed_mesh)
     print("Finished estimating physical properties.")
     logger.log_manipuland_estimated_physics(
@@ -326,7 +330,11 @@ def run_iiwa_manip(
     )
 
     # Create a directive for processed_mesh manipuland
-    if is_primitive:
+    if mesh_sdf_path is not None:
+        processed_mesh_directive = create_directive_str_for_sdf_path(
+            mesh_sdf_path, params["env"]["obj_name"]
+        )
+    elif is_primitive:
         processed_mesh_directive = create_processed_mesh_primitive_directive_str(
             primitive_info,
             mass,

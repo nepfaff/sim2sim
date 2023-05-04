@@ -24,6 +24,7 @@ class QuadricDecimationMeshProcessor(MeshProcessorBase):
         Union[o3d.geometry.TriangleMesh, None],
         List[o3d.geometry.TriangleMesh],
         Union[List[Dict[str, Any]], None],
+        Union[str, None],
     ]:
         simplified_mesh = mesh.simplify_quadric_decimation(self._target_triangle_num)
-        return False, simplified_mesh, [], None
+        return False, simplified_mesh, [], None, None

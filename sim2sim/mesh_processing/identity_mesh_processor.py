@@ -19,5 +19,6 @@ class IdentityMeshProcessor(MeshProcessorBase):
         Union[o3d.geometry.TriangleMesh, None],
         List[o3d.geometry.TriangleMesh],
         Union[List[Dict[str, Any]], None],
+        Union[str, None],
     ]:
-        return False, mesh, [], None
+        return False, mesh, [], None, None
