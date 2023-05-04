@@ -58,6 +58,8 @@ def main():
         + "experiment description will be used.",
     )
 
+    start_time = time.time()
+
     args = parser.parse_args()
     representation_collection_path = args.path
     experiment_description_path = args.experiment_description
@@ -95,6 +97,24 @@ def main():
             if path.is_dir():
                 experiment_description = copy.deepcopy(base_experiment_description)
                 experiment_description["experiment_id"] = path.name
+
+                # Ensure that the outer sim is deterministic by re-using the SDFormat
+                # file from the first experiment
+                if len(experiment_specifications) > 0:
+                    first_experiment_name = experiment_specifications[0][
+                        "experiment_id"
+                    ]
+                    outer_sdf_path = os.path.join(
+                        logging_path,
+                        first_experiment_name,
+                        "meshes/outer_processed_mesh.sdf",
+                    )
+                    experiment_description["outer_mesh_processor"][
+                        "class"
+                    ] = "IdentitySDFMeshProcessor"
+                    experiment_description["outer_mesh_processor"]["args"] = {
+                        "sdf_path": outer_sdf_path
+                    }
 
                 # Primitive info
                 experiment_description["inner_mesh_processor"]["args"][
@@ -156,6 +176,8 @@ def main():
     if logging_path_is_tmp:
         print(f"Cleaning up temporary logging folder {logging_path}")
         shutil.rmtree(logging_path)
+
+    print(f"Evaluation took {(time.time()-start_time)/60.0} minutes.")
 
 
 if __name__ == "__main__":
