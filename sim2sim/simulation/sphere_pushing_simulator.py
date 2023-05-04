@@ -3,7 +3,7 @@ import time
 from typing import Optional
 
 import numpy as np
-from pydrake.all import DiagramBuilder, SceneGraph, Simulator
+from pydrake.all import DiagramBuilder, SceneGraph, Simulator, MultibodyPlant
 
 from sim2sim.logging import SpherePushingLogger
 from sim2sim.simulation import SimulatorBase
@@ -58,6 +58,10 @@ class SpherePushingSimulator(SimulatorBase):
             num_meters_to_move_in_manpuland_direction
         )
 
+        # To be set by 'EquationErrorSpherePushingSimulator'
+        self._is_equation_error = False
+        self._reset_seconds = np.nan
+
         self._finalize_and_build_diagrams()
 
     def _finalize_and_build_diagrams(self) -> None:
@@ -89,7 +93,16 @@ class SpherePushingSimulator(SimulatorBase):
         self._outer_diagram = self._outer_builder.Build()
         self._inner_diagram = self._inner_builder.Build()
 
+    def _is_reset_time(self, sim_time: float) -> bool:
+        return self._is_equation_error and np.isclose(
+            sim_time / self._reset_seconds,
+            round(sim_time / self._reset_seconds),
+        )
+
     def simulate(self, duration: float) -> None:
+        outer_manipuland_states = []
+        outer_sphere_states = []
+
         for i, (diagram, visualizer, meshcat) in enumerate(
             zip(
                 [self._outer_diagram, self._inner_diagram],
@@ -102,6 +115,15 @@ class SpherePushingSimulator(SimulatorBase):
             sphere_state_source: SphereStateSource = diagram.GetSubsystemByName(
                 "sphere_state_source"
             )
+            plant: MultibodyPlant = diagram.GetSubsystemByName("plant")
+            plant_context = plant.GetMyMutableContextFromRoot(context)
+            manipuland_instance = plant.GetModelInstanceByName(self._manipuland_name)
+            sphere_instance = plant.GetModelInstanceByName("sphere")
+
+            get_states = lambda: (
+                plant.GetPositionsAndVelocities(plant_context, manipuland_instance),
+                plant.GetPositionsAndVelocities(plant_context, sphere_instance),
+            )
 
             # TODO: Move `StartRecording` and `StopRecording` into logger using `with` statement
             visualizer.StartRecording()
@@ -111,37 +133,32 @@ class SpherePushingSimulator(SimulatorBase):
             simulator.AdvanceTo(self._settling_time)
 
             if i == 0:
-                plant = diagram.GetSubsystemByName("plant")
-                plant_context = plant.GetMyContextFromRoot(context)
                 total_time = self._settling_time + duration
-                sim_times = np.linspace(
+                sim_times = np.arange(
                     self._settling_time,
                     total_time,
-                    int(duration / self._controll_period),
+                    self._controll_period,
                 )
 
                 if self._closed_loop_control:
                     action_log = []
                     for sim_time in sim_times:
-                        mesh_manipuland_instance = plant.GetModelInstanceByName(
-                            self._manipuland_name
-                        )
-                        mesh_manipuland_translation = plant.GetPositions(
-                            plant_context, mesh_manipuland_instance
+                        manipuland_translation = plant.GetPositions(
+                            plant_context, manipuland_instance
                         )[4:]
 
-                        sphere_state_source.set_desired_position(
-                            mesh_manipuland_translation
-                        )
-                        action_log.append(mesh_manipuland_translation)
+                        sphere_state_source.set_desired_position(manipuland_translation)
+                        action_log.append(manipuland_translation)
+
+                        if self._is_reset_time(sim_time):
+                            manipuland_state, sphere_state = get_states()
+                            outer_manipuland_states.append(manipuland_state)
+                            outer_sphere_states.append(sphere_state)
 
                         simulator.AdvanceTo(sim_time)
                 else:
-                    mesh_manipuland_instance = plant.GetModelInstanceByName(
-                        self._manipuland_name
-                    )
-                    mesh_manipuland_translation = plant.GetPositions(
-                        plant_context, mesh_manipuland_instance
+                    manipuland_translation = plant.GetPositions(
+                        plant_context, manipuland_instance
                     )[4:]
                     sphere_instance = plant.GetModelInstanceByName("sphere")
                     sphere_translation = plant.GetPositions(
@@ -149,7 +166,7 @@ class SpherePushingSimulator(SimulatorBase):
                     )
 
                     # Move sphere along vector connecting sphere starting position and manipuland position
-                    push_direction = mesh_manipuland_translation - sphere_translation
+                    push_direction = manipuland_translation - sphere_translation
                     push_direction_unit = push_direction / np.linalg.norm(
                         push_direction
                     )
@@ -167,10 +184,31 @@ class SpherePushingSimulator(SimulatorBase):
 
                     for sim_time, action in zip(sim_times, action_log):
                         sphere_state_source.set_desired_position(action)
+
+                        if self._is_reset_time(sim_time):
+                            manipuland_state, sphere_state = get_states()
+                            outer_manipuland_states.append(manipuland_state)
+                            outer_sphere_states.append(sphere_state)
+
                         simulator.AdvanceTo(sim_time)
             else:
+                idx = 0
                 for sim_time, action in zip(sim_times, action_log):
                     sphere_state_source.set_desired_position(action)
+
+                    if self._is_reset_time(sim_time):
+                        plant.SetPositionsAndVelocities(
+                            plant_context,
+                            manipuland_instance,
+                            outer_manipuland_states[idx],
+                        )
+                        plant.SetPositionsAndVelocities(
+                            plant_context,
+                            sphere_instance,
+                            outer_sphere_states[idx],
+                        )
+                        idx += 1
+
                     simulator.AdvanceTo(sim_time)
 
             time_taken_to_simulate = time.time() - start_time
