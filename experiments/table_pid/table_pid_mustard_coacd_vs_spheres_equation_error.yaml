@@ -1,0 +1,89 @@
+# Unique identifier for this experiment for logging
+experiment_id: "table_pid_mustard_coacd_vs_spheres_equation_error"
+
+outer_env:
+  contact_model: "hydroelastic_with_fallback"
+  solver: "tamsi"
+  obj_name: "ycb_mustard_bottle"
+
+inner_env:
+  contact_model: "point"
+  solver: "tamsi"
+  obj_name: "ycb_mustard_bottle"
+
+script:
+  name: "table_pid"
+  args:
+    sim_duration: 5.0
+    no_command_time: 0.5
+    timestep: 0.001
+    final_table_angle: 0.7854
+    logging_frequency_hz: 1000
+    manipuland_directive: "../../models/manipulands/mustard_bottle_manipuland_directive.yaml"
+    manipuland_base_link_name: "ycb_mustard_bottle_base_link"
+    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.62]
+    save_raw_mesh: false
+    hydroelastic_manipuland: true # No effect if 'contact_model' is 'point'
+    is_pipeline_comparison: True
+
+# Component specifications
+# 'args' are constructor arguments that are not part of the base class constructors
+logger:
+  class: "DynamicLogger"
+  args:
+    label_to_mask: -1 # NOTE: Does not correspond to anything
+    manipuland_name: "ycb_mustard_bottle"
+    manipuland_base_link_name: "ycb_mustard_bottle_base_link"
+    kProximity: false
+
+outer_image_generator:
+  class: "NoneImageGenerator"
+  args:
+
+inner_image_generator:
+  class: "NoneImageGenerator"
+  args:
+
+outer_inverse_graphics:
+  class: "IdentityInverseGraphics"
+  args:
+    mesh_path: ./data/ycb_mustard_bottle/mustard_ring_tsdf.obj
+    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.62]
+
+inner_inverse_graphics:
+  class: "IdentityInverseGraphics"
+  args:
+    mesh_path: ./data/ycb_mustard_bottle/mustard_ring_tsdf.obj
+    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.62]
+
+outer_mesh_processor:
+  class: "CoACDMeshProcessor"
+  args:
+      mesh_name: ./data/ycb_mustard_bottle/mustard_ring_tsdf.obj
+      mesh_dir: "tmp"
+      preview_with_trimesh: false
+
+inner_mesh_processor:
+  class: "IdentityPrimitiveMeshProcessor"
+  args:
+    primitive_info_path: ./data/ycb_mustard_bottle/mustard_ring_tsdf_dualsdf_spheres.pkl
+
+outer_physical_property_estimator:
+  class: "GTPhysicalPropertyEstimator"
+  args:
+    mass: 0.349000
+    inertia: [[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]
+    center_of_mass: [0.0, 0.0, 0.0]
+
+inner_physical_property_estimator:
+  class: "GTPhysicalPropertyEstimator"
+  args:
+    mass: 0.349000
+    inertia: [[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]
+    center_of_mass: [0.0, 0.0, 0.0]
+
+simulator:
+  class: "EquationErrorBasicSimulator"
+  args:
+    manipuland_base_link_name: "ycb_mustard_bottle_base_link"
+    reset_seconds: 0.1

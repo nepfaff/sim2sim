@@ -19,7 +19,11 @@ from pydrake.all import (
     MultibodyPlant,
 )
 
-from sim2sim.simulation import BasicSimulator, BasicInnerOnlySimulator
+from sim2sim.simulation import (
+    BasicSimulator,
+    BasicInnerOnlySimulator,
+    EquationErrorBasicSimulator,
+)
 from sim2sim.logging import DynamicLogger
 from sim2sim.util import (
     get_parser,
@@ -76,6 +80,7 @@ PHYSICAL_PROPERTY_ESTIMATOR = {
 SIMULATORS = {
     "BasicSimulator": BasicSimulator,
     "BasicInnerOnlySimulator": BasicInnerOnlySimulator,
+    "EquationErrorBasicSimulator": EquationErrorBasicSimulator,
 }
 
 

@@ -6,3 +6,4 @@ from .iiwa_push_in_hole_simulator import IIWAPushInHoleSimulator
 from .basic_inner_only_simulator import BasicInnerOnlySimulator
 from .random_force_simulator import RandomForceSimulator
 from .sphere_pushing_simulator import SpherePushingSimulator
+from .equation_error_basic_simulator import EquationErrorBasicSimulator
