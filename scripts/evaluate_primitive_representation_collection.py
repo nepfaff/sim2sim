@@ -101,6 +101,13 @@ def main():
         help="Whether to create a visualizer for each outer simulation. If False, only "
         + "the first outer simulation is visualized/ recorded.",
     )
+    parser.add_argument(
+        "--wandb_name",
+        required=False,
+        default=None,
+        type=str,
+        help="An optional custom wandb name",
+    )
 
     start_time = time.time()
 
@@ -110,13 +117,16 @@ def main():
     logging_path = args.logging_path
     additional_experiment_descriptions = args.additional_experiment_descriptions
     skip_outer_visualization = not args.keep_outer_vis
+    wandb_name = args.wandb_name
 
     base_experiment_description = yaml.safe_load(open(experiment_description_path, "r"))
 
     current_time = time.strftime("%Y-%b-%d-%H-%M-%S")
     wandb.init(
         project="sim2sim_evaluate_representation_collection",
-        name=f"{base_experiment_description['experiment_id']}_{current_time}",
+        name=f"{base_experiment_description['experiment_id']}_{current_time}"
+        if wandb_name is None
+        else wandb_name,
         config={
             "args": vars(args),
             "base_experiment_description": base_experiment_description,
