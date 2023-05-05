@@ -27,6 +27,7 @@ class EquationErrorSpherePushingSimulator(SpherePushingSimulator):
         reset_seconds: float,
         closed_loop_control: bool,
         num_meters_to_move_in_manpuland_direction: Optional[float] = None,
+        skip_outer_visualization: bool = False,
     ):
         """
         :param outer_builder: Diagram builder for the outer simulation environment.
@@ -60,6 +61,7 @@ class EquationErrorSpherePushingSimulator(SpherePushingSimulator):
             controll_period,
             closed_loop_control,
             num_meters_to_move_in_manpuland_direction,
+            skip_outer_visualization,
         )
 
         self._is_equation_error = True

@@ -29,6 +29,7 @@ class EquationErrorBasicSimulator(BasicSimulator):
         is_hydroelastic: bool,
         manipuland_name: str,
         reset_seconds: float,
+        skip_outer_visualization: bool = False,
     ):
         """
         :param reset_seconds: The inner manipuland state is set equal to the outer
@@ -41,6 +42,7 @@ class EquationErrorBasicSimulator(BasicSimulator):
             inner_scene_graph,
             logger,
             is_hydroelastic,
+            skip_outer_visualization,
         )
 
         self._manipuland_name = manipuland_name
@@ -59,8 +61,11 @@ class EquationErrorBasicSimulator(BasicSimulator):
         ):
             simulator = Simulator(diagram)
             simulator.Initialize()
-            # TODO: Move `StartRecording` and `StopRecording` into logger using `with` statement
-            visualizer.StartRecording()
+
+            if i == 1 or not self._skip_outer_visualization:
+                # TODO: Move `StartRecording` and `StopRecording` into logger using
+                # `with` statement
+                visualizer.StartRecording()
 
             context = simulator.get_mutable_context()
             plant: MultibodyPlant = diagram.GetSubsystemByName("plant")
@@ -89,18 +94,19 @@ class EquationErrorBasicSimulator(BasicSimulator):
             else:
                 self._logger.log(inner_simulation_time=time_taken_to_simulate)
 
-            visualizer.StopRecording()
-            visualizer.PublishRecording()
+            if i == 1 or not self._skip_outer_visualization:
+                visualizer.StopRecording()
+                visualizer.PublishRecording()
 
-            # TODO: Move this to the logger
-            html = meshcat.StaticHtml()
-            with open(
-                os.path.join(
-                    self._logger._logging_path, f"{'inner' if i else 'outer'}.html"
-                ),
-                "w",
-            ) as f:
-                f.write(html)
+                # TODO: Move this to the logger
+                html = meshcat.StaticHtml()
+                with open(
+                    os.path.join(
+                        self._logger._logging_path, f"{'inner' if i else 'outer'}.html"
+                    ),
+                    "w",
+                ) as f:
+                    f.write(html)
 
             context = simulator.get_mutable_context()
             self._logger.log_manipuland_poses(context, is_outer=(i == 0))

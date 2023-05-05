@@ -23,6 +23,7 @@ def make_outer_deterministic(
     experiment_specifications: List[dict],
     experiment_description: dict,
     logging_path: str,
+    skip_outer_visualization: bool,
 ) -> dict:
     """
     Ensure that the outer sim is deterministic by re-using the SDFormat file from the
@@ -38,6 +39,10 @@ def make_outer_deterministic(
     experiment_description["outer_mesh_processor"]["args"] = {
         "sdf_path": outer_sdf_path
     }
+
+    # No need to visualize outer sim as will be a copy of the first visualization
+    experiment_description["simulator"]["args"]["skip_outer_visualization"] = True
+
     return experiment_description
 
 
@@ -90,6 +95,12 @@ def main():
         + "(apart from making the outer sim deterministic). Hence, they should be "
         + "similar enough to '--experiment_description' to allow for fair comparison.",
     )
+    parser.add_argument(
+        "--keep_outer_vis",
+        action="store_true",
+        help="Whether to create a visualizer for each outer simulation. If False, only "
+        + "the first outer simulation is visualized/ recorded.",
+    )
 
     start_time = time.time()
 
@@ -98,6 +109,7 @@ def main():
     experiment_description_path = args.experiment_description
     logging_path = args.logging_path
     additional_experiment_descriptions = args.additional_experiment_descriptions
+    skip_outer_visualization = not args.keep_outer_vis
 
     base_experiment_description = yaml.safe_load(open(experiment_description_path, "r"))
 
@@ -136,7 +148,10 @@ def main():
             )
             if i > 0:
                 additional_description = make_outer_deterministic(
-                    experiment_specifications, additional_description, logging_path
+                    experiment_specifications,
+                    additional_description,
+                    logging_path,
+                    skip_outer_visualization,
                 )
             experiment_specifications.append(additional_description)
 
@@ -148,7 +163,10 @@ def main():
 
                 if len(experiment_specifications) > 0:
                     experiment_description = make_outer_deterministic(
-                        experiment_specifications, experiment_description, logging_path
+                        experiment_specifications,
+                        experiment_description,
+                        logging_path,
+                        skip_outer_visualization,
                     )
 
                 # Primitive info

@@ -22,6 +22,7 @@ class BasicSimulator(SimulatorBase):
         inner_scene_graph: SceneGraph,
         logger: DynamicLogger,
         is_hydroelastic: bool,
+        skip_outer_visualization: bool = False,
     ):
         super().__init__(
             outer_builder,
@@ -30,18 +31,22 @@ class BasicSimulator(SimulatorBase):
             inner_scene_graph,
             logger,
             is_hydroelastic,
+            skip_outer_visualization,
         )
         self._finalize_and_build_diagrams()
 
     def _finalize_and_build_diagrams(self) -> None:
         """Adds visualization systems to the outer and inner diagrams and builds them."""
 
-        self._outer_visualizer, self._outer_meshcat = self._logger.add_visualizers(
-            self._outer_builder,
-            self._outer_scene_graph,
-            self._is_hydroelastic,
-            is_outer=True,
-        )
+        if self._skip_outer_visualization:
+            self._outer_visualizer, self._outer_meshcat = None, None
+        else:
+            self._outer_visualizer, self._outer_meshcat = self._logger.add_visualizers(
+                self._outer_builder,
+                self._outer_scene_graph,
+                self._is_hydroelastic,
+                is_outer=True,
+            )
         self._inner_visualizer, self._inner_meshcat = self._logger.add_visualizers(
             self._inner_builder,
             self._inner_scene_graph,
@@ -73,8 +78,11 @@ class BasicSimulator(SimulatorBase):
         ):
             simulator = Simulator(diagram)
             simulator.Initialize()
-            # TODO: Move `StartRecording` and `StopRecording` into logger using `with` statement
-            visualizer.StartRecording()
+
+            if i == 1 or not self._skip_outer_visualization:
+                # TODO: Move `StartRecording` and `StopRecording` into logger using
+                # `with` statement
+                visualizer.StartRecording()
 
             start_time = time.time()
 
@@ -86,20 +94,20 @@ class BasicSimulator(SimulatorBase):
             else:
                 self._logger.log(inner_simulation_time=time_taken_to_simulate)
 
-            visualizer.StopRecording()
-            visualizer.PublishRecording()
+            if i == 1 or not self._skip_outer_visualization:
+                visualizer.StopRecording()
+                visualizer.PublishRecording()
 
-            # TODO: Move this to the logger
-            html = meshcat.StaticHtml()
-            with open(
-                os.path.join(
-                    self._logger._logging_path, f"{'inner' if i else 'outer'}.html"
-                ),
-                "w",
-            ) as f:
-                f.write(html)
+                # TODO: Move this to the logger
+                html = meshcat.StaticHtml()
+                with open(
+                    os.path.join(
+                        self._logger._logging_path, f"{'inner' if i else 'outer'}.html"
+                    ),
+                    "w",
+                ) as f:
+                    f.write(html)
 
             context = simulator.get_mutable_context()
             self._logger.log_manipuland_poses(context, is_outer=(i == 0))
             self._logger.log_manipuland_contact_forces(context, is_outer=(i == 0))
-            # print(f"simulation real time rate: {simulator.get_actual_realtime_rate ():.3f}")

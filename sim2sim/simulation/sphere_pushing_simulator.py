@@ -26,6 +26,7 @@ class SpherePushingSimulator(SimulatorBase):
         controll_period: float,
         closed_loop_control: bool,
         num_meters_to_move_in_manpuland_direction: Optional[float] = None,
+        skip_outer_visualization: bool = False,
     ):
         """
         :param outer_builder: Diagram builder for the outer simulation environment.
@@ -66,12 +67,15 @@ class SpherePushingSimulator(SimulatorBase):
 
     def _finalize_and_build_diagrams(self) -> None:
         """Adds visualization systems to the outer and inner diagrams and builds them."""
-        self._outer_visualizer, self._outer_meshcat = self._logger.add_visualizers(
-            self._outer_builder,
-            self._outer_scene_graph,
-            self._is_hydroelastic,
-            is_outer=True,
-        )
+        if self._skip_outer_visualization:
+            self._outer_visualizer, self._outer_meshcat = None, None
+        else:
+            self._outer_visualizer, self._outer_meshcat = self._logger.add_visualizers(
+                self._outer_builder,
+                self._outer_scene_graph,
+                self._is_hydroelastic,
+                is_outer=True,
+            )
         self._inner_visualizer, self._inner_meshcat = self._logger.add_visualizers(
             self._inner_builder,
             self._inner_scene_graph,
@@ -125,8 +129,10 @@ class SpherePushingSimulator(SimulatorBase):
                 plant.GetPositionsAndVelocities(plant_context, sphere_instance),
             )
 
-            # TODO: Move `StartRecording` and `StopRecording` into logger using `with` statement
-            visualizer.StartRecording()
+            if i == 1 or not self._skip_outer_visualization:
+                # TODO: Move `StartRecording` and `StopRecording` into logger using
+                # `with` statement
+                visualizer.StartRecording()
 
             start_time = time.time()
 
@@ -217,18 +223,20 @@ class SpherePushingSimulator(SimulatorBase):
             else:
                 self._logger.log(inner_simulation_time=time_taken_to_simulate)
 
-            visualizer.StopRecording()
-            visualizer.PublishRecording()
+            if i == 1 or not self._skip_outer_visualization:
+                visualizer.StopRecording()
+                visualizer.PublishRecording()
 
-            # TODO: Move this to the logger
-            html = meshcat.StaticHtml()
-            with open(
-                os.path.join(
-                    self._logger._logging_path, f"{'outer' if i == 0 else 'inner'}.html"
-                ),
-                "w",
-            ) as f:
-                f.write(html)
+                # TODO: Move this to the logger
+                html = meshcat.StaticHtml()
+                with open(
+                    os.path.join(
+                        self._logger._logging_path,
+                        f"{'outer' if i == 0 else 'inner'}.html",
+                    ),
+                    "w",
+                ) as f:
+                    f.write(html)
 
             context = simulator.get_mutable_context()
             self._logger.log_manipuland_poses(context, is_outer=(i == 0))

@@ -25,6 +25,7 @@ class IIWAPushInHoleSimulator(IIWAJointTrajectorySimulatorBase):
         logger: DynamicLogger,
         is_hydroelastic: bool,
         mesh_pose: List[float],
+        skip_outer_visualization: bool = False,
     ):
         """
         :param outer_builder: Diagram builder for the outer simulation environment.
@@ -43,6 +44,7 @@ class IIWAPushInHoleSimulator(IIWAJointTrajectorySimulatorBase):
             logger,
             is_hydroelastic,
             mesh_pose,
+            skip_outer_visualization,
         )
 
     def simulate(self, duration: float) -> None:
