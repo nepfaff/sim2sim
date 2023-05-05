@@ -8,6 +8,7 @@ import yaml
 import numpy as np
 from prettytable import PrettyTable
 import wandb
+import matplotlib.pyplot as plt
 
 from sim2sim.experiments import (
     run_table_pid,
@@ -138,6 +139,32 @@ def rank_based_on_final_errors(
     print(table)
 
 
+def log_performance_time_plots(
+    eval_data: List[Dict[str, float]], metric_keys: List[str], time_key: str
+):
+    """
+    Plot representation performance over simulation time and log with wandb.
+    """
+    x_data = [errors[time_key] for errors in eval_data]
+    for metric in metric_keys:
+        y_data = [errors[metric] for errors in eval_data]
+
+        fig_name = f"{metric}_over_{time_key}"
+        fig, ax = plt.subplots()
+        ax.scatter(x_data, y_data)
+        ax.set_xlabel(time_key)
+        ax.set_ylabel(metric)
+
+        for errors in eval_data:
+            ax.annotate(errors["name"], (errors[time_key], errors[metric]))
+
+        ax.autoscale()
+
+        # NOTE: This requires matplotlib version < 3.5.0
+        # (see https://github.com/plotly/plotly.py/issues/3624)
+        wandb.log({fig_name: fig})
+
+
 def rank_based_on_metrics(
     experiment_specifications: List[dict],
     logging_dir_path: str,
@@ -254,6 +281,19 @@ def rank_based_on_metrics(
             eval_data, wandb_table=True, sort_key="orientation_considered_final_error"
         )
         wandb.log({"evaluation_results": wandb_table})
+
+        log_performance_time_plots(
+            eval_data,
+            metric_keys=[
+                "trajectory_IoU_margin_01",
+                "trajectory_IoU_margin_1",
+                "orientation_considered_final_error",
+                "orientation_considered_average_error",
+                "final_translation_error",
+                "average_translation_error",
+            ],
+            time_key="simulation_time_ratio",
+        )
 
     table = create_evaluation_results_table(
         eval_data, sort_key="orientation_considered_final_error"
