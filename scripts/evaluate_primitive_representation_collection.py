@@ -170,6 +170,12 @@ def main():
                 experiment_description = copy.deepcopy(base_experiment_description)
                 experiment_description["experiment_id"] = path.name
 
+                # Write final SDF sample loss into description to enable inclusion into
+                # metrics
+                meta_data_path = os.path.join(path.path, "metadata.yaml")
+                meta_data = yaml.safe_load(open(meta_data_path, "r"))
+                experiment_description["sdf_loss"] = meta_data["final_sdf_loss"]
+
                 if len(experiment_specifications) > 0:
                     experiment_description = make_outer_deterministic(
                         experiment_specifications,
@@ -240,6 +246,7 @@ def main():
         logging_path,
         num_trajectory_iou_samples=args.num_trajectory_iou_samples,
         log_wandb=True,
+        additional_metric_keys=["sdf_loss"],
     )
 
     if logging_path_is_tmp:

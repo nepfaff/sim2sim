@@ -144,6 +144,7 @@ def rank_based_on_metrics(
     num_trajectory_iou_samples: int,
     log_wandb: bool = False,
     log_all_outer_htmls: bool = False,
+    additional_metric_keys: List[str] = [],
 ) -> None:
     def create_table_dict(
         name: str,
@@ -227,6 +228,12 @@ def rank_based_on_metrics(
             simulation_time_ratio=meta_data["time_taken_to_simulate_inner_s"]
             / meta_data["time_taken_to_simulate_outer_s"],
         )
+        for additional_metric in additional_metric_keys:
+            errors[additional_metric] = (
+                experiment_specification[additional_metric]
+                if additional_metric in experiment_specification
+                else np.nan
+            )
         eval_data.append(errors)
 
         print(f"Computing errors took {time.time()-start_time} seconds.")
