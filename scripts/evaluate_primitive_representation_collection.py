@@ -13,6 +13,7 @@ from typing import List
 import time
 import copy
 import json
+import random
 
 import wandb
 
@@ -150,13 +151,11 @@ def main():
     # Add additional experiment descriptions
     experiment_specifications: List[dict] = []
     if additional_experiment_descriptions is not None:
-        for i, additional_description_path in enumerate(
-            additional_experiment_descriptions
-        ):
+        for additional_description_path in additional_experiment_descriptions:
             additional_description = yaml.safe_load(
                 open(additional_description_path, "r")
             )
-            if i > 0:
+            if len(experiment_specifications) > 0:
                 additional_description = make_outer_deterministic(
                     experiment_specifications,
                     additional_description,
@@ -226,6 +225,13 @@ def main():
                     experiment_specifications.append(point_experiment_description)
                 else:
                     experiment_specifications.append(experiment_description)
+
+    # Shuffle experiment order for fairer runtime estimates
+    # Need to keep the first first due to deterministic outer
+    first_specification = experiment_specifications[0]
+    other_specifications = experiment_specifications[1:]
+    random.shuffle(other_specifications)
+    experiment_specifications = [first_specification, *other_specifications]
 
     print(f"Running {len(experiment_specifications)} experiments.")
 
