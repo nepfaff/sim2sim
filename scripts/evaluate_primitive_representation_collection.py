@@ -42,9 +42,14 @@ def make_outer_deterministic(
     }
 
     # No need to visualize outer sim as will be a copy of the first visualization
-    experiment_description["simulator"]["args"][
-        "skip_outer_visualization"
-    ] = skip_outer_visualization
+    if experiment_description["simulator"]["args"] is None:
+        experiment_description["simulator"]["args"] = {
+            "skip_outer_visualization": skip_outer_visualization
+        }
+    else:
+        experiment_description["simulator"]["args"][
+            "skip_outer_visualization"
+        ] = skip_outer_visualization
 
     return experiment_description
 
