@@ -49,6 +49,7 @@ class SpherePushingSimulator(SimulatorBase):
             inner_scene_graph,
             logger,
             is_hydroelastic,
+            skip_outer_visualization,
         )
 
         self._settling_time = settling_time
