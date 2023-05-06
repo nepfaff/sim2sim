@@ -140,23 +140,30 @@ def rank_based_on_final_errors(
 
 
 def log_performance_time_plots(
-    eval_data: List[Dict[str, float]], metric_keys: List[str], time_key: str
+    eval_data: List[Dict[str, float]],
+    metric_keys: List[str],
+    time_key: str,
+    use_log_scale: bool = True,
 ):
     """
     Plot representation performance over simulation time and log with wandb.
     """
-    x_data = [errors[time_key] for errors in eval_data]
+    scaler = (lambda x: np.log(x)) if use_log_scale else (lambda x: x)
+
+    x_data = [scaler(errors[time_key]) for errors in eval_data]
     for metric in metric_keys:
-        y_data = [errors[metric] for errors in eval_data]
+        y_data = [scaler(errors[metric]) for errors in eval_data]
 
         fig_name = f"{metric}_over_{time_key}"
         fig, ax = plt.subplots()
         ax.scatter(x_data, y_data)
-        ax.set_xlabel(time_key)
-        ax.set_ylabel(metric)
+        ax.set_xlabel(f"log({time_key})" if use_log_scale else time_key)
+        ax.set_ylabel(f"log({metric})" if use_log_scale else metric)
 
         for errors in eval_data:
-            ax.annotate(errors["name"], (errors[time_key], errors[metric]))
+            ax.annotate(
+                errors["name"], (scaler(errors[time_key]), scaler(errors[metric]))
+            )
 
         ax.autoscale()
 
