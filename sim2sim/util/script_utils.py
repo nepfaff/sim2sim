@@ -24,6 +24,8 @@ from sim2sim.util import (
     orientation_considered_average_displacement_error,
     final_displacement_error_translation_only,
     average_displacement_error_translation_only,
+    average_mean_contact_point_gradient_magnitude,
+    average_generalized_contact_force_gradient_magnitude,
 )
 
 ENTRYPOINTS = {
@@ -170,6 +172,22 @@ def log_performance_time_plots(
         # NOTE: This requires matplotlib version < 3.5.0
         # (see https://github.com/plotly/plotly.py/issues/3624)
         wandb.log({fig_name: fig})
+        plt.close(fig)
+
+
+def process_contact_points_arr(arr: np.ndarray) -> np.ndarray:
+    max_count = 0
+    for el in arr:
+        max_count = max(max_count, len(el))
+
+    return np.array(
+        [
+            np.concatenate([el, np.zeros((max_count - len(el), 3))], axis=0)
+            if len(el) > 0
+            else np.zeros((max_count, 3))
+            for el in arr
+        ]
+    )
 
 
 def rank_based_on_metrics(
@@ -188,6 +206,8 @@ def rank_based_on_metrics(
         orientation_considered_average_error: float,
         final_translation_error: float,
         average_translation_error: float,
+        average_mean_contact_point_gradient_magnitude: float,
+        average_generalized_contact_force_gradient_magnitude: float,
         simulation_time: float,
         simulation_time_ratio: float,  # inner_time / outer_time
     ) -> Dict[str, Union[str, float]]:
@@ -199,6 +219,8 @@ def rank_based_on_metrics(
             "orientation_considered_average_error": orientation_considered_average_error,
             "final_translation_error": final_translation_error,
             "average_translation_error": average_translation_error,
+            "average_mean_contact_point_gradient_magnitude": average_mean_contact_point_gradient_magnitude,
+            "average_generalized_contact_force_gradient_magnitude": average_generalized_contact_force_gradient_magnitude,
             "simulation_time": simulation_time,
             "simulation_time_ratio": simulation_time_ratio,
         }
@@ -221,12 +243,39 @@ def rank_based_on_metrics(
         )
 
         time_logs_path = os.path.join(logging_path, "time_logs")
+        # States
         outer_states = np.loadtxt(
             os.path.join(time_logs_path, "outer_manipuland_poses.txt")
         )
         inner_states = np.loadtxt(
             os.path.join(time_logs_path, "inner_manipuland_poses.txt")
         )
+        # Generalized contact forces
+        inner_generalized_contact_force_torques = np.loadtxt(
+            os.path.join(time_logs_path, "inner_manipuland_contact_forces.txt")
+        )
+        inner_generalized_contact_forces = inner_generalized_contact_force_torques[
+            :, 3:
+        ]
+        # Contact points
+        hydroelastic_contact_points_raw = np.load(
+            os.path.join(
+                time_logs_path, "inner_hydroelastic_contact_result_centroids.npy"
+            ),
+            allow_pickle=True,
+        )
+        point_contact_points_raw = np.load(
+            os.path.join(
+                time_logs_path, "inner_point_contact_result_contact_points.npy"
+            ),
+            allow_pickle=True,
+        )
+        contact_points_raw = (
+            hydroelastic_contact_points_raw
+            if any(hydroelastic_contact_points_raw)
+            else point_contact_points_raw
+        )
+        inner_contact_points = process_contact_points_arr(contact_points_raw)
 
         meta_data_path = os.path.join(logging_path, "meta_data.yaml")
         meta_data = yaml.safe_load(open(meta_data_path))
@@ -258,6 +307,12 @@ def rank_based_on_metrics(
             average_translation_error=average_displacement_error_translation_only(
                 outer_states, inner_states
             ),
+            average_mean_contact_point_gradient_magnitude=average_mean_contact_point_gradient_magnitude(
+                inner_contact_points, inner_states
+            ),
+            average_generalized_contact_force_gradient_magnitude=average_generalized_contact_force_gradient_magnitude(
+                inner_generalized_contact_forces
+            ),
             simulation_time=meta_data["time_taken_to_simulate_inner_s"],
             simulation_time_ratio=meta_data["time_taken_to_simulate_inner_s"]
             / meta_data["time_taken_to_simulate_outer_s"],
@@ -285,7 +340,7 @@ def rank_based_on_metrics(
 
     if log_wandb:
         wandb_table = create_evaluation_results_table(
-            eval_data, wandb_table=True, sort_key="orientation_considered_final_error"
+            eval_data, wandb_table=True, sort_key="orientation_considered_average_error"
         )
         wandb.log({"evaluation_results": wandb_table})
 
@@ -298,12 +353,14 @@ def rank_based_on_metrics(
                 "orientation_considered_average_error",
                 "final_translation_error",
                 "average_translation_error",
+                "average_mean_contact_point_gradient_magnitude",
+                "average_generalized_contact_force_gradient_magnitude",
             ],
             time_key="simulation_time_ratio",
         )
 
     table = create_evaluation_results_table(
-        eval_data, sort_key="orientation_considered_final_error"
+        eval_data, sort_key="orientation_considered_average_error"
     )
     print("\n\nEvaluation results:\n")
     print(table)

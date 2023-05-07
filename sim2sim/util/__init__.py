@@ -33,4 +33,6 @@ from .metrics import (
     trajectory_IoU,
     orientation_considered_average_displacement_error,
     orientation_considered_final_displacement_error,
+    average_mean_contact_point_gradient_magnitude,
+    average_generalized_contact_force_gradient_magnitude,
 )

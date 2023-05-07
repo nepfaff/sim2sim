@@ -228,3 +228,49 @@ def orientation_considered_average_displacement_error(
     mean_error = np.mean(pointwise_error, axis=-1)  # Shape (N,)
     ade = np.mean(mean_error)
     return ade
+
+
+def average_mean_contact_point_gradient_magnitude(
+    contact_points: np.ndarray, states: np.ndarray
+) -> float:
+    """
+    :param contact_points: Contact points of shape (N,M,3) where M is the number of
+        contact points at timestep N.
+    :param states: The states containing the object poses for transforming the contact
+        points into the object frame.
+    """
+    assert len(contact_points.shape) == 3  # Shape (N, M, 3)
+
+    # Transform contact points into object frame
+    X_WO = _states_to_poses(states)  # Shape (N,4,4)
+    X_OW = np.linalg.inv(X_WO)
+    points_object_frame = (
+        contact_points @ X_OW[:, :3, :3].transpose((0, 2, 1))
+        + X_OW[:, :3, 3][:, np.newaxis, :]
+    )  # Shape (N,M,3)
+
+    contact_point_magnitudes = np.linalg.norm(
+        points_object_frame, axis=-1
+    )  # Shape (N,M)
+    mean_contact_point_magnitudes = np.mean(
+        contact_point_magnitudes, axis=-1
+    )  # Shape (N,)
+    mean_contact_point_magnitude_gradients = np.gradient(
+        mean_contact_point_magnitudes, axis=0
+    )  # Shape (N,3)
+    return np.mean(np.abs(mean_contact_point_magnitude_gradients))
+
+
+def average_generalized_contact_force_gradient_magnitude(
+    generalized_contact_forces: np.ndarray,
+) -> float:
+    """
+    :param generalized_contact_forces: Generalized contact forces of shape (N,3).
+    """
+    generalized_contact_force_magnitudes = np.linalg.norm(
+        generalized_contact_forces, axis=-1
+    )  # Shape (N,)
+    generalized_contact_force_magnitude_gradients = np.gradient(
+        generalized_contact_force_magnitudes
+    )  # Shape (N,)
+    return np.mean(np.abs(generalized_contact_force_magnitude_gradients))
