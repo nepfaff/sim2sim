@@ -1,5 +1,5 @@
 # Unique identifier for this experiment for logging
-experiment_id: "table_pid_tomato_can_raw_tsdf_vs_spheres_equation_error"
+experiment_id: "coacd"
 
 outer_env:
   contact_model: "hydroelastic_with_fallback"
@@ -7,7 +7,7 @@ outer_env:
   obj_name: "ycb_tomato_soup_can"
 
 inner_env:
-  contact_model: "point"
+  contact_model: "hydroelastic_with_fallback"
   solver: "sap"
   obj_name: "ycb_tomato_soup_can"
 
@@ -61,9 +61,11 @@ outer_mesh_processor:
   args:
 
 inner_mesh_processor:
-  class: "IdentityPrimitiveMeshProcessor"
+  class: "CoACDMeshProcessor"
   args:
-    primitive_info_path: ./data/ycb_tomato_soup_can/tomato_soup_can_tsdf_dualsdf_spheres.pkl
+      mesh_name: ./data/ycb_tomato_soup_can/tomato_soup_can_tsdf.obj
+      mesh_dir: "tmp"
+      preview_with_trimesh: false
 
 outer_physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
@@ -88,8 +90,6 @@ inner_physical_property_estimator:
     center_of_mass: [-0.0032, 0.0062, -0.0124]
 
 simulator:
-  class: "EquationErrorBasicSimulator"
+  class: "BasicSimulator"
   args:
-    manipuland_name: "ycb_tomato_soup_can"
-    reset_seconds: 0.1
  

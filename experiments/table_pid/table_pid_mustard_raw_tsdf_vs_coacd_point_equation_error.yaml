@@ -1,27 +1,27 @@
 # Unique identifier for this experiment for logging
-experiment_id: "table_pid_tomato_can_raw_tsdf_vs_spheres_equation_error"
+experiment_id: "coacd_point"
 
 outer_env:
   contact_model: "hydroelastic_with_fallback"
   solver: "sap"
-  obj_name: "ycb_tomato_soup_can"
+  obj_name: "ycb_mustard_bottle"
 
 inner_env:
   contact_model: "point"
   solver: "sap"
-  obj_name: "ycb_tomato_soup_can"
+  obj_name: "ycb_mustard_bottle"
 
 script:
   name: "table_pid"
   args:
-    sim_duration: 3.0
+    sim_duration: 2.0
     no_command_time: 0.25
     timestep: 0.001
     final_table_angle: 0.7854
     logging_frequency_hz: 1000
-    manipuland_directive: "../../models/manipulands/tomato_can_manipuland_directive.yaml"
-    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
-    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
+    manipuland_directive: "../../models/manipulands/mustard_bottle_manipuland_directive.yaml"
+    manipuland_base_link_name: "ycb_mustard_bottle_base_link"
+    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.62]
     save_raw_mesh: false
     hydroelastic_manipuland: true # No effect if 'contact_model' is 'point'
     is_pipeline_comparison: True
@@ -32,8 +32,8 @@ logger:
   class: "DynamicLogger"
   args:
     label_to_mask: -1 # NOTE: Does not correspond to anything
-    manipuland_name: "ycb_tomato_soup_can"
-    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
+    manipuland_name: "ycb_mustard_bottle"
+    manipuland_base_link_name: "ycb_mustard_bottle_base_link"
     kProximity: false
 
 outer_image_generator:
@@ -47,49 +47,51 @@ inner_image_generator:
 outer_inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
-    mesh_path: ./data/ycb_tomato_soup_can/tomato_soup_can_tsdf.obj
-    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
+    mesh_path: ./data/ycb_mustard_bottle/mustard_ring_tsdf.obj
+    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.62]
 
 inner_inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
-    mesh_path: ./data/ycb_tomato_soup_can/tomato_soup_can_tsdf.obj
-    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
+    mesh_path: ./data/ycb_mustard_bottle/mustard_ring_tsdf.obj
+    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.62]
 
 outer_mesh_processor:
   class: "IdentityMeshProcessor"
   args:
 
 inner_mesh_processor:
-  class: "IdentityPrimitiveMeshProcessor"
+  class: "CoACDMeshProcessor"
   args:
-    primitive_info_path: ./data/ycb_tomato_soup_can/tomato_soup_can_tsdf_dualsdf_spheres.pkl
+      mesh_name: ./data/ycb_mustard_bottle/mustard_ring_tsdf.obj
+      mesh_dir: "tmp"
+      preview_with_trimesh: false
 
 outer_physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
   args:
-    mass: 0.348
+    mass: 0.435
     inertia: [
-      [4.0049e-04, 2.8689e-06, -2.7256e-06],
-      [2.8689e-06, 3.9849e-04, -1.0914e-05],
-      [-2.7256e-06, -1.0914e-05, 2.1282e-04]
+      [ 1.0618e-03, -4.7439e-06, -4.0405e-06],
+      [-4.7439e-06, 9.3767e-04, -1.6208e-05],
+      [-4.0405e-06, -1.6208e-05, 2.4569e-04]
     ]
-    center_of_mass: [-0.0032, 0.0062, -0.0124]
+    center_of_mass: [ 0.0014, 0.0016, -0.0124]
 
 inner_physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
   args:
-    mass: 0.348
+    mass: 0.435
     inertia: [
-      [4.0049e-04, 2.8689e-06, -2.7256e-06],
-      [2.8689e-06, 3.9849e-04, -1.0914e-05],
-      [-2.7256e-06, -1.0914e-05, 2.1282e-04]
+      [ 1.0618e-03, -4.7439e-06, -4.0405e-06],
+      [-4.7439e-06, 9.3767e-04, -1.6208e-05],
+      [-4.0405e-06, -1.6208e-05, 2.4569e-04]
     ]
-    center_of_mass: [-0.0032, 0.0062, -0.0124]
+    center_of_mass: [ 0.0014, 0.0016, -0.0124]
 
 simulator:
   class: "EquationErrorBasicSimulator"
   args:
-    manipuland_name: "ycb_tomato_soup_can"
+    manipuland_name: "ycb_mustard_bottle"
     reset_seconds: 0.1
  

@@ -1,5 +1,5 @@
 # Unique identifier for this experiment for logging
-experiment_id: "table_pid_tomato_can_raw_tsdf_vs_spheres_equation_error"
+experiment_id: "coacd_point"
 
 outer_env:
   contact_model: "hydroelastic_with_fallback"
@@ -12,29 +12,34 @@ inner_env:
   obj_name: "ycb_tomato_soup_can"
 
 script:
-  name: "table_pid"
+  name: "sphere_pushing"
   args:
-    sim_duration: 3.0
-    no_command_time: 0.25
+    sim_duration: 1.0
     timestep: 0.001
-    final_table_angle: 0.7854
     logging_frequency_hz: 1000
     manipuland_directive: "../../models/manipulands/tomato_can_manipuland_directive.yaml"
     manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
-    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
+    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.07]
     save_raw_mesh: false
     hydroelastic_manipuland: true # No effect if 'contact_model' is 'point'
+    sphere_starting_position: [0.2, 0.0, 0.07]
+    sphere_pid_gains:
+      kp: 100.0
+      ki: 1.0
+      kd: 20.0
+    sphere_radius: 0.02
     is_pipeline_comparison: True
 
 # Component specifications
 # 'args' are constructor arguments that are not part of the base class constructors
 logger:
-  class: "DynamicLogger"
+  class: "SpherePushingLogger"
   args:
     label_to_mask: -1 # NOTE: Does not correspond to anything
     manipuland_name: "ycb_tomato_soup_can"
     manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
     kProximity: false
+    sphere_name: "sphere"
 
 outer_image_generator:
   class: "NoneImageGenerator"
@@ -48,22 +53,24 @@ outer_inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
     mesh_path: ./data/ycb_tomato_soup_can/tomato_soup_can_tsdf.obj
-    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
+    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.07]
 
 inner_inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
     mesh_path: ./data/ycb_tomato_soup_can/tomato_soup_can_tsdf.obj
-    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
+    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.07]
 
 outer_mesh_processor:
   class: "IdentityMeshProcessor"
   args:
 
 inner_mesh_processor:
-  class: "IdentityPrimitiveMeshProcessor"
+  class: "CoACDMeshProcessor"
   args:
-    primitive_info_path: ./data/ycb_tomato_soup_can/tomato_soup_can_tsdf_dualsdf_spheres.pkl
+      mesh_name: ./data/ycb_tomato_soup_can/tomato_soup_can_tsdf.obj
+      mesh_dir: "tmp"
+      preview_with_trimesh: false
 
 outer_physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
@@ -88,8 +95,12 @@ inner_physical_property_estimator:
     center_of_mass: [-0.0032, 0.0062, -0.0124]
 
 simulator:
-  class: "EquationErrorBasicSimulator"
+  class: "EquationErrorSpherePushingSimulator"
   args:
-    manipuland_name: "ycb_tomato_soup_can"
+    settling_time: 0.2
+    manipuland_name: ycb_tomato_soup_can
+    controll_period: 0.01
+    closed_loop_control: false
+    num_meters_to_move_in_manpuland_direction: 0.6
     reset_seconds: 0.1
  

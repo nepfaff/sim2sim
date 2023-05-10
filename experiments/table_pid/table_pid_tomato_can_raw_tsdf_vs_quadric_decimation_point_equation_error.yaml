@@ -1,5 +1,5 @@
 # Unique identifier for this experiment for logging
-experiment_id: "table_pid_tomato_can_raw_tsdf_vs_spheres_equation_error"
+experiment_id: "quadric_decimation_500_point"
 
 outer_env:
   contact_model: "hydroelastic_with_fallback"
@@ -61,9 +61,9 @@ outer_mesh_processor:
   args:
 
 inner_mesh_processor:
-  class: "IdentityPrimitiveMeshProcessor"
+  class: "QuadricDecimationMeshProcessor"
   args:
-    primitive_info_path: ./data/ycb_tomato_soup_can/tomato_soup_can_tsdf_dualsdf_spheres.pkl
+    target_triangle_num: 500
 
 outer_physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"

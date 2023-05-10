@@ -1,5 +1,5 @@
 # Unique identifier for this experiment for logging
-experiment_id: "table_pid_tomato_can_raw_tsdf_vs_spheres_equation_error"
+experiment_id: "table_pid_tomato_can_raw_tsdf_vs_spheres"
 
 outer_env:
   contact_model: "hydroelastic_with_fallback"
@@ -88,8 +88,6 @@ inner_physical_property_estimator:
     center_of_mass: [-0.0032, 0.0062, -0.0124]
 
 simulator:
-  class: "EquationErrorBasicSimulator"
+  class: "BasicSimulator"
   args:
-    manipuland_name: "ycb_tomato_soup_can"
-    reset_seconds: 0.1
  
