@@ -27,7 +27,7 @@ class IdentityInverseGraphics(InverseGraphicsBase):
         """
         super().__init__(images, intrinsics, extrinsics, depth, labels, masks)
 
-        self._mesh = o3d.io.read_triangle_mesh(mesh_path)
+        self._mesh = o3d.io.read_triangle_mesh(mesh_path, enable_post_processing=True)
         self._mesh_pose = np.asarray(mesh_pose)
 
     def run(self) -> Tuple[o3d.geometry.TriangleMesh, np.ndarray]:
