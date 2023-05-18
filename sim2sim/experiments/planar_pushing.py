@@ -1,6 +1,6 @@
 import os
 import pathlib
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Union
 
 from pydrake.all import (
     LoadModelDirectives,
@@ -14,6 +14,7 @@ from pydrake.all import (
     MultibodyPlantConfig,
     AddMultibodyPlant,
     Sphere,
+    Box,
     SpatialInertia,
     UnitInertia,
     PrismaticJoint,
@@ -26,10 +27,10 @@ from manipulation.scenarios import AddShape
 
 from sim2sim.simulation import (
     BasicSimulator,
-    SpherePushingSimulator,
-    EquationErrorSpherePushingSimulator,
+    PlanarPushingSimulator,
+    EquationErrorPlanarPushingSimulator,
 )
-from sim2sim.logging import SpherePushingLogger
+from sim2sim.logging import PlanarPushingLogger
 from sim2sim.util import (
     get_parser,
     create_processed_mesh_directive_str,
@@ -60,7 +61,7 @@ SCENE_DIRECTIVE = "../../models/random_force/random_force_directive.yaml"
 
 # TODO: Add type info using base classes
 LOGGERS = {
-    "SpherePushingLogger": SpherePushingLogger,
+    "PlanarPushingLogger": PlanarPushingLogger,
 }
 IMAGE_GENERATORS = {
     "NoneImageGenerator": NoneImageGenerator,
@@ -86,21 +87,38 @@ PHYSICAL_PROPERTY_ESTIMATOR = {
 }
 SIMULATORS = {
     "BasicSimulator": BasicSimulator,
-    "SpherePushingSimulator": SpherePushingSimulator,
-    "EquationErrorSpherePushingSimulator": EquationErrorSpherePushingSimulator,
+    "PlanarPushingSimulator": PlanarPushingSimulator,
+    "EquationErrorPlanarPushingSimulator": EquationErrorPlanarPushingSimulator,
 }
 
 
-def add_sphere(
-    plant: MultibodyPlant, radius: float = 0.05, position: List[float] = [0.0, 0.0, 0.0]
+def add_pusher_geometry(
+    plant: MultibodyPlant,
+    type: str,
+    dimensions: Union[float, List[float]],
+    position: List[float] = [0.0, 0.0, 0.0],
 ) -> None:
-    sphere = AddShape(plant, Sphere(radius), "sphere", color=[0.9, 0.5, 0.5, 1.0])
-    _ = plant.AddRigidBody(
-        "false_body1", sphere, SpatialInertia(0, [0, 0, 0], UnitInertia(0, 0, 0))
+    if type.lower() == "sphere":
+        assert isinstance(dimensions, float)
+        pusher_geometry = Sphere(dimensions)
+    elif type.lower() == "box":
+        assert isinstance(dimensions, List) and len(dimensions) == 3
+        pusher_geometry = Box(dimensions[0], dimensions[1], dimensions[2])
+    else:
+        print(f"Unknown pusher geometry: {type}")
+        exit()
+    pusher_shape = AddShape(
+        plant,
+        pusher_geometry,
+        "pusher_geometry",
+        color=[0.9, 0.5, 0.5, 1.0],
     )
-    sphere_x = plant.AddJoint(
+    _ = plant.AddRigidBody(
+        "false_body1", pusher_shape, SpatialInertia(0, [0, 0, 0], UnitInertia(0, 0, 0))
+    )
+    pusher_geometry_x = plant.AddJoint(
         PrismaticJoint(
-            "sphere_x",
+            "pusher_geometry_x",
             plant.world_frame(),
             plant.GetFrameByName("false_body1"),
             [1, 0, 0],
@@ -108,14 +126,14 @@ def add_sphere(
             10.0,
         )
     )
-    sphere_x.set_default_translation(position[0])
-    plant.AddJointActuator("sphere_x", sphere_x)
+    pusher_geometry_x.set_default_translation(position[0])
+    plant.AddJointActuator("pusher_geometry_x", pusher_geometry_x)
     _ = plant.AddRigidBody(
-        "false_body2", sphere, SpatialInertia(0, [0, 0, 0], UnitInertia(0, 0, 0))
+        "false_body2", pusher_shape, SpatialInertia(0, [0, 0, 0], UnitInertia(0, 0, 0))
     )
-    sphere_y = plant.AddJoint(
+    pusher_geometry_y = plant.AddJoint(
         PrismaticJoint(
-            "sphere_y",
+            "pusher_geometry_y",
             plant.GetFrameByName("false_body1"),
             plant.GetFrameByName("false_body2"),
             [0, 1, 0],
@@ -123,20 +141,20 @@ def add_sphere(
             10.0,
         )
     )
-    sphere_y.set_default_translation(position[1])
-    plant.AddJointActuator("sphere_y", sphere_y)
-    sphere_z = plant.AddJoint(
+    pusher_geometry_y.set_default_translation(position[1])
+    plant.AddJointActuator("pusher_geometry_y", pusher_geometry_y)
+    pusher_geometry_z = plant.AddJoint(
         PrismaticJoint(
-            "sphere_z",
+            "pusher_geometry_z",
             plant.GetFrameByName("false_body2"),
-            plant.GetFrameByName("sphere"),
+            plant.GetFrameByName("pusher_geometry"),
             [0, 0, 1],
             -10.0,
             10.0,
         )
     )
-    sphere_z.set_default_translation(position[2])
-    plant.AddJointActuator("sphere_z", sphere_z)
+    pusher_geometry_z.set_default_translation(position[2])
+    plant.AddJointActuator("pusher_geometry_z", pusher_geometry_z)
 
 
 def create_env(
@@ -144,14 +162,15 @@ def create_env(
     timestep: float,
     manipuland_base_link_name: str,
     manipuland_pose: RigidTransform,
-    sphere_starting_position: List[float],
-    sphere_pid_gains: Dict[str, float],
+    pusher_geometry_starting_position: List[float],
+    pusher_geometry_pid_gains: Dict[str, float],
     hydroelastic_manipuland: bool,
-    sphere_radius: float,
+    pusher_geometry_type: str,
+    pusher_geometry_dimensions: Union[float, List[float]],
     directive_files: List[str] = [],
     directive_strs: List[str] = [],
 ) -> Tuple[DiagramBuilder, SceneGraph, MultibodyPlant]:
-    """Creates the sphere pushing simulation environment without building it."""
+    """Creates the planar pushing simulation environment without building it."""
 
     builder = DiagramBuilder()
     multibody_plant_config = MultibodyPlantConfig(
@@ -168,14 +187,19 @@ def create_env(
         directive = LoadModelDirectivesFromString(directive_str)
         ProcessModelDirectives(directive, parser)
 
-    add_sphere(plant, radius=sphere_radius, position=sphere_starting_position)
+    add_pusher_geometry(
+        plant,
+        type=pusher_geometry_type,
+        dimensions=pusher_geometry_dimensions,
+        position=pusher_geometry_starting_position,
+    )
     if hydroelastic_manipuland:
         print(
-            "Enabling hydroelastic for sphere. This might take a while. Increase the "
+            "Enabling hydroelastic for pusher_geometry. This might take a while. Increase the "
             + "resolution hint to make this faster."
         )
-        # Make sphere complient hydroelastic
-        sphere = plant.GetBodyByName("sphere")
+        # Make pusher_geometry complient hydroelastic
+        pusher_geometry = plant.GetBodyByName("pusher_geometry")
         new_proximity_properties = ProximityProperties()
         # NOTE: Setting hydroelastic properties becomes slow as the resolution hint decreases
         AddCompliantHydroelasticProperties(
@@ -183,7 +207,7 @@ def create_env(
             hydroelastic_modulus=1e8,
             properties=new_proximity_properties,
         )
-        geometry_ids = plant.GetCollisionGeometriesForBody(sphere)
+        geometry_ids = plant.GetCollisionGeometriesForBody(pusher_geometry)
         for geometry_id in geometry_ids:
             inspector = scene_graph.model_inspector()
             const_proximity_properties = inspector.GetProximityProperties(geometry_id)
@@ -197,44 +221,52 @@ def create_env(
                 RoleAssign.kReplace,
             )
 
-    # Sphere state source
-    sphere_state_source = builder.AddSystem(SphereStateSource(sphere_starting_position))
-    sphere_state_source.set_name("sphere_state_source")
+    # pusher_geometry state source
+    pusher_geometry_state_source = builder.AddSystem(
+        SphereStateSource(pusher_geometry_starting_position)
+    )
+    pusher_geometry_state_source.set_name("pusher_geometry_state_source")
 
-    # Sphere controller
-    sphere_controller_plant = MultibodyPlant(time_step=timestep)
-    sphere_controller_plant.set_name("sphere_controller_plant")
-    add_sphere(sphere_controller_plant, radius=sphere_radius)
-    sphere_controller_plant.Finalize()
-    sphere_inverse_dynamics_controller = builder.AddSystem(
+    # pusher_geometry controller
+    pusher_geometry_controller_plant = MultibodyPlant(time_step=timestep)
+    pusher_geometry_controller_plant.set_name("pusher_geometry_controller_plant")
+    add_pusher_geometry(
+        pusher_geometry_controller_plant,
+        type=pusher_geometry_type,
+        dimensions=pusher_geometry_dimensions,
+    )
+    pusher_geometry_controller_plant.Finalize()
+    pusher_geometry_inverse_dynamics_controller = builder.AddSystem(
         InverseDynamicsController(
-            sphere_controller_plant,
-            kp=[sphere_pid_gains["kp"]] * 3,
-            ki=[sphere_pid_gains["ki"]] * 3,
-            kd=[sphere_pid_gains["kd"]] * 3,
+            pusher_geometry_controller_plant,
+            kp=[pusher_geometry_pid_gains["kp"]] * 3,
+            ki=[pusher_geometry_pid_gains["ki"]] * 3,
+            kd=[pusher_geometry_pid_gains["kd"]] * 3,
             has_reference_acceleration=False,
         )
     )
-    sphere_inverse_dynamics_controller.set_name("sphere_inverse_dynamics_controller")
+    pusher_geometry_inverse_dynamics_controller.set_name(
+        "pusher_geometry_inverse_dynamics_controller"
+    )
 
     plant.SetDefaultFreeBodyPose(
         plant.GetBodyByName(manipuland_base_link_name), manipuland_pose
     )
     plant.Finalize()
 
-    # Connect sphere state source and controller to plant
-    sphere_instance = plant.GetModelInstanceByName("sphere")
+    # Connect pusher_geometry state source and controller to plant
+    pusher_geometry_instance = plant.GetModelInstanceByName("pusher_geometry")
     builder.Connect(
-        plant.get_state_output_port(sphere_instance),
-        sphere_inverse_dynamics_controller.get_input_port_estimated_state(),
+        plant.get_state_output_port(pusher_geometry_instance),
+        pusher_geometry_inverse_dynamics_controller.get_input_port_estimated_state(),
     )
     builder.Connect(
-        sphere_inverse_dynamics_controller.get_output_port_control(),
-        plant.get_actuation_input_port(sphere_instance),
+        pusher_geometry_inverse_dynamics_controller.get_output_port_control(),
+        plant.get_actuation_input_port(pusher_geometry_instance),
     )
     builder.Connect(
-        sphere_state_source.get_output_port(),
-        sphere_inverse_dynamics_controller.get_input_port_desired_state(),
+        pusher_geometry_state_source.get_output_port(),
+        pusher_geometry_inverse_dynamics_controller.get_input_port_desired_state(),
     )
 
     return builder, scene_graph, plant
@@ -242,15 +274,16 @@ def create_env(
 
 def run_pipeline(
     params: dict,
-    logger: SpherePushingLogger,
+    logger: PlanarPushingLogger,
     timestep: float,
     manipuland_base_link_name: str,
     manipuland_default_pose: RigidTransform,
     save_raw_mesh: bool,
     hydroelastic_manipuland: bool,
-    sphere_starting_position: List[float],
-    sphere_pid_gains: Dict[str, float],
-    sphere_radius: float,
+    pusher_geometry_starting_position: List[float],
+    pusher_geometry_pid_gains: Dict[str, float],
+    pusher_geometry_type: str,
+    pusher_geometry_dimensions: Union[float, List[float]],
     scene_directive_path: str,
     manipuland_directive_path: str,
     prefix: str = "",
@@ -269,9 +302,10 @@ def run_pipeline(
         timestep=timestep,
         manipuland_base_link_name=manipuland_base_link_name,
         manipuland_pose=manipuland_default_pose,
-        sphere_starting_position=sphere_starting_position,
-        sphere_pid_gains=sphere_pid_gains,
-        sphere_radius=sphere_radius,
+        pusher_geometry_starting_position=pusher_geometry_starting_position,
+        pusher_geometry_pid_gains=pusher_geometry_pid_gains,
+        pusher_geometry_type=pusher_geometry_type,
+        pusher_geometry_dimensions=pusher_geometry_dimensions,
         hydroelastic_manipuland=hydroelastic_manipuland,
         directive_files=[scene_directive_path, manipuland_directive_path],
     )
@@ -407,9 +441,10 @@ def run_pipeline(
         timestep=timestep,
         env_params=params[f"{prefix}env"],
         manipuland_base_link_name=manipuland_base_link_name,
-        sphere_starting_position=sphere_starting_position,
-        sphere_pid_gains=sphere_pid_gains,
-        sphere_radius=sphere_radius,
+        pusher_geometry_starting_position=pusher_geometry_starting_position,
+        pusher_geometry_pid_gains=pusher_geometry_pid_gains,
+        pusher_geometry_type=pusher_geometry_type,
+        pusher_geometry_dimensions=pusher_geometry_dimensions,
         hydroelastic_manipuland=hydroelastic_manipuland,
         directive_files=[scene_directive_path],
         directive_strs=[processed_mesh_directive],
@@ -421,7 +456,7 @@ def run_pipeline(
     return builder, scene_graph, plant
 
 
-def run_sphere_pushing(
+def run_planar_pushing(
     logging_path: str,
     params: dict,
     sim_duration: float,
@@ -432,13 +467,14 @@ def run_sphere_pushing(
     manipuland_default_pose: str,
     save_raw_mesh: bool,
     hydroelastic_manipuland: bool,
-    sphere_starting_position: List[float],
-    sphere_pid_gains: Dict[str, float],
-    sphere_radius: float,
+    pusher_geometry_starting_position: List[float],
+    pusher_geometry_pid_gains: Dict[str, float],
+    pusher_geometry_type: str,
+    pusher_geometry_dimensions: Union[float, List[float]],
     is_pipeline_comparison: bool,
 ):
     """
-    Experiment entrypoint for the sphere pushing scene.
+    Experiment entrypoint for the planar pushing scene.
 
     :param logging_path: The path to log the data to.
     :param params: The experiment yaml file dict.
@@ -453,10 +489,12 @@ def run_sphere_pushing(
     :param save_raw_mesh: Whether to save the raw mesh from inverse graphics.
     :param hydroelastic_manipuland: Whether to use hydroelastic or point contact for the
         inner manipuland.
-    :param sphere_starting_position: The starting position [x, y, z] of the sphere.
-    :param sphere_pid_gains: The PID gains of the inverse dynamics controller. Must
+    :param pusher_geometry_starting_position: The starting position [x, y, z] of the pusher_geometry.
+    :param pusher_geometry_pid_gains: The PID gains of the inverse dynamics controller. Must
         contain keys "kp", "ki", and "kd".
-    :param sphere_radius: The sphere radius in meters.
+    :param pusher_geometry_type: The pusher geometry type. "sphere" or "box".
+    :param pusher_geometry_dimensions: The dimensions for the pusher geometry. Radius
+        for a pusher_geometry and [W,D,H] for a pusher geometry.
     :param is_pipeline_comparison: Whether it is a sim2sim pipeline comparison experiment.
     """
     scene_directive_path = os.path.join(
@@ -487,9 +525,10 @@ def run_sphere_pushing(
             manipuland_default_pose=manipuland_default_pose,
             save_raw_mesh=save_raw_mesh,
             hydroelastic_manipuland=hydroelastic_manipuland,
-            sphere_starting_position=sphere_starting_position,
-            sphere_pid_gains=sphere_pid_gains,
-            sphere_radius=sphere_radius,
+            pusher_geometry_starting_position=pusher_geometry_starting_position,
+            pusher_geometry_pid_gains=pusher_geometry_pid_gains,
+            pusher_geometry_type=pusher_geometry_type,
+            pusher_geometry_dimensions=pusher_geometry_dimensions,
             scene_directive_path=scene_directive_path,
             manipuland_directive_path=manipuland_directive_path,
         )
@@ -503,9 +542,10 @@ def run_sphere_pushing(
             manipuland_default_pose=manipuland_default_pose,
             save_raw_mesh=save_raw_mesh,
             hydroelastic_manipuland=hydroelastic_manipuland,
-            sphere_starting_position=sphere_starting_position,
-            sphere_pid_gains=sphere_pid_gains,
-            sphere_radius=sphere_radius,
+            pusher_geometry_starting_position=pusher_geometry_starting_position,
+            pusher_geometry_pid_gains=pusher_geometry_pid_gains,
+            pusher_geometry_type=pusher_geometry_type,
+            pusher_geometry_dimensions=pusher_geometry_dimensions,
             scene_directive_path=scene_directive_path,
             manipuland_directive_path=manipuland_directive_path,
         )
@@ -515,9 +555,10 @@ def run_sphere_pushing(
             timestep=timestep,
             manipuland_base_link_name=manipuland_base_link_name,
             manipuland_pose=manipuland_default_pose,
-            sphere_starting_position=sphere_starting_position,
-            sphere_pid_gains=sphere_pid_gains,
-            sphere_radius=sphere_radius,
+            pusher_geometry_starting_position=pusher_geometry_starting_position,
+            pusher_geometry_pid_gains=pusher_geometry_pid_gains,
+            pusher_geometry_type=pusher_geometry_type,
+            pusher_geometry_dimensions=pusher_geometry_dimensions,
             hydroelastic_manipuland=hydroelastic_manipuland,
             directive_files=[scene_directive_path, manipuland_directive_path],
         )
@@ -530,9 +571,10 @@ def run_sphere_pushing(
             manipuland_default_pose=manipuland_default_pose,
             save_raw_mesh=save_raw_mesh,
             hydroelastic_manipuland=hydroelastic_manipuland,
-            sphere_starting_position=sphere_starting_position,
-            sphere_pid_gains=sphere_pid_gains,
-            sphere_radius=sphere_radius,
+            pusher_geometry_starting_position=pusher_geometry_starting_position,
+            pusher_geometry_pid_gains=pusher_geometry_pid_gains,
+            pusher_geometry_type=pusher_geometry_type,
+            pusher_geometry_dimensions=pusher_geometry_dimensions,
             scene_directive_path=scene_directive_path,
             manipuland_directive_path=manipuland_directive_path,
         )

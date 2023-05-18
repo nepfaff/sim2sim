@@ -37,7 +37,7 @@ system overview diagram. The second one is for comparing two different sim2sim p
 them is run instead of the hand-crafted 'outer'/ real-world manipuland. This is particularly useful for evaluating how
 two different sim2sim pipelines differ from each other (e.g. by using the contact force visualizer).
 
-**NOTE:** The sim2im pipeline comparison experiment type is currently only supported by the `sphere_pushing` and `table_pid` experiments.
+**NOTE:** The sim2im pipeline comparison experiment type is currently only supported by the `planar_pushing` and `table_pid` experiments.
 
 The sim2sim pipeline comparison experiment type is shown in the image below:
 ![pipeline_comparison_diagram](pipeline_comparison_diagram.png)
@@ -47,9 +47,9 @@ The sim2sim pipeline comparison experiment type is shown in the image below:
 An experiment description file deterministically specifies an experiment. New experiments can easily be constructed by
 mixing components and their parameters in an experiment description file.
 
-An example of a sim2sim pipeline experiment can be found in `experiments/sphere_pushing/sphere_pushing_coacd.yaml` and
+An example of a sim2sim pipeline experiment can be found in `experiments/planar_pushing/box/coacd.yaml` and
 an example of a sim2sim pipeline comparison experiment can be found in
-`experiments/sphere_pushing/sphere_pushing_coacd_vs_dualsdf_sphere.yaml`. These two look very similar apart from the
+`experiments/planar_pushing/sphere/coacd_vs_hydroelastic_coacd.yaml`. These two look very similar apart from the
 `is_pipeline_comparison` parameter and that there is an `inner` and `outer` version for most components in the pipeline
 comparison experiment.
 
@@ -59,7 +59,7 @@ Replace `experiments/table_pid/table_pid_simple.yaml` in the command below with 
 The experiment description file deterministically specifies an experiment.
 
 ```bash
-python scripts/run_experiment.py --experiment_description experiments/sphere_pushing/sphere_pushing_coacd.yaml
+python scripts/run_experiment.py --experiment_description experiments/planar_pushing/box/coacd.yaml
 ```
 
 ## Contact Force Visualizer
@@ -109,7 +109,7 @@ The following script can be used for ranking representations in a primitive repr
 and velocity errors at the final timestep.
 
 ```bash
-python scripts/evaluate_primitive_representation_collection.py --path representation_collection/ --experiment_description experiments/sphere_pushing/sphere_pushing_mustard_ring_coacd_vs_spheres.yaml --eval_contact_model
+python scripts/evaluate_primitive_representation_collection.py --path representation_collection/ --experiment_description experiments/planar_pushing/sphere/mustard_ring_coacd_vs_spheres.yaml --eval_contact_model
 ```
 
 where `representation_collection/` is a folder with the following structure:
@@ -142,7 +142,7 @@ The experiment description specifies the experiment and must contain the followi
     python scripts/collect_random_force_data.py --experiment_description experiments/random_force/random_force_gmm.yaml --logging_path logs/metric_learning_data --num_runs_per_perturbation 10 --num_perturbations 1000
     ```
     ```bash
-    python3 scripts/collect_sphere_pushing_data.py --experiment_description experiments/sphere_pushing/sphere_pushing_gmm.yaml --logging_path logs/metric_learning_data --num_runs_per_perturbation 10 --num_perturbations 1000
+    python3 scripts/collect_planar_pushing_data.py --experiment_description experiments/planar_pushing/sphere/gmm.yaml --logging_path logs/metric_learning_data --num_runs_per_perturbation 10 --num_perturbations 1000
     ```
 3. Postprocess the data:
     ```bash

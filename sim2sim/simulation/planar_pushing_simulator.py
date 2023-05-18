@@ -5,13 +5,13 @@ from typing import Optional
 import numpy as np
 from pydrake.all import DiagramBuilder, SceneGraph, Simulator, MultibodyPlant
 
-from sim2sim.logging import SpherePushingLogger
+from sim2sim.logging import PlanarPushingLogger
 from sim2sim.simulation import SimulatorBase
 from sim2sim.util import SphereStateSource
 
 
-class SpherePushingSimulator(SimulatorBase):
-    """A simulator that uses a fully actuated sphere to push a manipuland."""
+class PlanarPushingSimulator(SimulatorBase):
+    """A simulator that uses a fully actuated primitive to push a manipuland."""
 
     def __init__(
         self,
@@ -19,7 +19,7 @@ class SpherePushingSimulator(SimulatorBase):
         outer_scene_graph: SceneGraph,
         inner_builder: DiagramBuilder,
         inner_scene_graph: SceneGraph,
-        logger: SpherePushingLogger,
+        logger: PlanarPushingLogger,
         is_hydroelastic: bool,
         settling_time: float,
         manipuland_name: str,
@@ -35,12 +35,15 @@ class SpherePushingSimulator(SimulatorBase):
         :param inner_scene_graph: Scene graph for the inner simulation environment.
         :param logger: The logger.
         :param is_hydroelastic: Whether hydroelastic or point contact is used.
-        :param settling_time: The time in seconds to simulate initially to allow the scene to settle.
+        :param settling_time: The time in seconds to simulate initially to allow the
+            scene to settle.
         :param manipuland_name: The name of the manipuland model instance.
         :param controll_period: Period at which to update the control command.
-        :param closed_loop_control: Whether to update the control actions based on the actual sphere position.
-        :param num_meters_to_move_in_manpuland_direction: The number of meters to move the spere towards the manipuland.
-            This is only needed/used if `closed_loop_control` is False.
+        :param closed_loop_control: Whether to update the control actions based on the
+            actual pusher geometry position.
+        :param num_meters_to_move_in_manpuland_direction: The number of meters to move
+            the pusher geometry towards the manipuland. This is only needed/used if
+            `closed_loop_control` is False.
         """
         super().__init__(
             outer_builder,
@@ -60,7 +63,7 @@ class SpherePushingSimulator(SimulatorBase):
             num_meters_to_move_in_manpuland_direction
         )
 
-        # To be set by 'EquationErrorSpherePushingSimulator'
+        # To be set by 'EquationErrorPlanarPushingSimulator'
         self._is_equation_error = False
         self._reset_seconds = np.nan
 
@@ -93,7 +96,9 @@ class SpherePushingSimulator(SimulatorBase):
         self._logger.add_contact_result_logging(
             self._outer_builder, self._inner_builder
         )
-        self._logger.add_sphere_pose_logging(self._outer_builder, self._inner_builder)
+        self._logger.add_pusher_geometry_pose_logging(
+            self._outer_builder, self._inner_builder
+        )
 
         self._outer_diagram = self._outer_builder.Build()
         self._inner_diagram = self._inner_builder.Build()
@@ -106,7 +111,7 @@ class SpherePushingSimulator(SimulatorBase):
 
     def simulate(self, duration: float) -> None:
         outer_manipuland_states = []
-        outer_sphere_states = []
+        outer_pusher_geometry_states = []
 
         for i, (diagram, visualizer, meshcat) in enumerate(
             zip(
@@ -117,17 +122,19 @@ class SpherePushingSimulator(SimulatorBase):
         ):
             simulator = Simulator(diagram)
             context = simulator.get_mutable_context()
-            sphere_state_source: SphereStateSource = diagram.GetSubsystemByName(
-                "sphere_state_source"
+            pusher_geometry_state_source: SphereStateSource = (
+                diagram.GetSubsystemByName("pusher_geometry_state_source")
             )
             plant: MultibodyPlant = diagram.GetSubsystemByName("plant")
             plant_context = plant.GetMyMutableContextFromRoot(context)
             manipuland_instance = plant.GetModelInstanceByName(self._manipuland_name)
-            sphere_instance = plant.GetModelInstanceByName("sphere")
+            pusher_geometry_instance = plant.GetModelInstanceByName("pusher_geometry")
 
             get_states = lambda: (
                 plant.GetPositionsAndVelocities(plant_context, manipuland_instance),
-                plant.GetPositionsAndVelocities(plant_context, sphere_instance),
+                plant.GetPositionsAndVelocities(
+                    plant_context, pusher_geometry_instance
+                ),
             )
 
             if i == 1 or not self._skip_outer_visualization:
@@ -154,31 +161,38 @@ class SpherePushingSimulator(SimulatorBase):
                             plant_context, manipuland_instance
                         )[4:]
 
-                        sphere_state_source.set_desired_position(manipuland_translation)
+                        pusher_geometry_state_source.set_desired_position(
+                            manipuland_translation
+                        )
                         action_log.append(manipuland_translation)
 
                         if self._is_reset_time(sim_time):
-                            manipuland_state, sphere_state = get_states()
+                            manipuland_state, pusher_geometry_state = get_states()
                             outer_manipuland_states.append(manipuland_state)
-                            outer_sphere_states.append(sphere_state)
+                            outer_pusher_geometry_states.append(pusher_geometry_state)
 
                         simulator.AdvanceTo(sim_time)
                 else:
                     manipuland_translation = plant.GetPositions(
                         plant_context, manipuland_instance
                     )[4:]
-                    sphere_instance = plant.GetModelInstanceByName("sphere")
-                    sphere_translation = plant.GetPositions(
-                        plant_context, sphere_instance
+                    pusher_geometry_instance = plant.GetModelInstanceByName(
+                        "pusher_geometry"
+                    )
+                    pusher_geometry_translation = plant.GetPositions(
+                        plant_context, pusher_geometry_instance
                     )
 
-                    # Move sphere along vector connecting sphere starting position and manipuland position
-                    push_direction = manipuland_translation - sphere_translation
+                    # Move pusher_geometry along vector connecting pusher_geometry
+                    # starting position and manipuland position
+                    push_direction = (
+                        manipuland_translation - pusher_geometry_translation
+                    )
                     push_direction_unit = push_direction / np.linalg.norm(
                         push_direction
                     )
                     action_log = (
-                        sphere_translation
+                        pusher_geometry_translation
                         + (
                             np.linspace(
                                 0.0,
@@ -190,18 +204,18 @@ class SpherePushingSimulator(SimulatorBase):
                     )
 
                     for sim_time, action in zip(sim_times, action_log):
-                        sphere_state_source.set_desired_position(action)
+                        pusher_geometry_state_source.set_desired_position(action)
 
                         if self._is_reset_time(sim_time):
-                            manipuland_state, sphere_state = get_states()
+                            manipuland_state, pusher_geometry_state = get_states()
                             outer_manipuland_states.append(manipuland_state)
-                            outer_sphere_states.append(sphere_state)
+                            outer_pusher_geometry_states.append(pusher_geometry_state)
 
                         simulator.AdvanceTo(sim_time)
             else:
                 idx = 0
                 for sim_time, action in zip(sim_times, action_log):
-                    sphere_state_source.set_desired_position(action)
+                    pusher_geometry_state_source.set_desired_position(action)
 
                     if self._is_reset_time(sim_time):
                         plant.SetPositionsAndVelocities(
@@ -211,8 +225,8 @@ class SpherePushingSimulator(SimulatorBase):
                         )
                         plant.SetPositionsAndVelocities(
                             plant_context,
-                            sphere_instance,
-                            outer_sphere_states[idx],
+                            pusher_geometry_instance,
+                            outer_pusher_geometry_states[idx],
                         )
                         idx += 1
 
@@ -242,4 +256,4 @@ class SpherePushingSimulator(SimulatorBase):
             context = simulator.get_mutable_context()
             self._logger.log_manipuland_poses(context, is_outer=(i == 0))
             self._logger.log_manipuland_contact_forces(context, is_outer=(i == 0))
-            self._logger.log_sphere_poses(context, is_outer=(i == 0))
+            self._logger.log_pusher_geometry_poses(context, is_outer=(i == 0))

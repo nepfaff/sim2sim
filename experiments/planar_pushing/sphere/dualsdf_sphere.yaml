@@ -1,39 +1,39 @@
 # Unique identifier for this experiment for logging
-experiment_id: "sphere_pushing_mustard_dualsdf_sphere"
+experiment_id: "sphere_pushing_dualsdf_sphere"
 env:
   contact_model: "point"
   solver: "tamsi"
-  obj_name: "ycb_mustard_bottle"
+  obj_name: "ycb_tomato_soup_can"
 
 script:
-  name: "sphere_pushing"
+  name: "planar_pushing"
   args:
     sim_duration: 1.0
     timestep: 0.001
     logging_frequency_hz: 1000
-    manipuland_directive: "../../models/manipulands/mustard_bottle_manipuland_directive.yaml"
-    manipuland_base_link_name: "ycb_mustard_bottle_base_link"
+    manipuland_directive: "../../models/random_force/random_force_manipuland_directive.yaml"
+    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
     manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
     save_raw_mesh: false
     hydroelastic_manipuland: false
-    sphere_starting_position: [0.3, 0.0, 0.1]
-    sphere_pid_gains:
+    pusher_geometry_starting_position: [0.3, 0.0, 0.1]
+    pusher_geometry_pid_gains:
       kp: 100.0
       ki: 1.0
       kd: 20.0
-    sphere_radius: 0.05
+    pusher_geometry_type: "sphere"
+    pusher_geometry_dimensions: 0.05
     is_pipeline_comparison: False
 
 # Component specifications
 # 'args' are constructor arguments that are not part of the base class constructors
 logger:
-  class: "SpherePushingLogger"
+  class: "PlanarPushingLogger"
   args:
     label_to_mask: -1 # NOTE: Does not correspond to anything
-    manipuland_name: "ycb_mustard_bottle"
-    manipuland_base_link_name: "ycb_mustard_bottle_base_link"
+    manipuland_name: "ycb_tomato_soup_can"
+    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
     kProximity: true
-    sphere_name: "sphere"
 
 image_generator:
   class: "NoneImageGenerator"
@@ -42,26 +42,26 @@ image_generator:
 inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
-    mesh_path: ./data/ycb_mustard_bottle/mustard_bottle_instant_ngp.obj
+    mesh_path: ./data/tomato_soup_can_instant_ngp.obj
     mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
 
 mesh_processor:
   class: "IdentityPrimitiveMeshProcessor"
   args:
-    primitive_info_path: ./data/ycb_mustard_bottle/mustard_bottle_dualsdf_sphere.pkl
+    primitive_info_path: ./data/tomato_soup_can_dualsdf_sphere.pkl
 
 physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
   args:
-    mass: 0.6030
-    inertia: [[0.002009, 0.0, 0.0], [0.0, 0.000633, 0.0], [0.0, 0.0, 0.002302]]
+    mass: 0.349000
+    inertia: [[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]
     center_of_mass: [0.0, 0.0, 0.0]
 
 simulator:
-  class: "SpherePushingSimulator"
+  class: "PlanarPushingSimulator"
   args:
     settling_time: 0.2
-    manipuland_name: ycb_mustard_bottle
+    manipuland_name: ycb_tomato_soup_can
     controll_period: 0.01
-    closed_loop_control: True
+    closed_loop_control: false
     num_meters_to_move_in_manpuland_direction: 0.6

@@ -1,6 +1,7 @@
 """
-Script for collecting sphere pushing data for metric learning.
-NOTE: Using textured meshes in inverse graphics/ mesh processing might cause issues with multicore execution.
+Script for collecting planar pushing data for metric learning.
+NOTE: Using textured meshes in inverse graphics/ mesh processing might cause issues with
+multicore execution.
 """
 
 import os
@@ -14,7 +15,7 @@ import numpy as np
 from tqdm import tqdm
 import open3d as o3d
 
-from sim2sim.experiments import run_sphere_pushing
+from sim2sim.experiments import run_planar_pushing
 from sim2sim.images import generate_camera_locations_circle
 
 PERTURBATION_DIR_BASENAME = "perturb_"
@@ -51,7 +52,7 @@ def main():
     parser.add_argument(
         "--viz_starting_locations",
         action="store_true",
-        help="Whether to visualize the possible sphere starting locations.",
+        help="Whether to visualize the possible pusher_geometry starting locations.",
     )
     args = parser.parse_args()
 
@@ -67,7 +68,7 @@ def main():
     else:
         os.mkdir(args.logging_path)
 
-    sphere_start_locations = []
+    pusher_geometry_start_locations = []
     for z_distance, radius, num_locations in zip(
         [0.06, 0.12, 0.18], [0.3, 0.25, 0.2], [10, 10, 10]
     ):
@@ -77,12 +78,14 @@ def main():
             num_points=num_locations,
             xz=False,
         )
-        sphere_start_locations.append(locations)
-    sphere_start_locations = np.concatenate(sphere_start_locations, axis=0)
+        pusher_geometry_start_locations.append(locations)
+    pusher_geometry_start_locations = np.concatenate(
+        pusher_geometry_start_locations, axis=0
+    )
 
     if args.viz_starting_locations:
         viz_geoms = []
-        for location in sphere_start_locations:
+        for location in pusher_geometry_start_locations:
             viz_geoms.append(
                 o3d.geometry.TriangleMesh.create_sphere(0.01).translate(location)
             )
@@ -112,12 +115,12 @@ def main():
         processes = []
         for i in range(args.num_runs_per_perturbation):
             rng = np.random.default_rng(random_seed)
-            sphere_start_location = sphere_start_locations[
-                rng.choice(len(sphere_start_locations))
+            pusher_geometry_start_location = pusher_geometry_start_locations[
+                rng.choice(len(pusher_geometry_start_locations))
             ]
             experiment_specification["script"]["args"][
-                "sphere_starting_position"
-            ] = sphere_start_location
+                "pusher_geometry_starting_position"
+            ] = pusher_geometry_start_location
             random_seed += 1
 
             kwargs = {
@@ -125,7 +128,7 @@ def main():
                 "params": experiment_specification,
             }
             kwargs.update(experiment_specification["script"]["args"])
-            p = Process(target=run_sphere_pushing, kwargs=kwargs)
+            p = Process(target=run_planar_pushing, kwargs=kwargs)
             processes.append(p)
             p.start()
 

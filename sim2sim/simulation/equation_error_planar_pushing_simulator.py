@@ -3,14 +3,14 @@ from typing import Optional
 import numpy as np
 from pydrake.all import DiagramBuilder, SceneGraph
 
-from sim2sim.logging import SpherePushingLogger
-from sim2sim.simulation import SpherePushingSimulator
+from sim2sim.logging import PlanarPushingLogger
+from sim2sim.simulation import PlanarPushingSimulator
 
 
-class EquationErrorSpherePushingSimulator(SpherePushingSimulator):
+class EquationErrorPlanarPushingSimulator(PlanarPushingSimulator):
     """
-    A simulator that uses a fully actuated sphere to push a manipuland. It sets the inner
-    manipuland pose equal to the outer manipuland pose every K seconds.
+    A simulator that uses a fully actuated pusher geometry to push a manipuland. It
+    sets the inner manipuland pose equal to the outer manipuland pose every K seconds.
     """
 
     def __init__(
@@ -19,7 +19,7 @@ class EquationErrorSpherePushingSimulator(SpherePushingSimulator):
         outer_scene_graph: SceneGraph,
         inner_builder: DiagramBuilder,
         inner_scene_graph: SceneGraph,
-        logger: SpherePushingLogger,
+        logger: PlanarPushingLogger,
         is_hydroelastic: bool,
         settling_time: float,
         manipuland_name: str,
@@ -44,7 +44,7 @@ class EquationErrorSpherePushingSimulator(SpherePushingSimulator):
             manipuland pose every `reset_seconds` seconds. NOTE: This must be an integer
             multiple of `controll_period`.
         :param closed_loop_control: Whether to update the control actions based on the
-            actual sphere position.
+            actual pusher_geometry position.
         :param num_meters_to_move_in_manpuland_direction: The number of meters to move
             the spere towards the manipuland. This is only needed/used if
             `closed_loop_control` is False.

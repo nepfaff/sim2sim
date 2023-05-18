@@ -1,6 +1,6 @@
 import argparse
 
-from sim2sim.visualization import SpherePushingContactForceVisualizer
+from sim2sim.visualization import PlanarPushingContactForceVisualizer
 
 
 def main():
@@ -47,17 +47,17 @@ def main():
         + "This only has an effect if `--manipuland` is 'both'.",
     )
     parser.add_argument(
-        "--sphere_transparency",
+        "--pusher_geometry_transparency",
         default=1.0,
         type=float,
-        help="The alpha value of the sphere in range (0,1].",
+        help="The alpha value of the pusher geometry in range (0,1].",
     )
     parser.add_argument(
         "--save_html", action="store_true", help="Whether to save the meshcat HTML."
     )
     args = parser.parse_args()
 
-    visualizer = SpherePushingContactForceVisualizer(
+    visualizer = PlanarPushingContactForceVisualizer(
         data_path=args.data,
         manipuland=args.manipuland,
         separation_distance=args.separation_distance,
@@ -66,7 +66,7 @@ def main():
         newton_meters_per_meter=args.newton_meters_per_meter,
         hydroelastic=args.hydroelastic,
         kIllustration=args.kIllustration,
-        sphere_transparency=args.sphere_transparency,
+        pusher_geometry_transparency=args.pusher_geometry_transparency,
     )
     visualizer.setup()
 

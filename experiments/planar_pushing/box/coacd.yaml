@@ -1,12 +1,12 @@
 # Unique identifier for this experiment for logging
-experiment_id: "sphere_pushing_coacd"
+experiment_id: "box_pushing_coacd"
 env:
   contact_model: "point"
   solver: "tamsi"
   obj_name: "ycb_tomato_soup_can"
 
 script:
-  name: "sphere_pushing"
+  name: "planar_pushing"
   args:
     sim_duration: 1.0
     timestep: 0.001
@@ -16,24 +16,24 @@ script:
     manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
     save_raw_mesh: false
     hydroelastic_manipuland: false
-    sphere_starting_position: [0.3, 0.0, 0.1]
-    sphere_pid_gains:
+    pusher_geometry_starting_position: [0.3, 0.0, 0.1]
+    pusher_geometry_pid_gains:
       kp: 100.0
       ki: 1.0
       kd: 20.0
-    sphere_radius: 0.05
+    pusher_geometry_type: "box"
+    pusher_geometry_dimensions: [0.01, 0.05, 0.05]
     is_pipeline_comparison: False
 
 # Component specifications
 # 'args' are constructor arguments that are not part of the base class constructors
 logger:
-  class: "SpherePushingLogger"
+  class: "PlanarPushingLogger"
   args:
     label_to_mask: -1 # NOTE: Does not correspond to anything
     manipuland_name: "ycb_tomato_soup_can"
     manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
     kProximity: true
-    sphere_name: "sphere"
 
 image_generator:
   class: "NoneImageGenerator"
@@ -60,7 +60,7 @@ physical_property_estimator:
     center_of_mass: [0.0, 0.0, 0.0]
 
 simulator:
-  class: "SpherePushingSimulator"
+  class: "PlanarPushingSimulator"
   args:
     settling_time: 0.2
     manipuland_name: ycb_tomato_soup_can

@@ -1,2 +1,2 @@
 from .contact_force_visualizer import ContactForceVisualizer
-from .sphere_pushing_contact_force_visualizer import SpherePushingContactForceVisualizer
+from .planar_pushing_contact_force_visualizer import PlanarPushingContactForceVisualizer

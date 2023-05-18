@@ -16,7 +16,7 @@ from sim2sim.experiments import (
     run_iiwa_manip_pepper,
     run_floor_drop,
     run_random_force,
-    run_sphere_pushing,
+    run_planar_pushing,
 )
 from sim2sim.util import (
     trajectory_IoU,
@@ -34,7 +34,7 @@ ENTRYPOINTS = {
     "iiwa_manip_pepper": run_iiwa_manip_pepper,
     "floor_drop": run_floor_drop,
     "random_force": run_random_force,
-    "sphere_pushing": run_sphere_pushing,
+    "planar_pushing": run_planar_pushing,
 }
 
 
