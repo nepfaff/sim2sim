@@ -2,7 +2,7 @@ from .identity_mesh_processor import IdentityMeshProcessor
 from .quadric_decimation_mesh_processor import QuadricDecimationMeshProcessor
 from .sphere_mesh_processor import SphereMeshProcessor
 from .convex_decomp_mesh_processor import ConvexDecompMeshProcessor
-from .col_aware_decomp_mesh_processor import CoACDMeshProcessor
+from .coacd_mesh_processor import CoACDMeshProcessor
 from .gmm_mesh_processor import GMMMeshProcessor
 from .fuzzy_metaball_mesh_processor import FuzzyMetaballMeshProcessor
 from .identity_primitive_mesh_processor import IdentityPrimitiveMeshProcessor

@@ -41,8 +41,12 @@ inverse_graphics:
 mesh_processor:
   class: "CoACDMeshProcessor"
   args:
-      mesh_name: ./data/tomato_soup_can_instant_ngp.obj
-      mesh_dir: "tmp"
+      threshold: 0.05
+      resolution: 2000
+      preprocess_resolution: 30
+      mcts_nodes: 20
+      mcts_iterations: 150
+      mcts_max_depth: 3
       preview_with_trimesh: false
 
 physical_property_estimator:

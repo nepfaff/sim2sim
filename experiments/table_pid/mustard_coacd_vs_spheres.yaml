@@ -59,8 +59,12 @@ inner_inverse_graphics:
 outer_mesh_processor:
   class: "CoACDMeshProcessor"
   args:
-      mesh_name: ./data/ycb_mustard_bottle/mustard_ring_tsdf.obj
-      mesh_dir: "tmp"
+      threshold: 0.05
+      resolution: 2000
+      preprocess_resolution: 30
+      mcts_nodes: 20
+      mcts_iterations: 150
+      mcts_max_depth: 3
       preview_with_trimesh: false
 
 inner_mesh_processor:

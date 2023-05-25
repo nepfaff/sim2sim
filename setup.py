@@ -20,5 +20,6 @@ setup(
         "pyrender",
         "prettytable",
         "wandb",
+        "coacd",
     ],
 )
