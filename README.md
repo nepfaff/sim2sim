@@ -129,6 +129,7 @@ The experiment description specifies the experiment and must contain the followi
 - `IdentityPrimitiveMeshProcessor` for `inner_mesh_processor`
 - `GTPhysicalPropertyEstimator` for `outer_physical_property_estimator`
 - `GTPhysicalPropertyEstimator` for `inner_physical_property_estimator`
+- `IdentityInverseGraphics` for `inner_inverse_graphics` with a valid `mesh_pose` if using the `--additional_collision_geometries_path` argument
 
 **NOTE:** Make sure that `inner_env` uses the desired contact model for simulating the representation collection (`point` or `hydroelastic_with_fallback`).
 

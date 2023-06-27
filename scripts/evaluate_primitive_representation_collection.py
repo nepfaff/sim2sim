@@ -16,6 +16,7 @@ import json
 import random
 
 import wandb
+import open3d as o3d
 
 from sim2sim.util.script_utils import rank_based_on_metrics
 
@@ -104,6 +105,16 @@ def main():
         + "similar enough to '--experiment_description' to allow for fair comparison.",
     )
     parser.add_argument(
+        "--additional_collision_geometries_path",
+        required=False,
+        default=None,
+        type=str,
+        help="The path to a folder containing additional collision geometries to "
+        + "include in the evaluation. These collision geometries will be added "
+        + "similarly to the primitive collision geometries, by modidfying the provided "
+        + "experiment description.",
+    )
+    parser.add_argument(
         "--keep_outer_vis",
         action="store_true",
         help="Whether to create a visualizer for each outer simulation. If False, only "
@@ -124,6 +135,7 @@ def main():
     experiment_description_path = args.experiment_description
     logging_path = args.logging_path
     additional_experiment_descriptions = args.additional_experiment_descriptions
+    additional_collision_geometries_path = args.additional_collision_geometries_path
     skip_outer_visualization = not args.keep_outer_vis
     wandb_name = args.wandb_name
 
@@ -171,6 +183,74 @@ def main():
                 )
             experiment_specifications.append(additional_description)
 
+    def adjust_experiment_description(experiment_description: dict) -> List[dict]:
+        """Make representation collection specific edits to the experiment description."""
+
+        # Outer physical properties
+        experiment_description["outer_physical_property_estimator"]["args"][
+            "mass"
+        ] = pysical_properties["mass"]
+        experiment_description["outer_physical_property_estimator"]["args"][
+            "inertia"
+        ] = pysical_properties["inertia"]
+        experiment_description["outer_physical_property_estimator"]["args"][
+            "center_of_mass"
+        ] = pysical_properties["com"]
+
+        # Inner physical properties
+        experiment_description["inner_physical_property_estimator"]["args"][
+            "mass"
+        ] = pysical_properties["mass"]
+        experiment_description["inner_physical_property_estimator"]["args"][
+            "inertia"
+        ] = pysical_properties["inertia"]
+        experiment_description["inner_physical_property_estimator"]["args"][
+            "center_of_mass"
+        ] = pysical_properties["com"]
+
+        adjusted_descriptions = []
+        if args.eval_contact_model:
+            hydroelastic_experiment_description = copy.deepcopy(experiment_description)
+            hydroelastic_experiment_description["experiment_id"] += "_hydroelastic"
+            hydroelastic_experiment_description["inner_env"][
+                "contact_model"
+            ] = "hydroelastic_with_fallback"
+            adjusted_descriptions.append(hydroelastic_experiment_description)
+
+            point_experiment_description = copy.deepcopy(experiment_description)
+            point_experiment_description["experiment_id"] += "_point"
+            point_experiment_description["inner_env"]["contact_model"] = "point"
+            adjusted_descriptions.append(point_experiment_description)
+        else:
+            adjusted_descriptions.append(experiment_description)
+
+        return adjusted_descriptions
+
+    # Add additional collision geometries
+    if additional_collision_geometries_path is not None:
+        with os.scandir(additional_collision_geometries_path) as paths:
+            for path in paths:
+                if path.is_file():
+                    experiment_description = copy.deepcopy(base_experiment_description)
+                    experiment_description["experiment_id"] = os.path.splitext(
+                        path.name
+                    )[0]
+
+                    # Add collision geometry
+                    experiment_description["inner_inverse_graphics"]["args"][
+                        "mesh_path"
+                    ] = path.path
+                    experiment_description["inner_mesh_processor"][
+                        "class"
+                    ] = "IdentityMeshProcessor"
+                    experiment_description["inner_mesh_processor"]["args"] = {}
+
+                    # Make edits based on representation collection
+                    adjusted_experiment_specifications = adjust_experiment_description(
+                        experiment_description
+                    )
+                    experiment_specifications.extend(adjusted_experiment_specifications)
+
     with os.scandir(representation_collection_path) as paths:
         for path in paths:
             if path.is_dir():
@@ -191,53 +271,16 @@ def main():
                         skip_outer_visualization,
                     )
 
-                # Primitive info
+                # Add primitive info
                 experiment_description["inner_mesh_processor"]["args"][
                     "primitive_info_path"
                 ] = os.path.join(path.path, "primitive_info.pkl")
 
-                # Outer physical properties
-                experiment_description["outer_physical_property_estimator"]["args"][
-                    "mass"
-                ] = pysical_properties["mass"]
-                experiment_description["outer_physical_property_estimator"]["args"][
-                    "inertia"
-                ] = pysical_properties["inertia"]
-                experiment_description["outer_physical_property_estimator"]["args"][
-                    "center_of_mass"
-                ] = pysical_properties["com"]
-
-                # Inner physical properties
-                experiment_description["inner_physical_property_estimator"]["args"][
-                    "mass"
-                ] = pysical_properties["mass"]
-                experiment_description["inner_physical_property_estimator"]["args"][
-                    "inertia"
-                ] = pysical_properties["inertia"]
-                experiment_description["inner_physical_property_estimator"]["args"][
-                    "center_of_mass"
-                ] = pysical_properties["com"]
-
-                if args.eval_contact_model:
-                    hydroelastic_experiment_description = copy.deepcopy(
-                        experiment_description
-                    )
-                    hydroelastic_experiment_description[
-                        "experiment_id"
-                    ] += "_hydroelastic"
-                    hydroelastic_experiment_description["inner_env"][
-                        "contact_model"
-                    ] = "hydroelastic_with_fallback"
-                    experiment_specifications.append(
-                        hydroelastic_experiment_description
-                    )
-
-                    point_experiment_description = copy.deepcopy(experiment_description)
-                    point_experiment_description["experiment_id"] += "_point"
-                    point_experiment_description["inner_env"]["contact_model"] = "point"
-                    experiment_specifications.append(point_experiment_description)
-                else:
-                    experiment_specifications.append(experiment_description)
+                # Make edits based on representation collection
+                adjusted_experiment_specifications = adjust_experiment_description(
+                    experiment_description
+                )
+                experiment_specifications.extend(adjusted_experiment_specifications)
 
     # Shuffle experiment order for fairer runtime estimates
     # Need to keep the first first due to deterministic outer
