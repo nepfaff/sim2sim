@@ -1,5 +1,5 @@
 # Unique identifier for this experiment for logging
-experiment_id: "table_pid_mustard_raw_tsdf_vs_spheres_equation_error"
+experiment_id: "box_pushing_mustard_raw_tsdf_vs_spheres_equation_error"
 
 outer_env:
   contact_model: "hydroelastic_with_fallback"
@@ -12,29 +12,34 @@ inner_env:
   obj_name: "ycb_mustard_bottle"
 
 script:
-  name: "table_pid"
+  name: "planar_pushing"
   args:
-    sim_duration: 2.0
-    no_command_time: 0.25
+    sim_duration: 1.0
     timestep: 0.001
-    final_table_angle: 0.7854
     logging_frequency_hz: 1000
     manipuland_directive: "../../models/manipulands/mustard_bottle_manipuland_directive.yaml"
     manipuland_base_link_name: "ycb_mustard_bottle_base_link"
-    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.62]
+    manipuland_default_pose: [1.57, 1.57, 0, 0.0, 0.0, 0.032]
     save_raw_mesh: false
-    hydroelastic_manipuland: true # No effect if 'contact_model' is 'point'
+    hydroelastic_manipuland: True
+    pusher_geometry_starting_position: [0.15, 0.03, 0.03]
+    pusher_geometry_pid_gains:
+      kp: 100.0
+      ki: 1.0
+      kd: 20.0
+    pusher_geometry_type: "box"
+    pusher_geometry_dimensions: [0.02, 0.02, 0.02]
     is_pipeline_comparison: True
 
 # Component specifications
 # 'args' are constructor arguments that are not part of the base class constructors
 logger:
-  class: "DynamicLogger"
+  class: "PlanarPushingLogger"
   args:
     label_to_mask: -1 # NOTE: Does not correspond to anything
     manipuland_name: "ycb_mustard_bottle"
     manipuland_base_link_name: "ycb_mustard_bottle_base_link"
-    kProximity: false
+    kProximity: True
 
 outer_image_generator:
   class: "NoneImageGenerator"
@@ -48,13 +53,13 @@ outer_inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
     mesh_path: ./data/ycb_mustard_bottle/mustard_ring_tsdf.obj
-    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.62]
+    mesh_pose: [1.57, 1.57, 0, 0.0, 0.0, 0.032]
 
 inner_inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
     mesh_path: ./data/ycb_mustard_bottle/mustard_ring_tsdf.obj
-    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.62]
+    mesh_pose: [1.57, 1.57, 0, 0.0, 0.0, 0.032]
 
 outer_mesh_processor:
   class: "IdentityMeshProcessor"
@@ -88,8 +93,12 @@ inner_physical_property_estimator:
     center_of_mass: [ 0.0014, 0.0016, -0.0124]
 
 simulator:
-  class: "EquationErrorBasicSimulator"
+  class: "EquationErrorPlanarPushingSimulator"
   args:
-    manipuland_name: "ycb_mustard_bottle"
+    settling_time: 0.2
+    manipuland_name: ycb_mustard_bottle
+    controll_period: 0.01
+    closed_loop_control: false
+    num_meters_to_move_in_manpuland_direction: 0.6
     reset_seconds: 0.1
  
