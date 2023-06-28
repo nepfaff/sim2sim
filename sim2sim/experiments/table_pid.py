@@ -43,6 +43,7 @@ from sim2sim.mesh_processing import (
     FuzzyMetaballMeshProcessor,
     IdentityPrimitiveMeshProcessor,
     IdentitySDFMeshProcessor,
+    IdentityMeshPiecesMeshProcessor,
 )
 from sim2sim.physical_property_estimator import (
     WaterDensityPhysicalPropertyEstimator,
@@ -72,6 +73,7 @@ MESH_PROCESSORS = {
     "FuzzyMetaballMeshProcessor": FuzzyMetaballMeshProcessor,
     "IdentityPrimitiveMeshProcessor": IdentityPrimitiveMeshProcessor,
     "IdentitySDFMeshProcessor": IdentitySDFMeshProcessor,
+    "IdentityMeshPiecesMeshProcessor": IdentityMeshPiecesMeshProcessor,
 }
 PHYSICAL_PROPERTY_ESTIMATOR = {
     "WaterDensityPhysicalPropertyEstimator": WaterDensityPhysicalPropertyEstimator,

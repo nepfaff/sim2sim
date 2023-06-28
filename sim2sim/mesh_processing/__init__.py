@@ -7,3 +7,4 @@ from .gmm_mesh_processor import GMMMeshProcessor
 from .fuzzy_metaball_mesh_processor import FuzzyMetaballMeshProcessor
 from .identity_primitive_mesh_processor import IdentityPrimitiveMeshProcessor
 from .identity_sdf_mesh_processor import IdentitySDFMeshProcessor
+from .identity_mesh_pieces_mesh_processor import IdentityMeshPiecesMeshProcessor

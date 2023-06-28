@@ -41,6 +41,7 @@ from sim2sim.mesh_processing import (
     QuadricDecimationMeshProcessor,
     IdentityPrimitiveMeshProcessor,
     IdentitySDFMeshProcessor,
+    IdentityMeshPiecesMeshProcessor,
 )
 from sim2sim.simulation import (
     BasicSimulator,
@@ -74,6 +75,7 @@ MESH_PROCESSORS = {
     "QuadricDecimationMeshProcessor": QuadricDecimationMeshProcessor,
     "IdentityPrimitiveMeshProcessor": IdentityPrimitiveMeshProcessor,
     "IdentitySDFMeshProcessor": IdentitySDFMeshProcessor,
+    "IdentityMeshPiecesMeshProcessor": IdentityMeshPiecesMeshProcessor,
 }
 PHYSICAL_PROPERTY_ESTIMATOR = {
     "WaterDensityPhysicalPropertyEstimator": WaterDensityPhysicalPropertyEstimator,
