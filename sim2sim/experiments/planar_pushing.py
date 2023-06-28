@@ -200,16 +200,16 @@ def create_env(
         )
         # Make pusher_geometry complient hydroelastic
         pusher_geometry = plant.GetBodyByName("pusher_geometry")
-        new_proximity_properties = ProximityProperties()
-        # NOTE: Setting hydroelastic properties becomes slow as the resolution hint decreases
-        AddCompliantHydroelasticProperties(
-            resolution_hint=0.1,
-            hydroelastic_modulus=1e8,
-            properties=new_proximity_properties,
-        )
         geometry_ids = plant.GetCollisionGeometriesForBody(pusher_geometry)
+        inspector = scene_graph.model_inspector()
         for geometry_id in geometry_ids:
-            inspector = scene_graph.model_inspector()
+            new_proximity_properties = ProximityProperties()
+            # NOTE: Setting hydroelastic properties becomes slow as the resolution hint decreases
+            AddCompliantHydroelasticProperties(
+                resolution_hint=0.1,
+                hydroelastic_modulus=1e8,
+                properties=new_proximity_properties,
+            )
             const_proximity_properties = inspector.GetProximityProperties(geometry_id)
             copy_object_proximity_properties(
                 const_proximity_properties, new_proximity_properties
@@ -220,6 +220,8 @@ def create_env(
                 new_proximity_properties,
                 RoleAssign.kReplace,
             )
+            # TODO: This seems to prevent a RuntimeError bug but I'm not sure why
+            break
 
     # pusher_geometry state source
     pusher_geometry_state_source = builder.AddSystem(
