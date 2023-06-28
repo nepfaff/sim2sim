@@ -23,7 +23,6 @@ from pydrake.all import (
     ProximityProperties,
     RoleAssign,
 )
-from manipulation.scenarios import AddShape
 
 from sim2sim.simulation import (
     BasicSimulator,
@@ -38,6 +37,7 @@ from sim2sim.util import (
     create_directive_str_for_sdf_path,
     SphereStateSource,
     copy_object_proximity_properties,
+    add_shape,
 )
 from sim2sim.images import SphereImageGenerator, NoneImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
@@ -107,7 +107,7 @@ def add_pusher_geometry(
     else:
         print(f"Unknown pusher geometry: {type}")
         exit()
-    pusher_shape = AddShape(
+    pusher_shape = add_shape(
         plant,
         pusher_geometry,
         "pusher_geometry",
@@ -220,8 +220,6 @@ def create_env(
                 new_proximity_properties,
                 RoleAssign.kReplace,
             )
-            # TODO: This seems to prevent a RuntimeError bug but I'm not sure why
-            break
 
     # pusher_geometry state source
     pusher_geometry_state_source = builder.AddSystem(

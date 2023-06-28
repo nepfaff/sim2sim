@@ -11,6 +11,7 @@ from .util import (
     vector_pose_to_rigidtransform,
     get_principal_component,
     get_main_mesh_cluster,
+    add_shape,
 )
 from .physics import calc_mesh_inertia
 from .iiwa import (
