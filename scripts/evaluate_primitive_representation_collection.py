@@ -16,7 +16,6 @@ import json
 import random
 
 import wandb
-import open3d as o3d
 
 from sim2sim.util.script_utils import rank_based_on_metrics
 
@@ -115,6 +114,18 @@ def main():
         + "experiment description.",
     )
     parser.add_argument(
+        "--additional_collision_geometries_mesh_pieces_path",
+        required=False,
+        default=None,
+        type=str,
+        help="The path to a folder containing additional collision geometries to "
+        + "include in the evaluation. The collision geometries are represented by a "
+        + "folder, containing multiple mesh pieces. The individual pieces make up one "
+        + "collision geometry. These collision geometries will be added "
+        + "similarly to the primitive collision geometries, by modidfying the provided "
+        + "experiment description.",
+    )
+    parser.add_argument(
         "--keep_outer_vis",
         action="store_true",
         help="Whether to create a visualizer for each outer simulation. If False, only "
@@ -136,6 +147,9 @@ def main():
     logging_path = args.logging_path
     additional_experiment_descriptions = args.additional_experiment_descriptions
     additional_collision_geometries_path = args.additional_collision_geometries_path
+    additional_collision_geometries_mesh_pieces_path = (
+        args.additional_collision_geometries_mesh_pieces_path
+    )
     skip_outer_visualization = not args.keep_outer_vis
     wandb_name = args.wandb_name
 
@@ -244,6 +258,31 @@ def main():
                         "class"
                     ] = "IdentityMeshProcessor"
                     experiment_description["inner_mesh_processor"]["args"] = {}
+
+                    # Make edits based on representation collection
+                    adjusted_experiment_specifications = adjust_experiment_description(
+                        experiment_description
+                    )
+                    experiment_specifications.extend(adjusted_experiment_specifications)
+
+    # Add additional mesh pieces based collision geometries
+    if additional_collision_geometries_mesh_pieces_path is not None:
+        with os.scandir(additional_collision_geometries_mesh_pieces_path) as paths:
+            for path in paths:
+                if path.is_dir():
+                    experiment_description = copy.deepcopy(base_experiment_description)
+                    experiment_description["experiment_id"] = os.path.splitext(
+                        path.name
+                    )[0]
+
+                    # Add collision geometry
+                    experiment_description["inner_mesh_processor"][
+                        "class"
+                    ] = "IdentityMeshPiecesMeshProcessor"
+                    experiment_description["inner_mesh_processor"]["args"] = {}
+                    experiment_description["inner_mesh_processor"]["args"][
+                        "mesh_pieces_path"
+                    ] = path.path
 
                     # Make edits based on representation collection
                     adjusted_experiment_specifications = adjust_experiment_description(
