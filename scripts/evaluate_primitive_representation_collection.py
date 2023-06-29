@@ -250,6 +250,14 @@ def main():
                         path.name
                     )[0]
 
+                    if len(experiment_specifications) > 0:
+                        experiment_description = make_outer_deterministic(
+                            experiment_specifications,
+                            experiment_description,
+                            logging_path,
+                            skip_outer_visualization,
+                        )
+
                     # Add collision geometry
                     experiment_description["inner_inverse_graphics"]["args"][
                         "mesh_path"
@@ -274,6 +282,14 @@ def main():
                     experiment_description["experiment_id"] = os.path.splitext(
                         path.name
                     )[0]
+
+                    if len(experiment_specifications) > 0:
+                        experiment_description = make_outer_deterministic(
+                            experiment_specifications,
+                            experiment_description,
+                            logging_path,
+                            skip_outer_visualization,
+                        )
 
                     # Add collision geometry
                     experiment_description["inner_mesh_processor"][
