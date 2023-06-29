@@ -12,8 +12,7 @@ import matplotlib.pyplot as plt
 
 from sim2sim.experiments import (
     run_table_pid,
-    run_iiwa_manip_tomato_soup_can,
-    run_iiwa_manip_pepper,
+    run_iiwa_manip,
     run_floor_drop,
     run_random_force,
     run_planar_pushing,
@@ -30,8 +29,7 @@ from sim2sim.util import (
 
 ENTRYPOINTS = {
     "table_pid": run_table_pid,
-    "iiwa_manip_tomato_soup_can": run_iiwa_manip_tomato_soup_can,
-    "iiwa_manip_pepper": run_iiwa_manip_pepper,
+    "iiwa_manip": run_iiwa_manip,
     "floor_drop": run_floor_drop,
     "random_force": run_random_force,
     "planar_pushing": run_planar_pushing,
