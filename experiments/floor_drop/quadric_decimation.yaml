@@ -17,6 +17,7 @@ script:
     manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
     save_raw_mesh: false
     hydroelastic_manipuland: false
+    is_pipeline_comparison: false
 
 # Component specifications
 # 'args' are constructor arguments that are not part of the base class constructors
