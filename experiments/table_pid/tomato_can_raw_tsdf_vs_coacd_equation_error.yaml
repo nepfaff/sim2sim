@@ -80,6 +80,7 @@ outer_physical_property_estimator:
       [-2.7256e-06, -1.0914e-05, 2.1282e-04]
     ]
     center_of_mass: [-0.0032, 0.0062, -0.0124]
+    is_compliant: False
 
 inner_physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
@@ -91,6 +92,7 @@ inner_physical_property_estimator:
       [-2.7256e-06, -1.0914e-05, 2.1282e-04]
     ]
     center_of_mass: [-0.0032, 0.0062, -0.0124]
+    is_compliant: False
 
 simulator:
   class: "EquationErrorBasicSimulator"

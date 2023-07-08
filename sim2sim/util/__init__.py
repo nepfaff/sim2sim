@@ -37,3 +37,4 @@ from .metrics import (
     average_mean_contact_point_gradient_magnitude,
     average_generalized_contact_force_gradient_magnitude,
 )
+from .dataclasses import PhysicalProperties

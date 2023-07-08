@@ -77,6 +77,7 @@ outer_physical_property_estimator:
     mass: 0.349000
     inertia: [[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]
     center_of_mass: [0.0, 0.0, 0.0]
+    is_compliant: False
 
 inner_physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
@@ -84,6 +85,7 @@ inner_physical_property_estimator:
     mass: 0.349000
     inertia: [[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]
     center_of_mass: [0.0, 0.0, 0.0]
+    is_compliant: False
 
 simulator:
   class: "EquationErrorBasicSimulator"
