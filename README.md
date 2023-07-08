@@ -8,6 +8,16 @@ A high-level system diagram is shown below:
 
 Clone the repo and execute the following commands from the repository's root.
 
+Create a virtual environment:
+```
+python -m venv sim2sim_env
+```
+
+Activate the environment:
+```
+source sim2sim_env/bin/activate
+```
+
 Install `git lfs`:
 
 ```bash

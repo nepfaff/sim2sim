@@ -7,3 +7,4 @@ sim2simenv/
 data/sample_data/
 tmp/
 wandb/
+sim2sim_env/
