@@ -9,8 +9,6 @@ setup(
         "matplotlib",
         "pre-commit",
         "py",
-        "pytest",
-        "pytest-parallel",
         "trimesh",
         "manipulation",
         "pydrake",
