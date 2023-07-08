@@ -3,7 +3,7 @@
 build/
 *.pyc
 sim2simenv/
-.vscode/settings.json
+.vscode/
 data/sample_data/
 tmp/
 wandb/

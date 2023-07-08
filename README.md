@@ -13,6 +13,13 @@ Create a virtual environment:
 python -m venv sim2sim_env
 ```
 
+For local Drake and manipulation installations, insert the following at the end of the
+`sim2sim_env/bin/activate` file, modifying the paths and python version as required:
+```bash
+export PYTHONPATH=~/drake-build/install/lib/python3.8/site-packages:${PYTHONPATH}
+export PYTHONPATH=~/manipulation:${PYTHONPATH}
+```
+
 Activate the environment:
 ```
 source sim2sim_env/bin/activate
@@ -38,6 +45,12 @@ pre-commit install
 
 Install the [learning_real2sim](https://github.com/liruiw/learning_real2sim) repo in development mode based on the
 instructions in its `README`. Note that this repo is only needed for a small subset of experiments.
+
+### Requirements for using mesh decomposition
+
+1. Install [pointnet-pytorch](https://github.com/liruiw/Pointnet2_PyTorch).
+2. Install [v-hacd](https://github.com/mikedh/trimesh/blob/30a423b884903905aba82408255f02dec0b33175/docker/builds/vhacd.bash)
+in trimesh by running the script.
 
 ## Experiment Types
 
@@ -186,12 +199,6 @@ meshcats are spawned and it is not possible to clean them up without terminating
 ## Data format
 
 The camera extrinsics are homogenous `world2cam` transformation matrices with `OpenCV convention`.
-
-## Requirements for using mesh decomposition
-
-1. Install [pointnet-pytorch](https://github.com/liruiw/Pointnet2_PyTorch).
-2. Install [v-hacd](https://github.com/mikedh/trimesh/blob/30a423b884903905aba82408255f02dec0b33175/docker/builds/vhacd.bash)
-in trimesh by running the script.
 
 ## Error: "Meshes does not have textures"
 
