@@ -22,7 +22,6 @@ script:
     manipuland_directive: "../../models/manipulands/mustard_bottle_manipuland_directive.yaml"
     manipuland_base_link_name: "ycb_mustard_bottle_base_link"
     manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.62]
-    save_raw_mesh: false
     hydroelastic_manipuland: true # No effect if 'contact_model' is 'point'
     is_pipeline_comparison: True
 

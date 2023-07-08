@@ -14,7 +14,6 @@ script:
     manipuland_directive: "../../models/manipulands/mustard_ring_tsdf_manipuland_directive.yaml"
     manipuland_base_link_name: "ycb_mustard_bottle_base_link"
     manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.09]
-    save_raw_mesh: false
     hydroelastic_manipuland: true
     pusher_geometry_starting_position: [0.3, 0.0, 0.1]
     pusher_geometry_pid_gains:

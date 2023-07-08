@@ -86,7 +86,6 @@ def run_pipeline(
     timestep: float,
     manipuland_base_link_name: str,
     manipuland_default_pose: RigidTransform,
-    save_raw_mesh: bool,
     hydroelastic_manipuland: bool,
     scene_directive_path: str,
     manipuland_directive_path: str,
@@ -200,12 +199,15 @@ def run_pipeline(
     )
 
     # Save mesh data to create SDF files that can be added to a new simulation environment
-    if save_raw_mesh:
-        logger.log(raw_mesh=raw_mesh)
     logger.log(
-        processed_mesh=processed_mesh, processed_mesh_piece=processed_mesh_pieces
+        raw_mesh=raw_mesh,
+        processed_mesh=processed_mesh,
+        processed_mesh_piece=processed_mesh_pieces,
     )
-    _, processed_mesh_file_path = logger.save_mesh_data(prefix=prefix)
+    raw_mesh_file_path, processed_mesh_file_path = logger.save_mesh_data(prefix=prefix)
+    raw_mesh_file_path = os.path.join(
+        pathlib.Path(__file__).parent.resolve(), "../..", raw_mesh_file_path
+    )
     processed_mesh_file_path = os.path.join(
         pathlib.Path(__file__).parent.resolve(), "../..", processed_mesh_file_path
     )
@@ -217,6 +219,7 @@ def run_pipeline(
         )
     elif is_primitive:
         processed_mesh_directive = create_processed_mesh_primitive_directive_str(
+            raw_mesh_file_path,
             primitive_info,
             mass,
             inertia,
@@ -229,6 +232,7 @@ def run_pipeline(
         )
     else:
         processed_mesh_directive = create_processed_mesh_directive_str(
+            raw_mesh_file_path,
             mass,
             inertia,
             center_of_mass,
@@ -266,7 +270,6 @@ def run_experiment(
     scene_directive: str,
     manipuland_base_link_name: str,
     manipuland_default_pose: str,
-    save_raw_mesh: bool,
     hydroelastic_manipuland: bool,
     is_pipeline_comparison: bool,
     create_env_func: Callable,
@@ -287,7 +290,6 @@ def run_experiment(
     :param manipuland_base_link_name: The base link name of the outer manipuland.
     :param manipuland_default_pose: The default pose of the outer manipuland of form
         [roll, pitch, yaw, x, y, z].
-    :param save_raw_mesh: Whether to save the raw mesh from inverse graphics.
     :param hydroelastic_manipuland: Whether to use hydroelastic or point contact for the
         inner manipuland.
     :param is_pipeline_comparison: Whether it is a sim2sim pipeline comparison
@@ -321,7 +323,6 @@ def run_experiment(
             timestep=timestep,
             manipuland_base_link_name=manipuland_base_link_name,
             manipuland_default_pose=manipuland_default_pose,
-            save_raw_mesh=save_raw_mesh,
             hydroelastic_manipuland=hydroelastic_manipuland,
             scene_directive_path=scene_directive_path,
             manipuland_directive_path=manipuland_directive_path,
@@ -336,7 +337,6 @@ def run_experiment(
             timestep=timestep,
             manipuland_base_link_name=manipuland_base_link_name,
             manipuland_default_pose=manipuland_default_pose,
-            save_raw_mesh=save_raw_mesh,
             hydroelastic_manipuland=hydroelastic_manipuland,
             scene_directive_path=scene_directive_path,
             manipuland_directive_path=manipuland_directive_path,
@@ -360,7 +360,6 @@ def run_experiment(
             timestep=timestep,
             manipuland_base_link_name=manipuland_base_link_name,
             manipuland_default_pose=manipuland_default_pose,
-            save_raw_mesh=save_raw_mesh,
             hydroelastic_manipuland=hydroelastic_manipuland,
             scene_directive_path=scene_directive_path,
             manipuland_directive_path=manipuland_directive_path,

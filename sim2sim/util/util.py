@@ -40,6 +40,7 @@ def visualize_poses(poses: List[RigidTransform], meshcat) -> None:
 
 
 def create_processed_mesh_sdf_file(
+    visual_mesh_file_path: str,
     mass: float,
     inertia: np.ndarray,
     center_of_mass: np.ndarray,
@@ -51,6 +52,7 @@ def create_processed_mesh_sdf_file(
     """
     Creates and saves an SDF file for the processed mesh.
 
+    :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     :param mass: The object mass in kg.
     :param inertia: The moment of inertia matrix of shape (3,3).
     :param center_of_mass: The object's center of mass that the inertia is about in the
@@ -82,7 +84,7 @@ def create_processed_mesh_sdf_file(
                         <pose>0 0 0 0 0 0</pose>
                         <geometry>
                             <mesh>
-                                <uri>{processed_mesh_file_path}</uri>
+                                <uri>{visual_mesh_file_path}</uri>
                             </mesh>
                         </geometry>
                     </visual>
@@ -118,6 +120,7 @@ def create_processed_mesh_sdf_file(
 
 
 def create_decomposition_processed_mesh_sdf_file(
+    visual_mesh_file_path: str,
     mass: float,
     inertia: np.ndarray,
     center_of_mass: np.ndarray,
@@ -132,6 +135,7 @@ def create_decomposition_processed_mesh_sdf_file(
     """
     Creates and saves an SDF file for the processed decomposition of a mesh.
 
+    :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     :param mass: The object mass in kg.
     :param inertia: The moment of inertia matrix of shape (3,3).
     :param center_of_mass: The object's center of mass that the inertia is about in the
@@ -159,19 +163,19 @@ def create_decomposition_processed_mesh_sdf_file(
                         <mass>{mass}</mass>
                         <pose>{center_of_mass[0]} {center_of_mass[1]} {center_of_mass[2]} 0 0 0</pose>
                     </inertial>
+                    <visual name="visual">
+                        <pose>0 0 0 0 0 0</pose>
+                        <geometry>
+                            <mesh>
+                                <uri>{visual_mesh_file_path}</uri>
+                            </mesh>
+                        </geometry>
+                    </visual>
     """
 
     # add the decomposed meshes
     for k, mesh_path in enumerate(mesh_pieces):
         procesed_mesh_sdf_str += f"""
-                        <visual name="visual_{k}">
-                            <pose>0 0 0 0 0 0</pose>
-                            <geometry>
-                                <mesh>
-                                    <uri>{mesh_path}</uri>
-                                </mesh>
-                            </geometry>
-                        </visual>
                         <collision name="collision_{k}">
                             <pose>0 0 0 0 0 0</pose>
                             <geometry>
@@ -207,6 +211,7 @@ def create_decomposition_processed_mesh_sdf_file(
 
 
 def create_processed_mesh_directive_str(
+    visual_mesh_file_path: str,
     mass: float,
     inertia: np.ndarray,
     center_of_mass: np.ndarray,
@@ -220,6 +225,7 @@ def create_processed_mesh_directive_str(
     """
     Creates a directive for the processed mesh.
 
+    :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     :param mass: The object mass in kg.
     :param inertia: The moment of inertia matrix of shape (3,3).
     :param center_of_mass: The object's center of mass that the inertia is about in the
@@ -237,6 +243,7 @@ def create_processed_mesh_directive_str(
             if "mesh_piece_" in f
         ]
         procesed_mesh_sdf_path = create_decomposition_processed_mesh_sdf_file(
+            visual_mesh_file_path,
             mass,
             inertia,
             center_of_mass,
@@ -249,6 +256,7 @@ def create_processed_mesh_directive_str(
         )
     else:
         procesed_mesh_sdf_path = create_processed_mesh_sdf_file(
+            visual_mesh_file_path,
             mass,
             inertia,
             center_of_mass,
@@ -267,6 +275,7 @@ def create_processed_mesh_directive_str(
 
 
 def create_processed_mesh_primitive_sdf_file(
+    visual_mesh_file_path: str,
     primitive_info: List[Dict[str, Any]],
     mass: float,
     inertia: np.ndarray,
@@ -279,6 +288,7 @@ def create_processed_mesh_primitive_sdf_file(
     """
     Creates and saves an SDF file for a processed mesh consisting of primitive geometries.
 
+    :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     :param primitive_info: A list of dicts containing primitive params. Each dict must contain "name" which can for
         example be sphere, ellipsoid, box, etc. and "transform" which is a homogenous transformation matrix. The other
         params are primitive dependent but must be sufficient to construct that primitive.
@@ -307,6 +317,14 @@ def create_processed_mesh_primitive_sdf_file(
                         <mass>{mass}</mass>
                         <pose>{center_of_mass[0]} {center_of_mass[1]} {center_of_mass[2]} 0 0 0</pose>
                     </inertial>
+                    <visual name="visual">
+                        <pose>0 0 0 0 0 0</pose>
+                        <geometry>
+                            <mesh>
+                                <uri>{visual_mesh_file_path}</uri>
+                            </mesh>
+                        </geometry>
+                    </visual>
     """
 
     # Add the primitives
@@ -349,12 +367,6 @@ def create_processed_mesh_primitive_sdf_file(
             raise RuntimeError(f"Unsupported primitive type: {info['name']}")
 
         procesed_mesh_sdf_str += f"""
-            <visual name="visual_{i}">
-                <pose>{translation[0]} {translation[1]} {translation[2]} {rotation[0]} {rotation[1]} {rotation[2]}</pose>
-                <geometry>
-                    {geometry}
-                </geometry>
-            </visual>
             <collision name="collision_{i}">
                 <pose>{translation[0]} {translation[1]} {translation[2]} {rotation[0]} {rotation[1]} {rotation[2]}</pose>
                 <geometry>
@@ -401,6 +413,7 @@ def create_directive_str_for_sdf_path(
 
 
 def create_processed_mesh_primitive_directive_str(
+    visual_mesh_file_path: str,
     primitive_info: List[Dict[str, Any]],
     mass: float,
     inertia: np.ndarray,
@@ -414,6 +427,7 @@ def create_processed_mesh_primitive_directive_str(
     """
     Creates a directive for the processed mesh that contains primitive geometries.
 
+    :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     :param primitive_info: A list of dicts containing primitive params. Each dict must contain "name" which can for
         example be sphere, ellipsoid, box, etc. The other params are primitive dependent but must be sufficient to
         construct that primitive.
@@ -427,6 +441,7 @@ def create_processed_mesh_primitive_directive_str(
     :param prefix: An optional prefix for the processed mesh sdf file name.
     """
     procesed_mesh_sdf_path = create_processed_mesh_primitive_sdf_file(
+        visual_mesh_file_path,
         primitive_info,
         mass,
         inertia,

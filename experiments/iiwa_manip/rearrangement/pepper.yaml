@@ -17,7 +17,6 @@ script:
     manipuland_base_link_name: "pepper_base_link"
     manipuland_directive: "../../models/iiwa_manip/iiwa_manip_pepper_manipuland_directive.yaml"
     manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.45, 0.035]
-    save_raw_mesh: false
     is_pipeline_comparison: false
 
 # Component specifications

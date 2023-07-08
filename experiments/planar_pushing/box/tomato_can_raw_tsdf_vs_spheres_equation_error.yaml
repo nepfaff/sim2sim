@@ -20,7 +20,6 @@ script:
     manipuland_directive: "../../models/manipulands/tomato_can_manipuland_directive.yaml"
     manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
     manipuland_default_pose: [1.57, 1.57, 0, 0.0, 0.0, 0.035]
-    save_raw_mesh: false
     hydroelastic_manipuland: True
     pusher_geometry_starting_position: [0.15, 0.03, 0.02]
     pusher_geometry_pid_gains:
