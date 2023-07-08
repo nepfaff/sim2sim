@@ -143,6 +143,10 @@ class DynamicLogger:
             if not os.path.exists(path):
                 os.mkdir(path)
 
+    @property
+    def is_kProximity(self):
+        return self._kProximity
+
     @staticmethod
     def add_meshcat_visualizer(
         builder: DiagramBuilder, scene_graph: SceneGraph, kProximity: bool
@@ -849,7 +853,6 @@ class DynamicLogger:
                 self._masks,
             )
         ):
-
             np.savetxt(
                 os.path.join(self._camera_poses_dir_path, f"pose{i:04d}.txt"), pose
             )

@@ -199,14 +199,19 @@ def run_pipeline(
     )
 
     # Save mesh data to create SDF files that can be added to a new simulation environment
+    # Only save the raw mesh if we use it for visualization
+    if not logger.is_kProximity:
+        logger.log(raw_mesh=raw_mesh)
     logger.log(
-        raw_mesh=raw_mesh,
-        processed_mesh=processed_mesh,
-        processed_mesh_piece=processed_mesh_pieces,
+        processed_mesh=processed_mesh, processed_mesh_piece=processed_mesh_pieces
     )
     raw_mesh_file_path, processed_mesh_file_path = logger.save_mesh_data(prefix=prefix)
-    raw_mesh_file_path = os.path.join(
-        pathlib.Path(__file__).parent.resolve(), "../..", raw_mesh_file_path
+    raw_mesh_file_path = (
+        os.path.join(
+            pathlib.Path(__file__).parent.resolve(), "../..", raw_mesh_file_path
+        )
+        if not logger.is_kProximity
+        else None
     )
     processed_mesh_file_path = os.path.join(
         pathlib.Path(__file__).parent.resolve(), "../..", processed_mesh_file_path
@@ -219,7 +224,6 @@ def run_pipeline(
         )
     elif is_primitive:
         processed_mesh_directive = create_processed_mesh_primitive_directive_str(
-            raw_mesh_file_path,
             primitive_info,
             mass,
             inertia,
@@ -229,10 +233,10 @@ def run_pipeline(
             manipuland_base_link_name,
             hydroelastic=hydroelastic_manipuland,
             prefix=prefix,
+            visual_mesh_file_path=raw_mesh_file_path,
         )
     else:
         processed_mesh_directive = create_processed_mesh_directive_str(
-            raw_mesh_file_path,
             mass,
             inertia,
             center_of_mass,
@@ -242,6 +246,7 @@ def run_pipeline(
             manipuland_base_link_name,
             hydroelastic=hydroelastic_manipuland,
             prefix=prefix,
+            visual_mesh_file_path=raw_mesh_file_path,
         )
 
     builder, scene_graph, plant = create_env_func(

@@ -1,5 +1,5 @@
 import os
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import copy
 
 import open3d as o3d
@@ -40,7 +40,6 @@ def visualize_poses(poses: List[RigidTransform], meshcat) -> None:
 
 
 def create_processed_mesh_sdf_file(
-    visual_mesh_file_path: str,
     mass: float,
     inertia: np.ndarray,
     center_of_mass: np.ndarray,
@@ -48,11 +47,11 @@ def create_processed_mesh_sdf_file(
     tmp_folder: str,
     manipuland_base_link_name: str,
     hydroelastic: bool,
+    visual_mesh_file_path: Optional[str] = None,
 ) -> str:
     """
     Creates and saves an SDF file for the processed mesh.
 
-    :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     :param mass: The object mass in kg.
     :param inertia: The moment of inertia matrix of shape (3,3).
     :param center_of_mass: The object's center of mass that the inertia is about in the
@@ -61,6 +60,7 @@ def create_processed_mesh_sdf_file(
     :param tmp_folder: The folder to write the sdf file to.
     :param hydroelastic: Whether to make the body rigid hydroelastic.
     :return procesed_mesh_sdf_path: The path to the SDF file.
+    :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     """
     procesed_mesh_sdf_str = f"""
         <?xml version="1.0"?>
@@ -79,7 +79,10 @@ def create_processed_mesh_sdf_file(
                         <mass>{mass}</mass>
                         <pose>{center_of_mass[0]} {center_of_mass[1]} {center_of_mass[2]} 0 0 0</pose>
                     </inertial>
+        """
 
+    if visual_mesh_file_path is not None:
+        procesed_mesh_sdf_str += f"""
                     <visual name="visual">
                         <pose>0 0 0 0 0 0</pose>
                         <geometry>
@@ -88,6 +91,9 @@ def create_processed_mesh_sdf_file(
                             </mesh>
                         </geometry>
                     </visual>
+            """
+
+    procesed_mesh_sdf_str += f"""
                     <collision name="collision">
                         <pose>0 0 0 0 0 0</pose>
                         <geometry>
@@ -95,7 +101,7 @@ def create_processed_mesh_sdf_file(
                                 <uri>{processed_mesh_file_path}</uri>
                             </mesh>
                         </geometry>
-    """
+        """
 
     if hydroelastic:
         procesed_mesh_sdf_str += """
@@ -105,7 +111,7 @@ def create_processed_mesh_sdf_file(
             """
 
     procesed_mesh_sdf_str += """
-                </collision>
+                    </collision>
                     </link>
                 </model>
             </sdf>
@@ -120,7 +126,6 @@ def create_processed_mesh_sdf_file(
 
 
 def create_decomposition_processed_mesh_sdf_file(
-    visual_mesh_file_path: str,
     mass: float,
     inertia: np.ndarray,
     center_of_mass: np.ndarray,
@@ -131,11 +136,11 @@ def create_decomposition_processed_mesh_sdf_file(
     hydroelastic: bool,
     prefix: str = "",
     parts_are_convex: bool = True,
+    visual_mesh_file_path: Optional[str] = None,
 ) -> str:
     """
     Creates and saves an SDF file for the processed decomposition of a mesh.
 
-    :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     :param mass: The object mass in kg.
     :param inertia: The moment of inertia matrix of shape (3,3).
     :param center_of_mass: The object's center of mass that the inertia is about in the
@@ -145,6 +150,7 @@ def create_decomposition_processed_mesh_sdf_file(
     :param sdf_folder: The folder to write the sdf file to.
     :param hydroelastic: Whether to make the body rigid hydroelastic.
     :param prefix: An optional prefix for the processed mesh sdf file name.
+    :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     """
     procesed_mesh_sdf_str = f"""
         <?xml version="1.0"?>
@@ -163,6 +169,10 @@ def create_decomposition_processed_mesh_sdf_file(
                         <mass>{mass}</mass>
                         <pose>{center_of_mass[0]} {center_of_mass[1]} {center_of_mass[2]} 0 0 0</pose>
                     </inertial>
+        """
+
+    if visual_mesh_file_path is not None:
+        procesed_mesh_sdf_str += f"""
                     <visual name="visual">
                         <pose>0 0 0 0 0 0</pose>
                         <geometry>
@@ -171,7 +181,7 @@ def create_decomposition_processed_mesh_sdf_file(
                             </mesh>
                         </geometry>
                     </visual>
-    """
+            """
 
     # add the decomposed meshes
     for k, mesh_path in enumerate(mesh_pieces):
@@ -184,7 +194,7 @@ def create_decomposition_processed_mesh_sdf_file(
                                     <uri>{mesh_path}</uri>
                                 </mesh>
                             </geometry>
-        """
+            """
 
         if hydroelastic:
             procesed_mesh_sdf_str += """
@@ -211,7 +221,6 @@ def create_decomposition_processed_mesh_sdf_file(
 
 
 def create_processed_mesh_directive_str(
-    visual_mesh_file_path: str,
     mass: float,
     inertia: np.ndarray,
     center_of_mass: np.ndarray,
@@ -221,11 +230,11 @@ def create_processed_mesh_directive_str(
     manipuland_base_link_name: str,
     hydroelastic: bool,
     prefix: str = "",
+    visual_mesh_file_path: Optional[str] = None,
 ) -> str:
     """
     Creates a directive for the processed mesh.
 
-    :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     :param mass: The object mass in kg.
     :param inertia: The moment of inertia matrix of shape (3,3).
     :param center_of_mass: The object's center of mass that the inertia is about in the
@@ -235,6 +244,7 @@ def create_processed_mesh_directive_str(
     :param model_name: The name of the directive model.
     :param hydroelastic: Whether to make the body rigid hydroelastic.
     :param prefix: An optional prefix for the processed mesh sdf file name.
+    :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     """
     if not (processed_mesh_file_path).endswith(".obj"):
         listed_files = [
@@ -243,7 +253,6 @@ def create_processed_mesh_directive_str(
             if "mesh_piece_" in f
         ]
         procesed_mesh_sdf_path = create_decomposition_processed_mesh_sdf_file(
-            visual_mesh_file_path,
             mass,
             inertia,
             center_of_mass,
@@ -253,10 +262,10 @@ def create_processed_mesh_directive_str(
             manipuland_base_link_name,
             hydroelastic,
             prefix,
+            visual_mesh_file_path=visual_mesh_file_path,
         )
     else:
         procesed_mesh_sdf_path = create_processed_mesh_sdf_file(
-            visual_mesh_file_path,
             mass,
             inertia,
             center_of_mass,
@@ -264,6 +273,7 @@ def create_processed_mesh_directive_str(
             sdf_folder,
             manipuland_base_link_name,
             hydroelastic,
+            visual_mesh_file_path=visual_mesh_file_path,
         )
     processed_mesh_directive = f"""
         directives:
@@ -275,7 +285,6 @@ def create_processed_mesh_directive_str(
 
 
 def create_processed_mesh_primitive_sdf_file(
-    visual_mesh_file_path: str,
     primitive_info: List[Dict[str, Any]],
     mass: float,
     inertia: np.ndarray,
@@ -284,11 +293,11 @@ def create_processed_mesh_primitive_sdf_file(
     manipuland_base_link_name: str,
     hydroelastic: bool,
     prefix: str = "",
+    visual_mesh_file_path: Optional[str] = None,
 ) -> str:
     """
     Creates and saves an SDF file for a processed mesh consisting of primitive geometries.
 
-    :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     :param primitive_info: A list of dicts containing primitive params. Each dict must contain "name" which can for
         example be sphere, ellipsoid, box, etc. and "transform" which is a homogenous transformation matrix. The other
         params are primitive dependent but must be sufficient to construct that primitive.
@@ -299,6 +308,7 @@ def create_processed_mesh_primitive_sdf_file(
     :param sdf_folder: The folder to write the sdf file to.
     :param hydroelastic: Whether to make the body rigid hydroelastic.
     :param prefix: An optional prefix for the processed mesh sdf file name.
+    :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     """
     procesed_mesh_sdf_str = f"""
         <?xml version="1.0"?>
@@ -317,6 +327,10 @@ def create_processed_mesh_primitive_sdf_file(
                         <mass>{mass}</mass>
                         <pose>{center_of_mass[0]} {center_of_mass[1]} {center_of_mass[2]} 0 0 0</pose>
                     </inertial>
+        """
+
+    if visual_mesh_file_path is not None:
+        procesed_mesh_sdf_str += f"""
                     <visual name="visual">
                         <pose>0 0 0 0 0 0</pose>
                         <geometry>
@@ -325,7 +339,7 @@ def create_processed_mesh_primitive_sdf_file(
                             </mesh>
                         </geometry>
                     </visual>
-    """
+            """
 
     # Add the primitives
     for i, info in enumerate(primitive_info):
@@ -372,7 +386,7 @@ def create_processed_mesh_primitive_sdf_file(
                 <geometry>
                     {geometry}
                 </geometry>
-        """
+            """
 
         if hydroelastic:
             procesed_mesh_sdf_str += """
@@ -413,7 +427,6 @@ def create_directive_str_for_sdf_path(
 
 
 def create_processed_mesh_primitive_directive_str(
-    visual_mesh_file_path: str,
     primitive_info: List[Dict[str, Any]],
     mass: float,
     inertia: np.ndarray,
@@ -423,11 +436,11 @@ def create_processed_mesh_primitive_directive_str(
     manipuland_base_link_name: str,
     hydroelastic: str,
     prefix: str = "",
+    visual_mesh_file_path: Optional[str] = None,
 ) -> str:
     """
     Creates a directive for the processed mesh that contains primitive geometries.
 
-    :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     :param primitive_info: A list of dicts containing primitive params. Each dict must contain "name" which can for
         example be sphere, ellipsoid, box, etc. The other params are primitive dependent but must be sufficient to
         construct that primitive.
@@ -439,9 +452,9 @@ def create_processed_mesh_primitive_directive_str(
     :param model_name: The name of the directive model.
     :param hydroelastic: Whether to make the body rigid hydroelastic.
     :param prefix: An optional prefix for the processed mesh sdf file name.
+    :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     """
     procesed_mesh_sdf_path = create_processed_mesh_primitive_sdf_file(
-        visual_mesh_file_path,
         primitive_info,
         mass,
         inertia,
@@ -450,6 +463,7 @@ def create_processed_mesh_primitive_directive_str(
         manipuland_base_link_name,
         hydroelastic,
         prefix,
+        visual_mesh_file_path=visual_mesh_file_path,
     )
     processed_mesh_directive = f"""
         directives:
