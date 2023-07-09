@@ -1,4 +1,4 @@
-from typing import Tuple, List, Union, Any, Dict
+from typing import List, Any, Dict
 
 import open3d as o3d
 import numpy as np
@@ -6,7 +6,7 @@ import trimesh
 import sklearn.mixture
 
 from .mesh_processor_base import MeshProcessorBase
-from sim2sim.util import open3d_to_trimesh
+from sim2sim.util import open3d_to_trimesh, MeshProcessorResult
 from sim2sim.logging import DynamicLogger
 from learning_real2sim.src.ellipsoid import Ellipsoid
 
@@ -38,15 +38,7 @@ class GMMMeshProcessor(MeshProcessorBase):
 
         self._logger.log(meta_data={"mesh_processing_GMM_EM": gmm_em_params})
 
-    def process_mesh(
-        self, mesh: o3d.geometry.TriangleMesh
-    ) -> Tuple[
-        bool,
-        Union[o3d.geometry.TriangleMesh, None],
-        List[o3d.geometry.TriangleMesh],
-        Union[List[Dict[str, Any]], None],
-        Union[str, None],
-    ]:
+    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
         tmesh = open3d_to_trimesh(mesh)
         pts = trimesh.sample.sample_surface_even(tmesh, 10000)[0]
         gmm = sklearn.mixture.GaussianMixture(**self._gmm_em_params)
@@ -93,4 +85,7 @@ class GMMMeshProcessor(MeshProcessorBase):
                 }
             )
 
-        return True, None, [], analytical_ellipsoids, None
+        return MeshProcessorResult(
+            result_type=MeshProcessorResult.ResultType.PRIMITIVE_INFO,
+            primitive_info=analytical_ellipsoids,
+        )

@@ -19,6 +19,7 @@ from sim2sim.util import (
     create_processed_mesh_directive_str,
     create_processed_mesh_primitive_directive_str,
     create_directive_str_for_sdf_path,
+    MeshProcessorResult,
 )
 from sim2sim.images import SphereImageGenerator, NoneImageGenerator
 from sim2sim.inverse_graphics import IdentityInverseGraphics
@@ -33,6 +34,7 @@ from sim2sim.mesh_processing import (
     IdentityPrimitiveMeshProcessor,
     IdentitySDFMeshProcessor,
     IdentityMeshPiecesMeshProcessor,
+    IdentityVTKMeshProcessor,
 )
 from sim2sim.physical_property_estimator import (
     WaterDensityPhysicalPropertyEstimator,
@@ -63,6 +65,7 @@ MESH_PROCESSORS = {
     "IdentityPrimitiveMeshProcessor": IdentityPrimitiveMeshProcessor,
     "IdentitySDFMeshProcessor": IdentitySDFMeshProcessor,
     "IdentityMeshPiecesMeshProcessor": IdentityMeshPiecesMeshProcessor,
+    "IdentityVTKMeshProcessor": IdentityVTKMeshProcessor,
 }
 PHYSICAL_PROPERTY_ESTIMATOR = {
     "WaterDensityPhysicalPropertyEstimator": WaterDensityPhysicalPropertyEstimator,
@@ -163,13 +166,7 @@ def run_pipeline(
             else {}
         ),
     )
-    (
-        is_primitive,
-        processed_mesh,
-        processed_mesh_pieces,
-        primitive_info,
-        mesh_sdf_path,
-    ) = mesh_processor.process_mesh(raw_mesh)
+    mesh_processor_result: MeshProcessorResult = mesh_processor.process_mesh(raw_mesh)
     print(f"Finished mesh processing{f' for {prefix}' if prefix else ''}.")
 
     # Compute mesh inertia and mass
@@ -185,7 +182,7 @@ def run_pipeline(
         ),
     )
     physical_properties = physical_porperty_estimator.estimate_physical_properties(
-        processed_mesh
+        raw_mesh
     )
     print(
         f"Finished estimating physical properties{f' for {prefix}' if prefix else ''}."
@@ -196,9 +193,7 @@ def run_pipeline(
     # Only save the raw mesh if we use it for visualization
     if not logger.is_kProximity:
         logger.log(raw_mesh=raw_mesh)
-    logger.log(
-        processed_mesh=processed_mesh, processed_mesh_piece=processed_mesh_pieces
-    )
+    logger.log(mesh_processor_result=mesh_processor_result)
     raw_mesh_file_path, processed_mesh_file_path = logger.save_mesh_data(prefix=prefix)
     raw_mesh_file_path = (
         os.path.join(
@@ -212,13 +207,16 @@ def run_pipeline(
     )
 
     # Create a directive for processed_mesh manipuland
-    if mesh_sdf_path is not None:
+    if mesh_processor_result.result_type == MeshProcessorResult.ResultType.SDF_PATH:
         processed_mesh_directive = create_directive_str_for_sdf_path(
-            mesh_sdf_path, params[f"{prefix}env"]["obj_name"]
+            mesh_processor_result.get_result(), params[f"{prefix}env"]["obj_name"]
         )
-    elif is_primitive:
+    elif (
+        mesh_processor_result.result_type
+        == MeshProcessorResult.ResultType.PRIMITIVE_INFO
+    ):
         processed_mesh_directive = create_processed_mesh_primitive_directive_str(
-            primitive_info,
+            mesh_processor_result.get_result(),
             physical_properties,
             logger._mesh_dir_path,
             params[f"{prefix}env"]["obj_name"],

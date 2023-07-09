@@ -109,7 +109,7 @@ def create_processed_mesh_sdf_file(
     Creates and saves an SDF file for the processed mesh.
 
     :param physical_properties: The physical properties.
-    :param processed_mesh_file_path: The path to the processed mesh obj file.
+    :param processed_mesh_file_path: The path to the processed mesh obj/vtk file.
     :param tmp_folder: The folder to write the sdf file to.
     :param is_hydroelastic: Whether to make the body rigid hydroelastic.
     :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
@@ -169,7 +169,7 @@ def create_processed_mesh_sdf_file(
         """
 
     idx = processed_mesh_file_path.find("sim2sim/")
-    procesed_mesh_sdf_path = processed_mesh_file_path[idx + 8 :].replace(".obj", ".sdf")
+    procesed_mesh_sdf_path = processed_mesh_file_path[idx + 8 : -3] + "sdf"
 
     with open(procesed_mesh_sdf_path, "w") as f:
         f.write(procesed_mesh_sdf_str)
@@ -178,7 +178,6 @@ def create_processed_mesh_sdf_file(
 
 def create_decomposition_processed_mesh_sdf_file(
     physical_properties: PhysicalProperties,
-    processed_mesh_file_path: str,
     mesh_pieces: List[str],
     sdf_folder: str,
     manipuland_base_link_name: str,
@@ -191,7 +190,6 @@ def create_decomposition_processed_mesh_sdf_file(
     Creates and saves an SDF file for the processed decomposition of a mesh.
 
     :param physical_properties: The physical properties.
-    :param processed_mesh_file_path: The path to the processed mesh obj file.
     :param mesh_pieces: A list of mesh piece paths.
     :param sdf_folder: The folder to write the sdf file to.
     :param is_hydroelastic: Whether to make the body rigid hydroelastic.
@@ -278,14 +276,15 @@ def create_processed_mesh_directive_str(
     Creates a directive for the processed mesh.
 
     :param physical_properties: The physical properties.
-    :param processed_mesh_file_path: The path to the processed mesh obj file.
+    :param processed_mesh_file_path: The path to the processed mesh pieces directory,
+        obj file, or vtk file.
     :param sdf_folder: The folder to write the sdf file to.
     :param model_name: The name of the directive model.
     :param hydroelastic: Whether to make the body rigid hydroelastic.
     :param prefix: An optional prefix for the processed mesh sdf file name.
     :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     """
-    if not (processed_mesh_file_path).endswith(".obj"):
+    if os.path.isdir(processed_mesh_file_path):
         listed_files = [
             os.path.join(processed_mesh_file_path, f)
             for f in os.listdir(processed_mesh_file_path)
@@ -293,7 +292,6 @@ def create_processed_mesh_directive_str(
         ]
         procesed_mesh_sdf_path = create_decomposition_processed_mesh_sdf_file(
             physical_properties,
-            processed_mesh_file_path + ".obj",
             listed_files,
             sdf_folder,
             manipuland_base_link_name,
@@ -329,11 +327,13 @@ def create_processed_mesh_primitive_sdf_file(
     visual_mesh_file_path: Optional[str] = None,
 ) -> str:
     """
-    Creates and saves an SDF file for a processed mesh consisting of primitive geometries.
+    Creates and saves an SDF file for a processed mesh consisting of primitive
+    geometries.
 
-    :param primitive_info: A list of dicts containing primitive params. Each dict must contain "name" which can for
-        example be sphere, ellipsoid, box, etc. and "transform" which is a homogenous transformation matrix. The other
-        params are primitive dependent but must be sufficient to construct that primitive.
+    :param primitive_info: A list of dicts containing primitive params. Each dict must
+        contain "name" which can for example be sphere, ellipsoid, box, etc. and
+        "transform" which is a homogenous transformation matrix. The other params are
+        primitive dependent but must be sufficient to construct that primitive.
     :param physical_properties: The physical properties.
     :param sdf_folder: The folder to write the sdf file to.
     :param is_hydroelastic: Whether to make the body rigid hydroelastic.
@@ -471,9 +471,10 @@ def create_processed_mesh_primitive_directive_str(
     """
     Creates a directive for the processed mesh that contains primitive geometries.
 
-    :param primitive_info: A list of dicts containing primitive params. Each dict must contain "name" which can for
-        example be sphere, ellipsoid, box, etc. The other params are primitive dependent but must be sufficient to
-        construct that primitive.
+    :param primitive_info: A list of dicts containing primitive params. Each dict must
+        contain "name" which can for example be sphere, ellipsoid, box, etc. and
+        "transform" which is a homogenous transformation matrix. The other params are
+        primitive dependent but must be sufficient to construct that primitive.
     :param physical_properties: The physical properties.
     :param sdf_folder: The folder to write the sdf file to.
     :param model_name: The name of the directive model.
@@ -544,7 +545,9 @@ def copy_object_proximity_properties(
     const_proximity_properties: ProximityProperties,
     new_proximity_properties: ProximityProperties,
 ) -> None:
-    """Copies properties from `const_proximity_properties` to `new_proximity_properties`."""
+    """
+    Copies properties from `const_proximity_properties` to `new_proximity_properties`.
+    """
     for group_name in const_proximity_properties.GetGroupNames():
         properties = const_proximity_properties.GetPropertiesInGroup(group_name)
         for name in properties:
