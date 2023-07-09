@@ -290,6 +290,8 @@ def create_processed_mesh_directive_str(
             for f in os.listdir(processed_mesh_file_path)
             if "mesh_piece_" in f
         ]
+        # Assume that the individual pieces are convex
+        # Cannot declare VTK files as convex
         procesed_mesh_sdf_path = create_decomposition_processed_mesh_sdf_file(
             physical_properties,
             listed_files,
@@ -297,6 +299,7 @@ def create_processed_mesh_directive_str(
             manipuland_base_link_name,
             hydroelastic,
             prefix,
+            parts_are_convex=listed_files[0][-3:].lower() == "obj",
             visual_mesh_file_path=visual_mesh_file_path,
         )
     else:

@@ -35,6 +35,7 @@ from sim2sim.mesh_processing import (
     IdentitySDFMeshProcessor,
     IdentityMeshPiecesMeshProcessor,
     IdentityVTKMeshProcessor,
+    IdentityVTKPiecesMeshProcessor,
 )
 from sim2sim.physical_property_estimator import (
     WaterDensityPhysicalPropertyEstimator,
@@ -66,6 +67,7 @@ MESH_PROCESSORS = {
     "IdentitySDFMeshProcessor": IdentitySDFMeshProcessor,
     "IdentityMeshPiecesMeshProcessor": IdentityMeshPiecesMeshProcessor,
     "IdentityVTKMeshProcessor": IdentityVTKMeshProcessor,
+    "IdentityVTKPiecesMeshProcessor": IdentityVTKPiecesMeshProcessor,
 }
 PHYSICAL_PROPERTY_ESTIMATOR = {
     "WaterDensityPhysicalPropertyEstimator": WaterDensityPhysicalPropertyEstimator,

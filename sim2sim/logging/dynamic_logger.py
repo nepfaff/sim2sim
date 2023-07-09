@@ -651,7 +651,7 @@ class DynamicLogger:
                     for idx, mesh in enumerate(result):
                         o3d.io.write_triangle_mesh(
                             os.path.join(
-                                processed_mesh_file_path, f"mesh_piece_{idx}.obj"
+                                processed_mesh_file_path, f"mesh_piece_{idx:03d}.obj"
                             ),
                             mesh,
                         )
@@ -664,11 +664,25 @@ class DynamicLogger:
             elif result_type == MeshProcessorResult.ResultType.SDF_PATH:
                 # The SDF is already saved when creating the Drake directive
                 pass
-            elif result_type == MeshProcessorResult.ResultType.VTK_PATH:
-                processed_mesh_file_path = os.path.join(
-                    self._mesh_dir_path, f"{processed_mesh_name}.vtk"
-                )
-                shutil.copyfile(result, processed_mesh_file_path)
+            elif result_type == MeshProcessorResult.ResultType.VTK_PATHS:
+                if len(result) == 1:
+                    processed_mesh_file_path = os.path.join(
+                        self._mesh_dir_path, f"{processed_mesh_name}.vtk"
+                    )
+                    shutil.copyfile(result[0], processed_mesh_file_path)
+                else:
+                    processed_mesh_file_path = os.path.join(
+                        self._mesh_dir_path, f"{processed_mesh_name}_pieces"
+                    )
+                    if not os.path.exists(processed_mesh_file_path):
+                        os.mkdir(processed_mesh_file_path)
+                    for idx, vtk_path in enumerate(result):
+                        shutil.copyfile(
+                            vtk_path,
+                            os.path.join(
+                                processed_mesh_file_path, f"mesh_piece_{idx:03d}.vtk"
+                            ),
+                        )
 
         return raw_mesh_file_path, processed_mesh_file_path
 

@@ -55,7 +55,7 @@ class MeshProcessorResult:
         TRIANGLE_MESH = 1
         PRIMITIVE_INFO = 2
         SDF_PATH = 3
-        VTK_PATH = 4
+        VTK_PATHS = 4
 
     result_type: ResultType
     """The type of mesh processor result that this object contains."""
@@ -69,8 +69,8 @@ class MeshProcessorResult:
     sdf_path: Union[str, None] = None
     """A path to an SDFormat file to use directly instead of constructing it from the
     pipeline results."""
-    vtk_path: Union[str, None] = None
-    """A path to a VTK file."""
+    vtk_paths: Union[List[str], None] = None
+    """A list of vtk file paths. The combined vtk objects form the processed mesh."""
 
     def get_result(self):
         """Returns the stored mesh processor result."""
@@ -80,5 +80,5 @@ class MeshProcessorResult:
             return self.primitive_info
         if self.result_type == self.ResultType.SDF_PATH:
             return self.sdf_path
-        if self.result_type == self.ResultType.VTK_PATH:
-            return self.vtk_path
+        if self.result_type == self.ResultType.VTK_PATHS:
+            return self.vtk_paths
