@@ -1,3 +1,4 @@
+from .physical_property_estimator_base import PhysicalProperties
 from .water_density_physical_property_estimator import (
     WaterDensityPhysicalPropertyEstimator,
 )

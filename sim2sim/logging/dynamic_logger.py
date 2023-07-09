@@ -28,6 +28,7 @@ from sim2sim.util import (
     get_hydroelastic_contact_viz_params,
     get_point_contact_contact_viz_params,
 )
+from sim2sim.physical_property_estimator import PhysicalProperties
 from .abstract_value_logger import AbstractValueLogger
 
 
@@ -134,14 +135,16 @@ class DynamicLogger:
         self._inner_contact_result_logger = None
 
         # Manipuland physics
-        self._manipuland_mass_estimated: float = None
-        self._manipuland_inertia_estimated: List[float] = None
-        self._manipuland_com_estimated: List[float] = None
+        self._manipuland_physical_properties: PhysicalProperties = None
 
     def _create_data_directories(self) -> None:
         for path in self._data_directory_paths:
             if not os.path.exists(path):
                 os.mkdir(path)
+
+    @property
+    def is_kProximity(self):
+        return self._kProximity
 
     @staticmethod
     def add_meshcat_visualizer(
@@ -311,14 +314,9 @@ class DynamicLogger:
             self._inner_manipuland_contact_forces = log.data().T  # Shape (t, 6)
 
     def log_manipuland_estimated_physics(
-        self,
-        manipuland_mass_estimated: float,
-        manipuland_inertia_estimated: np.ndarray,
-        manipuland_com_estimated: np.ndarray,
+        self, physical_properties: PhysicalProperties
     ) -> None:
-        self._manipuland_mass_estimated = float(manipuland_mass_estimated)
-        self._manipuland_inertia_estimated = manipuland_inertia_estimated.tolist()
-        self._manipuland_com_estimated = manipuland_com_estimated.tolist()
+        self._manipuland_physical_properties = physical_properties
 
     def _get_contact_result_forces(
         self, is_outer: bool, body_of_interest: str
@@ -812,9 +810,15 @@ class DynamicLogger:
         meta_data = {
             "logger_creation_timestamp": self._creation_timestamp,
             "logging_timestamp": str(datetime.datetime.now()),
-            "manipuland_mass_estimated": self._manipuland_mass_estimated,
-            "manipuland_inertia_estimated": self._manipuland_inertia_estimated,
-            "manipuland_com_estimated": self._manipuland_com_estimated,
+            "manipuland_mass_estimated": self._manipuland_physical_properties.mass,
+            "manipuland_inertia_estimated": self._manipuland_physical_properties.inertia.tolist(),
+            "manipuland_com_estimated": self._manipuland_physical_properties.center_of_mass.tolist(),
+            "manipuland_is_compliant_estimated": self._manipuland_physical_properties.is_compliant,
+            "manipuland_hydroelastic_modulus_estimated": self._manipuland_physical_properties.hydroelastic_modulus,
+            "manipuland_hunt_crossley_dissipation_estimated": self._manipuland_physical_properties.hunt_crossley_dissipation,
+            "manipuland_mu_dynamic_estimated": self._manipuland_physical_properties.mu_dynamic,
+            "manipuland_mu_static_estimated": self._manipuland_physical_properties.mu_static,
+            "manipuland_mesh_resolution_hint_estimated": self._manipuland_physical_properties.mesh_resolution_hint,
             "time_taken_to_simulate_outer_s": self._outer_simulation_time,
             "time_taken_to_simulate_inner_s": self._inner_simulation_time,
         }
@@ -849,7 +853,6 @@ class DynamicLogger:
                 self._masks,
             )
         ):
-
             np.savetxt(
                 os.path.join(self._camera_poses_dir_path, f"pose{i:04d}.txt"), pose
             )

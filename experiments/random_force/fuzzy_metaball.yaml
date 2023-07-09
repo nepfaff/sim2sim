@@ -14,7 +14,6 @@ script:
     manipuland_directive: "../../models/random_force/random_force_manipuland_directive.yaml"
     manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
     manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
-    save_raw_mesh: false
     hydroelastic_manipuland: true
     is_pipeline_comparison: false
 
@@ -54,6 +53,8 @@ physical_property_estimator:
     mass: 0.349000
     inertia: [[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]
     center_of_mass: [0.0, 0.0, 0.0]
+    is_compliant: False
+    mesh_resolution_hint: 0.01
 
 simulator:
   class: "RandomForceSimulator"

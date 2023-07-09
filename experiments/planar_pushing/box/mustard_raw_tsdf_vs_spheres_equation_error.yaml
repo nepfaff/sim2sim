@@ -20,7 +20,6 @@ script:
     manipuland_directive: "../../models/manipulands/mustard_bottle_manipuland_directive.yaml"
     manipuland_base_link_name: "ycb_mustard_bottle_base_link"
     manipuland_default_pose: [1.57, 1.57, 0, 0.0, 0.0, 0.032]
-    save_raw_mesh: false
     hydroelastic_manipuland: True
     pusher_geometry_starting_position: [0.15, 0.03, 0.03]
     pusher_geometry_pid_gains:
@@ -80,6 +79,8 @@ outer_physical_property_estimator:
       [-4.0405e-06, -1.6208e-05, 2.4569e-04]
     ]
     center_of_mass: [ 0.0014, 0.0016, -0.0124]
+    is_compliant: False
+    mesh_resolution_hint: 0.01
 
 inner_physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
@@ -91,6 +92,8 @@ inner_physical_property_estimator:
       [-4.0405e-06, -1.6208e-05, 2.4569e-04]
     ]
     center_of_mass: [ 0.0014, 0.0016, -0.0124]
+    is_compliant: False
+    mesh_resolution_hint: 0.01
 
 simulator:
   class: "EquationErrorPlanarPushingSimulator"

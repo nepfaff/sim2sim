@@ -22,7 +22,6 @@ script:
     manipuland_directive: "../../models/manipulands/tomato_can_manipuland_directive.yaml"
     manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
     manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
-    save_raw_mesh: false
     hydroelastic_manipuland: true # No effect if 'contact_model' is 'point'
     is_pipeline_comparison: True
 
@@ -75,6 +74,8 @@ outer_physical_property_estimator:
       [-2.7256e-06, -1.0914e-05, 2.1282e-04]
     ]
     center_of_mass: [-0.0032, 0.0062, -0.0124]
+    is_compliant: False
+    mesh_resolution_hint: 0.01
 
 inner_physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
@@ -86,6 +87,8 @@ inner_physical_property_estimator:
       [-2.7256e-06, -1.0914e-05, 2.1282e-04]
     ]
     center_of_mass: [-0.0032, 0.0062, -0.0124]
+    is_compliant: False
+    mesh_resolution_hint: 0.01
 
 simulator:
   class: "EquationErrorBasicSimulator"

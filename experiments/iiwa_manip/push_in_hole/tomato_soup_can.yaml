@@ -17,7 +17,6 @@ script:
     manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
     manipuland_directive: "../../models/iiwa_manip/iiwa_manip_tomato_soup_can_manipuland_directive.yaml"
     manipuland_default_pose: [-1.57, 0.0, 0.0, 0.0, 0.5, 0.050450]
-    save_raw_mesh: false
     is_pipeline_comparison: false
 
 # Component specifications

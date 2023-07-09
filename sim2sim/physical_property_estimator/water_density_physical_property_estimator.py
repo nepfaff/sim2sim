@@ -1,9 +1,6 @@
-from typing import Tuple
-
 import open3d as o3d
-import numpy as np
 
-from sim2sim.util import calc_mesh_inertia
+from sim2sim.util import calc_mesh_inertia, PhysicalProperties
 from .physical_property_estimator_base import PhysicalPropertyEstimatorBase
 
 
@@ -17,12 +14,14 @@ class WaterDensityPhysicalPropertyEstimator(PhysicalPropertyEstimatorBase):
 
     def estimate_physical_properties(
         self, mesh: o3d.geometry.TriangleMesh
-    ) -> Tuple[float, np.ndarray, np.ndarray]:
+    ) -> PhysicalProperties:
         """
         :param mesh: The mesh to estimate physcial properties for.
-        :return: A tuple of (mass, inertia, center_of_mass).
-            - mass: Mass in kg.
-            - inertia: Moment of inertia of shape (3,3).
-            - center_of_mass: The center of mass that the inertia is about of shape (3,).
+        :return: The estimated physical properties.
         """
-        return calc_mesh_inertia(mesh)
+        mass, inertia, com = calc_mesh_inertia(mesh)
+        # TODO: Also estimate compliant Hydroelastic properties
+        properties = PhysicalProperties(
+            mass=mass, inertia=inertia, center_of_mass=com, is_compliant=False
+        )
+        return properties

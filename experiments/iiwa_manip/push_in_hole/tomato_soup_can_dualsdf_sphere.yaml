@@ -17,7 +17,6 @@ script:
     manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
     manipuland_directive: "../../models/iiwa_manip/iiwa_manip_tomato_soup_can_manipuland_directive.yaml"
     manipuland_default_pose: [-1.57, 0.0, 0.0, 0.0, 0.5, 0.050450]
-    save_raw_mesh: false
     is_pipeline_comparison: false
 
 # Component specifications
@@ -51,6 +50,8 @@ physical_property_estimator:
     mass: 0.349000
     inertia: [[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]
     center_of_mass: [0.0, 0.0, 0.0]
+    is_compliant: False
+    mesh_resolution_hint: 0.01
 
 simulator:
   class: "IIWAPushInHoleSimulator"

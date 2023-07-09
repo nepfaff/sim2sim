@@ -24,5 +24,6 @@ setup(
         "opencv-python",
         "transforms3d",
         "PyOpenGL-accelerate",
+        "black",
     ],
 )

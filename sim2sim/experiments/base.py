@@ -86,7 +86,6 @@ def run_pipeline(
     timestep: float,
     manipuland_base_link_name: str,
     manipuland_default_pose: RigidTransform,
-    save_raw_mesh: bool,
     hydroelastic_manipuland: bool,
     scene_directive_path: str,
     manipuland_directive_path: str,
@@ -185,27 +184,29 @@ def run_pipeline(
             else {}
         ),
     )
-    (
-        mass,
-        inertia,
-        center_of_mass,
-    ) = physical_porperty_estimator.estimate_physical_properties(processed_mesh)
+    physical_properties = physical_porperty_estimator.estimate_physical_properties(
+        processed_mesh
+    )
     print(
         f"Finished estimating physical properties{f' for {prefix}' if prefix else ''}."
     )
-    logger.log_manipuland_estimated_physics(
-        manipuland_mass_estimated=mass,
-        manipuland_inertia_estimated=inertia,
-        manipuland_com_estimated=center_of_mass,
-    )
+    logger.log_manipuland_estimated_physics(physical_properties)
 
     # Save mesh data to create SDF files that can be added to a new simulation environment
-    if save_raw_mesh:
+    # Only save the raw mesh if we use it for visualization
+    if not logger.is_kProximity:
         logger.log(raw_mesh=raw_mesh)
     logger.log(
         processed_mesh=processed_mesh, processed_mesh_piece=processed_mesh_pieces
     )
-    _, processed_mesh_file_path = logger.save_mesh_data(prefix=prefix)
+    raw_mesh_file_path, processed_mesh_file_path = logger.save_mesh_data(prefix=prefix)
+    raw_mesh_file_path = (
+        os.path.join(
+            pathlib.Path(__file__).parent.resolve(), "../..", raw_mesh_file_path
+        )
+        if not logger.is_kProximity
+        else None
+    )
     processed_mesh_file_path = os.path.join(
         pathlib.Path(__file__).parent.resolve(), "../..", processed_mesh_file_path
     )
@@ -218,26 +219,24 @@ def run_pipeline(
     elif is_primitive:
         processed_mesh_directive = create_processed_mesh_primitive_directive_str(
             primitive_info,
-            mass,
-            inertia,
-            center_of_mass,
+            physical_properties,
             logger._mesh_dir_path,
             params[f"{prefix}env"]["obj_name"],
             manipuland_base_link_name,
             hydroelastic=hydroelastic_manipuland,
             prefix=prefix,
+            visual_mesh_file_path=raw_mesh_file_path,
         )
     else:
         processed_mesh_directive = create_processed_mesh_directive_str(
-            mass,
-            inertia,
-            center_of_mass,
+            physical_properties,
             processed_mesh_file_path,
             logger._mesh_dir_path,
             params[f"{prefix}env"]["obj_name"],
             manipuland_base_link_name,
             hydroelastic=hydroelastic_manipuland,
             prefix=prefix,
+            visual_mesh_file_path=raw_mesh_file_path,
         )
 
     builder, scene_graph, plant = create_env_func(
@@ -266,7 +265,6 @@ def run_experiment(
     scene_directive: str,
     manipuland_base_link_name: str,
     manipuland_default_pose: str,
-    save_raw_mesh: bool,
     hydroelastic_manipuland: bool,
     is_pipeline_comparison: bool,
     create_env_func: Callable,
@@ -287,7 +285,6 @@ def run_experiment(
     :param manipuland_base_link_name: The base link name of the outer manipuland.
     :param manipuland_default_pose: The default pose of the outer manipuland of form
         [roll, pitch, yaw, x, y, z].
-    :param save_raw_mesh: Whether to save the raw mesh from inverse graphics.
     :param hydroelastic_manipuland: Whether to use hydroelastic or point contact for the
         inner manipuland.
     :param is_pipeline_comparison: Whether it is a sim2sim pipeline comparison
@@ -321,7 +318,6 @@ def run_experiment(
             timestep=timestep,
             manipuland_base_link_name=manipuland_base_link_name,
             manipuland_default_pose=manipuland_default_pose,
-            save_raw_mesh=save_raw_mesh,
             hydroelastic_manipuland=hydroelastic_manipuland,
             scene_directive_path=scene_directive_path,
             manipuland_directive_path=manipuland_directive_path,
@@ -336,7 +332,6 @@ def run_experiment(
             timestep=timestep,
             manipuland_base_link_name=manipuland_base_link_name,
             manipuland_default_pose=manipuland_default_pose,
-            save_raw_mesh=save_raw_mesh,
             hydroelastic_manipuland=hydroelastic_manipuland,
             scene_directive_path=scene_directive_path,
             manipuland_directive_path=manipuland_directive_path,
@@ -360,7 +355,6 @@ def run_experiment(
             timestep=timestep,
             manipuland_base_link_name=manipuland_base_link_name,
             manipuland_default_pose=manipuland_default_pose,
-            save_raw_mesh=save_raw_mesh,
             hydroelastic_manipuland=hydroelastic_manipuland,
             scene_directive_path=scene_directive_path,
             manipuland_directive_path=manipuland_directive_path,

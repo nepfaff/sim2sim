@@ -14,7 +14,6 @@ script:
     manipuland_directive: "../../models/manipulands/potted_meat_can_manipuland_directive.yaml"
     manipuland_base_link_name: "ycb_potted_meat_can_base_link"
     manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.05]
-    save_raw_mesh: false
     hydroelastic_manipuland: false
     pusher_geometry_starting_position: [0.3, 0.0, 0.1]
     pusher_geometry_pid_gains:
@@ -57,6 +56,7 @@ physical_property_estimator:
     mass: 0.370
     inertia: [[0.000317, 0.0, 0.0], [0.0, 0.000421, 0.0], [0.0, 0.0, 0.000533]]
     center_of_mass: [0.0, 0.0, 0.0]
+    is_compliant: False
 
 simulator:
   class: "PlanarPushingSimulator"

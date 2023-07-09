@@ -22,7 +22,6 @@ script:
     manipuland_directive: "../../models/manipulands/mustard_bottle_manipuland_directive.yaml"
     manipuland_base_link_name: "ycb_mustard_bottle_base_link"
     manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.62]
-    save_raw_mesh: false
     hydroelastic_manipuland: true # No effect if 'contact_model' is 'point'
     is_pipeline_comparison: True
 
@@ -78,6 +77,8 @@ outer_physical_property_estimator:
     mass: 0.349000
     inertia: [[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]
     center_of_mass: [0.0, 0.0, 0.0]
+    is_compliant: False
+    mesh_resolution_hint: 0.01
 
 inner_physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
@@ -85,6 +86,8 @@ inner_physical_property_estimator:
     mass: 0.349000
     inertia: [[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]
     center_of_mass: [0.0, 0.0, 0.0]
+    is_compliant: False
+    mesh_resolution_hint: 0.01
 
 simulator:
   class: "EquationErrorBasicSimulator"
