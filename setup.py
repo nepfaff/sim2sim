@@ -25,5 +25,7 @@ setup(
         "transforms3d",
         "PyOpenGL-accelerate",
         "black",
+        "meshio",
+        "tqdm",
     ],
 )

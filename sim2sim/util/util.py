@@ -1,10 +1,15 @@
 import os
 from typing import List, Dict, Any, Optional
 import copy
+import shutil
+from pathlib import Path
+import subprocess
 
 import open3d as o3d
 import trimesh
 import numpy as np
+import meshio
+from tqdm import tqdm
 from scipy.spatial.transform import Rotation as R
 from pydrake.all import (
     MultibodyPlant,
@@ -659,3 +664,61 @@ def add_shape(
         plant.RegisterVisualGeometry(body, RigidTransform(), shape, name, color)
 
     return instance
+
+
+def convert_obj_to_vtk(
+    obj_meshes: List[o3d.geometry.TriangleMesh],
+    output_path: str,
+    tmp_folder_path: str = "convert_obj_to_vtk_tmp_folder",
+) -> List[str]:
+    """
+    Converts OBJ file(s) to VTK files(s).
+
+    :param obj_meshes: The meshes to convert.
+    :param output_path: The path to write the VTK file or directory to write the VTK
+        files to.
+    :param tmp_folder_path: The temporary folder to store the intermediate results in.
+        The folder will be created at the beginning and deleted at the end.
+    :return: The VTK file paths.
+    """
+    os.mkdir(tmp_folder_path)
+
+    def convert(path: str) -> str:
+        name = Path(path).parts[-1][:-3]
+        msh_path = os.path.join(tmp_folder_path, name + "msh")
+        with open(os.devnull, "wb") as devnull:
+            subprocess.check_call(
+                ["FloatTetwild_bin", "-i", path, "-o", msh_path],
+                stdout=devnull,
+                stderr=subprocess.STDOUT,
+            )
+        mesh = meshio.read(msh_path)
+        vtk_path = os.path.join(output_path, name + "vtk")
+        mesh.write(vtk_path)
+        return vtk_path
+
+    vtk_file_paths = []
+    if len(obj_meshes) > 1:
+        assert os.path.isdir(
+            output_path
+        ), "The output path must be a directory if the input is multiple meshes!"
+        if not os.path.exists(output_path):
+            os.mkdir(output_path)
+
+        for i, obj_mesh in tqdm(
+            enumerate(obj_meshes), total=len(obj_meshes), desc="Converting OBJ to VTK"
+        ):
+            obj_path = os.path.join(tmp_folder_path, f"mesh_piece_{i:03d}.obj")
+            o3d.io.write_triangle_mesh(obj_path, obj_mesh)
+            vtk_path = convert(obj_path)
+            vtk_file_paths.append(vtk_path)
+    else:
+        assert output_path[-3:].lower() == "vtk"
+        obj_path = os.path.join(tmp_folder_path, "mesh.obj")
+        o3d.io.write_triangle_mesh(obj_path, obj_mesh)
+        vtk_path = convert(obj_path)
+        vtk_file_paths.append(vtk_path)
+
+    shutil.rmtree(tmp_folder_path)
+
+    return vtk_file_paths

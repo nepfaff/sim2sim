@@ -64,6 +64,7 @@ outer_mesh_processor:
       mcts_nodes: 20
       mcts_iterations: 150
       mcts_max_depth: 3
+      is_compliant: false
       preview_with_trimesh: false
 
 inner_mesh_processor:

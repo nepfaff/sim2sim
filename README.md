@@ -52,6 +52,10 @@ instructions in its `README`. Note that this repo is only needed for a small sub
 2. Install [v-hacd](https://github.com/mikedh/trimesh/blob/30a423b884903905aba82408255f02dec0b33175/docker/builds/vhacd.bash)
 in trimesh by running the script.
 
+### Requirement for compliant meshes
+
+Install [fTetWild](https://github.com/wildmeshing/fTetWild) and move the executable `FloatTetwild_bin` to a `bin` directory.
+
 ## Experiment Types
 
 This repo provides two different experiment types. The first one is the sim2sim pipeline experiment as shown in the

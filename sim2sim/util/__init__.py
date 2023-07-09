@@ -12,6 +12,7 @@ from .util import (
     get_principal_component,
     get_main_mesh_cluster,
     add_shape,
+    convert_obj_to_vtk,
 )
 from .physics import calc_mesh_inertia
 from .iiwa import (

@@ -1,5 +1,6 @@
 import logging
 import time
+import os
 
 import numpy as np
 import open3d as o3d
@@ -7,7 +8,7 @@ import trimesh
 import coacd
 
 from .mesh_processor_base import MeshProcessorBase
-from sim2sim.util import open3d_to_trimesh, MeshProcessorResult
+from sim2sim.util import open3d_to_trimesh, MeshProcessorResult, convert_obj_to_vtk
 from sim2sim.logging import DynamicLogger
 
 
@@ -28,6 +29,7 @@ class CoACDMeshProcessor(MeshProcessorBase):
         mcts_iterations: int,
         mcts_max_depth: int,
         preview_with_trimesh: bool,
+        is_compliant: bool,
     ):
         """
         :param threshold: Termination criteria in [0.01, 1] (0.01: most fine-grained;
@@ -39,6 +41,8 @@ class CoACDMeshProcessor(MeshProcessorBase):
         :param mcts_max_depth: Maximum depth for MCTS search.
         :param preview_with_trimesh: Whether to visualize the original and CoACD mesh
             in a trimesh popup.
+        :param is_compliant: Whether to convert the mesh pieces into VTK format to
+            simulate as compliant Hydroelastic objects.
         """
         super().__init__(logger)
 
@@ -49,6 +53,7 @@ class CoACDMeshProcessor(MeshProcessorBase):
         self._mcts_iterations = mcts_iterations
         self._mcts_max_depth = mcts_max_depth
         self._preview_with_trimesh = preview_with_trimesh
+        self._is_compliant = is_compliant
 
         # Prevent info logs
         coacd.set_log_level("error")
@@ -104,6 +109,22 @@ class CoACDMeshProcessor(MeshProcessorBase):
         for part in convex_pieces:
             open3d_part = part.as_open3d
             output_meshes.append(open3d_part)
+
+        if self._is_compliant:
+            vtk_pieces_path = os.path.join(self._logger.tmp_dir_path, "vtk_mesh_pieces")
+            if not os.path.exists(vtk_pieces_path):
+                os.mkdir(vtk_pieces_path)
+            vtk_paths = convert_obj_to_vtk(
+                obj_meshes=output_meshes,
+                output_path=vtk_pieces_path,
+                tmp_folder_path=os.path.join(
+                    self._logger.tmp_dir_path, "convert_obj_to_vtk_tmp_folder"
+                ),
+            )
+            return MeshProcessorResult(
+                result_type=MeshProcessorResult.ResultType.VTK_PATHS,
+                vtk_paths=vtk_paths,
+            )
 
         return MeshProcessorResult(
             result_type=MeshProcessorResult.ResultType.TRIANGLE_MESH,

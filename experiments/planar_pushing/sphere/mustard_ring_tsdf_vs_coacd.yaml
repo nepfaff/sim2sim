@@ -53,6 +53,7 @@ mesh_processor:
       mcts_nodes: 20
       mcts_iterations: 150
       mcts_max_depth: 3
+      is_compliant: false
       preview_with_trimesh: false
 
 physical_property_estimator:
