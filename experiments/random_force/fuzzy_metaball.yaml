@@ -54,6 +54,7 @@ physical_property_estimator:
     inertia: [[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]
     center_of_mass: [0.0, 0.0, 0.0]
     is_compliant: False
+    mesh_resolution_hint: 0.01
 
 simulator:
   class: "RandomForceSimulator"

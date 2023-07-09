@@ -80,6 +80,7 @@ outer_physical_property_estimator:
     ]
     center_of_mass: [-0.0032, 0.0062, -0.0124]
     is_compliant: False
+    mesh_resolution_hint: 0.01
 
 inner_physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
@@ -92,6 +93,7 @@ inner_physical_property_estimator:
     ]
     center_of_mass: [-0.0032, 0.0062, -0.0124]
     is_compliant: False
+    mesh_resolution_hint: 0.01
 
 simulator:
   class: "EquationErrorPlanarPushingSimulator"

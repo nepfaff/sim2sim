@@ -41,12 +41,68 @@ def visualize_poses(poses: List[RigidTransform], meshcat) -> None:
         AddMeshcatTriad(meshcat, f"pose{i}", length=0.15, radius=0.006, X_PT=pose)
 
 
+def construct_drake_proximity_properties_sdf_str(
+    physical_properties: PhysicalProperties, is_hydroelastic: bool
+) -> str:
+    """
+    Constructs a Drake proximity properties SDF string using the proximity properties
+    contained in `physical_properties`. Only adds the Hydroelastic properties if
+    `is_hydroelastic` is true.
+    """
+    proximity_properties_str = """
+            <drake:proximity_properties>
+        """
+    if is_hydroelastic:
+        if physical_properties.is_compliant:
+            assert (
+                physical_properties.hydroelastic_modulus is not None
+            ), "Require a Hydroelastic modulus for compliant Hydroelastic objects!"
+            proximity_properties_str += f"""
+                        <drake:compliant_hydroelastic/>
+                        <drake:hydroelastic_modulus>
+                            {physical_properties.hydroelastic_modulus}
+                        </drake:hydroelastic_modulus>
+                """
+        else:
+            proximity_properties_str += """
+                    <drake:rigid_hydroelastic/>
+            """
+        if physical_properties.mesh_resolution_hint is not None:
+            proximity_properties_str += f"""
+                    <drake:mesh_resolution_hint>
+                        {physical_properties.mesh_resolution_hint}
+                    </drake:mesh_resolution_hint>
+            """
+    if physical_properties.hunt_crossley_dissipation is not None:
+        proximity_properties_str += f"""
+                    <drake:hunt_crossley_dissipation>
+                        {physical_properties.hunt_crossley_dissipation}
+                    </drake:hunt_crossley_dissipation>
+            """
+    if physical_properties.mu_dynamic is not None:
+        proximity_properties_str += f"""
+                    <drake:mu_dynamic>
+                        {physical_properties.mu_dynamic}
+                    </drake:mu_dynamic>
+            """
+    if physical_properties.mu_static is not None:
+        proximity_properties_str += f"""
+                    <drake:mu_static>
+                        {physical_properties.mu_static}
+                    </drake:mu_static>
+            """
+    proximity_properties_str += """
+            </drake:proximity_properties>
+        """
+    return proximity_properties_str
+
+
 def create_processed_mesh_sdf_file(
     physical_properties: PhysicalProperties,
     processed_mesh_file_path: str,
     tmp_folder: str,
     manipuland_base_link_name: str,
-    hydroelastic: bool,
+    is_hydroelastic: bool,
     visual_mesh_file_path: Optional[str] = None,
 ) -> str:
     """
@@ -55,9 +111,9 @@ def create_processed_mesh_sdf_file(
     :param physical_properties: The physical properties.
     :param processed_mesh_file_path: The path to the processed mesh obj file.
     :param tmp_folder: The folder to write the sdf file to.
-    :param hydroelastic: Whether to make the body rigid hydroelastic.
-    :return procesed_mesh_sdf_path: The path to the SDF file.
+    :param is_hydroelastic: Whether to make the body rigid hydroelastic.
     :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
+    :return procesed_mesh_sdf_path: The path to the SDF file.
     """
     com = physical_properties.center_of_mass
     procesed_mesh_sdf_str = f"""
@@ -101,12 +157,9 @@ def create_processed_mesh_sdf_file(
                         </geometry>
         """
 
-    if hydroelastic:
-        procesed_mesh_sdf_str += """
-                <drake:proximity_properties>
-                    <drake:rigid_hydroelastic/>
-                </drake:proximity_properties>
-            """
+    procesed_mesh_sdf_str += construct_drake_proximity_properties_sdf_str(
+        physical_properties, is_hydroelastic
+    )
 
     procesed_mesh_sdf_str += """
                     </collision>
@@ -129,7 +182,7 @@ def create_decomposition_processed_mesh_sdf_file(
     mesh_pieces: List[str],
     sdf_folder: str,
     manipuland_base_link_name: str,
-    hydroelastic: bool,
+    is_hydroelastic: bool,
     prefix: str = "",
     parts_are_convex: bool = True,
     visual_mesh_file_path: Optional[str] = None,
@@ -141,7 +194,7 @@ def create_decomposition_processed_mesh_sdf_file(
     :param processed_mesh_file_path: The path to the processed mesh obj file.
     :param mesh_pieces: A list of mesh piece paths.
     :param sdf_folder: The folder to write the sdf file to.
-    :param hydroelastic: Whether to make the body rigid hydroelastic.
+    :param is_hydroelastic: Whether to make the body rigid hydroelastic.
     :param prefix: An optional prefix for the processed mesh sdf file name.
     :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     """
@@ -190,12 +243,9 @@ def create_decomposition_processed_mesh_sdf_file(
                             </geometry>
             """
 
-        if hydroelastic:
-            procesed_mesh_sdf_str += """
-                    <drake:proximity_properties>
-                        <drake:rigid_hydroelastic/>
-                    </drake:proximity_properties>
-                """
+        procesed_mesh_sdf_str += construct_drake_proximity_properties_sdf_str(
+            physical_properties, is_hydroelastic
+        )
 
         procesed_mesh_sdf_str += """
                 </collision>
@@ -274,7 +324,7 @@ def create_processed_mesh_primitive_sdf_file(
     physical_properties: PhysicalProperties,
     sdf_folder: str,
     manipuland_base_link_name: str,
-    hydroelastic: bool,
+    is_hydroelastic: bool,
     prefix: str = "",
     visual_mesh_file_path: Optional[str] = None,
 ) -> str:
@@ -286,7 +336,7 @@ def create_processed_mesh_primitive_sdf_file(
         params are primitive dependent but must be sufficient to construct that primitive.
     :param physical_properties: The physical properties.
     :param sdf_folder: The folder to write the sdf file to.
-    :param hydroelastic: Whether to make the body rigid hydroelastic.
+    :param is_hydroelastic: Whether to make the body rigid hydroelastic.
     :param prefix: An optional prefix for the processed mesh sdf file name.
     :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     """
@@ -363,19 +413,20 @@ def create_processed_mesh_primitive_sdf_file(
 
         procesed_mesh_sdf_str += f"""
             <collision name="collision_{i}">
-                <pose>{translation[0]} {translation[1]} {translation[2]} {rotation[0]} {rotation[1]} {rotation[2]}</pose>
+                <pose>
+                    {translation[0]} {translation[1]} {translation[2]} {rotation[0]} {rotation[1]} {rotation[2]}
+                </pose>
                 <geometry>
                     {geometry}
                 </geometry>
             """
 
-        if hydroelastic:
-            procesed_mesh_sdf_str += """
-                    <drake:proximity_properties>
-                        <drake:rigid_hydroelastic/>
-                        <drake:mesh_resolution_hint>0.01</drake:mesh_resolution_hint>
-                    </drake:proximity_properties>
-                """
+        assert (
+            not is_hydroelastic or physical_properties.mesh_resolution_hint is not None
+        ), "Require a mesh resolution hint for Hydroelastic primitive collision geometries!"
+        procesed_mesh_sdf_str += construct_drake_proximity_properties_sdf_str(
+            physical_properties, is_hydroelastic
+        )
 
         procesed_mesh_sdf_str += """
                 </collision>
