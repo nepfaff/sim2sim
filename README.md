@@ -186,7 +186,7 @@ The experiment description specifies the experiment and must contain the followi
 ## Generating simulator timing scale data with number of ellipsoids
 
 1. Comment out all meshcat specific stuff in `simulation/random_force_simulator.py` (Drake crashes if more than 100
-meshcats are spawned and it is not possible to clean them up without terminating the top-level script).
+meshcats are spawned and it is not possible to clean them up without terminating the top-level script until [this issue](https://github.com/RobotLocomotion/drake/issues/19362) is resolved).
 2. Collect the data:
     ```bash
     python scripts/collect_simulation_complexity_data.py --logging_path logs/simulation_complexity --experiment_description experiments/random_force/random_force_gmm.yaml
