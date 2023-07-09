@@ -1,10 +1,8 @@
-from typing import Tuple, List, Union, Any, Dict
-
 import trimesh
 import open3d as o3d
 
 from .mesh_processor_base import MeshProcessorBase
-from sim2sim.util import open3d_to_trimesh
+from sim2sim.util import open3d_to_trimesh, MeshProcessorResult
 from sim2sim.logging import DynamicLogger
 
 
@@ -22,15 +20,7 @@ class ConvexDecompMeshProcessor(MeshProcessorBase):
         self._mesh_name = mesh_name
         self._preview_with_trimesh = preview_with_trimesh
 
-    def process_mesh(
-        self, mesh: o3d.geometry.TriangleMesh
-    ) -> Tuple[
-        bool,
-        Union[o3d.geometry.TriangleMesh, None],
-        List[o3d.geometry.TriangleMesh],
-        Union[List[Dict[str, Any]], None],
-        Union[str, None],
-    ]:
+    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
         mesh_trimesh = open3d_to_trimesh(mesh)
 
         if self._preview_with_trimesh:
@@ -67,4 +57,7 @@ class ConvexDecompMeshProcessor(MeshProcessorBase):
             open3d_part = part.as_open3d
             output_meshes.append(open3d_part)
 
-        return False, None, output_meshes, None, None
+        return MeshProcessorResult(
+            result_type=MeshProcessorResult.ResultType.TRIANGLE_MESH,
+            triangle_meshes=output_meshes,
+        )

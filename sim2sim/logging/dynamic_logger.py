@@ -3,6 +3,7 @@ from typing import Tuple, List, Optional, Dict, Any, Union
 import yaml
 import datetime
 import shutil
+import pickle
 
 import numpy as np
 import open3d as o3d
@@ -27,6 +28,7 @@ from matplotlib import pyplot as plt
 from sim2sim.util import (
     get_hydroelastic_contact_viz_params,
     get_point_contact_contact_viz_params,
+    MeshProcessorResult,
 )
 from sim2sim.physical_property_estimator import PhysicalProperties
 from .abstract_value_logger import AbstractValueLogger
@@ -105,8 +107,7 @@ class DynamicLogger:
 
         # Mesh processing logs
         self._raw_mesh: Optional[o3d.geometry.TriangleMesh] = None
-        self._processed_mesh: Optional[o3d.geometry.TriangleMesh] = None
-        self._processed_meshes: List[o3d.geometry.TriangleMesh] = []
+        self._mesh_processor_result: Optional[MeshProcessorResult] = None
 
         # Meta data logs
         self._outer_simulation_time: Optional[float] = None
@@ -425,8 +426,7 @@ class DynamicLogger:
         labels: Optional[List[np.ndarray]] = None,
         masks: Optional[List[np.ndarray]] = None,
         raw_mesh: Optional[o3d.geometry.TriangleMesh] = None,
-        processed_mesh: Optional[o3d.geometry.TriangleMesh] = None,
-        processed_mesh_piece: Optional[List[o3d.geometry.TriangleMesh]] = None,
+        mesh_processor_result: Optional[MeshProcessorResult] = None,
         outer_simulation_time: Optional[float] = None,
         inner_simulation_time: Optional[float] = None,
         experiment_description: Optional[dict] = None,
@@ -447,10 +447,8 @@ class DynamicLogger:
             self._masks.extend(masks)
         if raw_mesh is not None:
             self._raw_mesh = raw_mesh
-        if processed_mesh is not None:
-            self._processed_mesh = processed_mesh
-        if processed_mesh_piece is not None:
-            self._processed_meshes.extend(processed_mesh_piece)
+        if mesh_processor_result is not None:
+            self._mesh_processor_result = mesh_processor_result
         if outer_simulation_time is not None:
             self._outer_simulation_time = outer_simulation_time
         if inner_simulation_time is not None:
@@ -619,34 +617,59 @@ class DynamicLogger:
 
     def save_mesh_data(self, prefix: str = "") -> Tuple[str, str]:
         """
-        Saves the raw and processed meshes if they exist.
+        Saves the raw mesh and mesh processor result if they exist.
 
         :param prefix: An optional prefix for the raw and processed mesh names.
         :return: A tuple of (raw_mesh_file_path, processed_mesh_file_path).
         """
         raw_mesh_name = f"{prefix}raw_mesh"
         processed_mesh_name = f"{prefix}processed_mesh"
-        raw_mesh_file_path = os.path.join(self._mesh_dir_path, f"{raw_mesh_name}.obj")
+        raw_mesh_file_path = ""
         processed_mesh_file_path = ""
 
         if self._raw_mesh:
+            raw_mesh_file_path = os.path.join(
+                self._mesh_dir_path, f"{raw_mesh_name}.obj"
+            )
             o3d.io.write_triangle_mesh(raw_mesh_file_path, self._raw_mesh)
-        if self._processed_mesh:
-            processed_mesh_file_path = os.path.join(
-                self._mesh_dir_path, f"{processed_mesh_name}.obj"
-            )
-            o3d.io.write_triangle_mesh(processed_mesh_file_path, self._processed_mesh)
-        if self._processed_meshes:
-            processed_mesh_file_path = os.path.join(
-                self._mesh_dir_path, f"{processed_mesh_name}_pieces"
-            )
-            if not os.path.exists(processed_mesh_file_path):
-                os.mkdir(processed_mesh_file_path)
-            for idx, mesh in enumerate(self._processed_meshes):
-                o3d.io.write_triangle_mesh(
-                    os.path.join(processed_mesh_file_path, f"mesh_piece_{idx}.obj"),
-                    mesh,
+
+        if self._mesh_processor_result:
+            result_type = self._mesh_processor_result.result_type
+            result = self._mesh_processor_result.get_result()
+            if result_type == MeshProcessorResult.ResultType.TRIANGLE_MESH:
+                if len(result) == 1:
+                    processed_mesh_file_path = os.path.join(
+                        self._mesh_dir_path, f"{processed_mesh_name}.obj"
+                    )
+                    o3d.io.write_triangle_mesh(processed_mesh_file_path, result[0])
+                else:
+                    processed_mesh_file_path = os.path.join(
+                        self._mesh_dir_path, f"{processed_mesh_name}_pieces"
+                    )
+                    if not os.path.exists(processed_mesh_file_path):
+                        os.mkdir(processed_mesh_file_path)
+                    for idx, mesh in enumerate(result):
+                        o3d.io.write_triangle_mesh(
+                            os.path.join(
+                                processed_mesh_file_path, f"mesh_piece_{idx}.obj"
+                            ),
+                            mesh,
+                        )
+            elif result_type == MeshProcessorResult.ResultType.PRIMITIVE_INFO:
+                processed_mesh_file_path = os.path.join(
+                    self._mesh_dir_path, f"{processed_mesh_name}.pkl"
                 )
+                with open(processed_mesh_file_path, "wb") as f:
+                    pickle.dump(result, f)
+            elif result_type == MeshProcessorResult.ResultType.SDF_PATH:
+                # The SDF is already saved when creating the Drake directive
+                pass
+            elif result_type == MeshProcessorResult.ResultType.VTK_PATH:
+                processed_mesh_file_path = os.path.join(
+                    self._mesh_dir_path, f"{processed_mesh_name}.vtk"
+                )
+                shutil.copyfile(result, processed_mesh_file_path)
+
         return raw_mesh_file_path, processed_mesh_file_path
 
     def save_manipuland_pose_logs(self) -> None:

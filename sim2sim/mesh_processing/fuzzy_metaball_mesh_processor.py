@@ -1,12 +1,10 @@
-from typing import Tuple, List, Union, Any, Dict
-
 import open3d as o3d
 import numpy as np
 
 from .mesh_processor_base import MeshProcessorBase
 from sim2sim.logging import DynamicLogger
 from learning_real2sim.src.meta_ball import MetaBall
-from sim2sim.util import open3d_to_trimesh
+from sim2sim.util import open3d_to_trimesh, MeshProcessorResult
 
 DIV_EPSILON = 1e-9
 
@@ -43,15 +41,7 @@ class FuzzyMetaballMeshProcessor(MeshProcessorBase):
         self._remove_outliers = remove_outliers
         self._normalize_mesh = normalize_mesh
 
-    def process_mesh(
-        self, mesh: o3d.geometry.TriangleMesh
-    ) -> Tuple[
-        bool,
-        Union[o3d.geometry.TriangleMesh, None],
-        List[o3d.geometry.TriangleMesh],
-        Union[List[Dict[str, Any]], None],
-        Union[str, None],
-    ]:
+    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
         meta_ball = MetaBall.generate_metaballs_from_mesh(
             self._mesh_path,
             iter_num=self._num_iter,
@@ -76,4 +66,7 @@ class FuzzyMetaballMeshProcessor(MeshProcessorBase):
                 }
             )
 
-        return True, None, [], primitive_info, None
+        return MeshProcessorResult(
+            result_type=MeshProcessorResult.ResultType.PRIMITIVE_INFO,
+            primitive_info=primitive_info,
+        )

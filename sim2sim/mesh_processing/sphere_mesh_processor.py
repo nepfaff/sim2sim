@@ -3,9 +3,8 @@ import numpy as np
 import torch
 import trimesh
 import pointnet2_ops.pointnet2_utils as pointnet2_utils
-from typing import Tuple, List, Union, Any, Dict
 
-from sim2sim.util import open3d_to_trimesh
+from sim2sim.util import open3d_to_trimesh, MeshProcessorResult
 from sim2sim.logging import DynamicLogger
 from .mesh_processor_base import MeshProcessorBase
 
@@ -23,15 +22,7 @@ class SphereMeshProcessor(MeshProcessorBase):
         self._target_sphere_num = target_sphere_num
         self._visualize = visualize
 
-    def process_mesh(
-        self, mesh: o3d.geometry.TriangleMesh
-    ) -> Tuple[
-        bool,
-        Union[o3d.geometry.TriangleMesh, None],
-        List[o3d.geometry.TriangleMesh],
-        Union[List[Dict[str, Any]], None],
-        Union[str, None],
-    ]:
+    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
         tmesh = open3d_to_trimesh(mesh)
         points = np.array(trimesh.sample.sample_surface_even(tmesh, 10000)[0])
         points = torch.from_numpy(points).cuda().float().contiguous()[None]
@@ -91,4 +82,8 @@ class SphereMeshProcessor(MeshProcessorBase):
             viewer.run()
             viewer.destroy_window()
 
-        return False, None, output_meshes, None, None
+        # TODO: Return primitive info instead of triangle meshes
+        return MeshProcessorResult(
+            result_type=MeshProcessorResult.ResultType.TRIANGLE_MESH,
+            triangle_meshes=output_meshes,
+        )
