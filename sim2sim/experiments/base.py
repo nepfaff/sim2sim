@@ -185,7 +185,7 @@ def run_pipeline(
         ),
     )
     physical_properties = physical_porperty_estimator.estimate_physical_properties(
-        processed_mesh
+        raw_mesh
     )
     print(
         f"Finished estimating physical properties{f' for {prefix}' if prefix else ''}."
