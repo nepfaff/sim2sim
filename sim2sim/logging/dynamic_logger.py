@@ -60,6 +60,7 @@ class DynamicLogger:
         self._label_to_mask = label_to_mask
         self._manipuland_name = manipuland_name
         self._manipuland_base_link_name = manipuland_base_link_name
+        self._tmp_dir_path = os.path.join(logging_path, "tmp_files")
 
         self._outer_plant: Union[MultibodyPlant, None] = None
         self._inner_plant: Union[MultibodyPlant, None] = None
@@ -71,6 +72,9 @@ class DynamicLogger:
         if os.path.exists(logging_path):
             shutil.rmtree(logging_path)
         os.mkdir(logging_path)
+
+        # Directory for temporary files
+        os.mkdir(self._tmp_dir_path)
 
         self._creation_timestamp = str(datetime.datetime.now())
 
@@ -143,9 +147,16 @@ class DynamicLogger:
             if not os.path.exists(path):
                 os.mkdir(path)
 
+    def __del__(self):
+        shutil.rmtree(self._tmp_dir_path)
+
     @property
     def is_kProximity(self):
         return self._kProximity
+
+    @property
+    def tmp_dir_path(self):
+        return self._tmp_dir_path
 
     @staticmethod
     def add_meshcat_visualizer(
