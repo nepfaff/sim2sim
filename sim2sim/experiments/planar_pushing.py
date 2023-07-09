@@ -23,7 +23,7 @@ from pydrake.all import (
 
 from sim2sim.util import (
     get_parser,
-    SphereStateSource,
+    StateSource,
     copy_object_proximity_properties,
     add_shape,
 )
@@ -180,7 +180,7 @@ def create_env(
 
     # pusher_geometry state source
     pusher_geometry_state_source = builder.AddSystem(
-        SphereStateSource(pusher_geometry_starting_position)
+        StateSource(pusher_geometry_starting_position)
     )
     pusher_geometry_state_source.set_name("pusher_geometry_state_source")
 

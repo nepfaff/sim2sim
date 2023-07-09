@@ -7,7 +7,7 @@ from pydrake.all import DiagramBuilder, SceneGraph, Simulator, MultibodyPlant
 
 from sim2sim.logging import PlanarPushingLogger
 from sim2sim.simulation import SimulatorBase
-from sim2sim.util import SphereStateSource
+from sim2sim.util import StateSource
 
 
 class PlanarPushingSimulator(SimulatorBase):
@@ -122,8 +122,8 @@ class PlanarPushingSimulator(SimulatorBase):
         ):
             simulator = Simulator(diagram)
             context = simulator.get_mutable_context()
-            pusher_geometry_state_source: SphereStateSource = (
-                diagram.GetSubsystemByName("pusher_geometry_state_source")
+            pusher_geometry_state_source: StateSource = diagram.GetSubsystemByName(
+                "pusher_geometry_state_source"
             )
             plant: MultibodyPlant = diagram.GetSubsystemByName("plant")
             plant_context = plant.GetMyMutableContextFromRoot(context)
