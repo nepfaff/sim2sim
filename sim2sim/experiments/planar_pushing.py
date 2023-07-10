@@ -97,7 +97,7 @@ def add_pusher_geometry(
     plant.AddJointActuator("pusher_geometry_z", pusher_geometry_z)
 
 
-def create_env(
+def create_systems(
     env_params: dict,
     timestep: float,
     manipuland_base_link_name: str,
@@ -109,26 +109,13 @@ def create_env(
     pusher_geometry_dimensions: Union[float, List[float]],
     directive_files: List[str] = [],
     directive_strs: List[str] = [],
-) -> Tuple[DiagramBuilder, SceneGraph, MultibodyPlant]:
+) -> Tuple[
+    DiagramBuilder, SceneGraph, MultibodyPlant, InverseDynamicsController, StateSource
+]:
     """
-    Creates the planar pushing simulation environment without building it.
-
-    :param env_params: The dict containing environment specific parameters.
-    :param timestep: The timestep to use in seconds.
-    :param manipuland_base_link_name: The base link name of the outer manipuland.
-    :param manipuland_pose: The default pose of the outer manipuland of form
-        [roll, pitch, yaw, x, y, z].
-    :param hydroelastic_manipuland: Whether to use hydroelastic or point contact for the
-        inner manipuland.
-    :param pusher_geometry_type: The pusher geometry type. "sphere" or "box".
-    :param pusher_geometry_starting_position: The starting position [x, y, z] of the
-        pusher_geometry.
-    :param pusher_geometry_pid_gains: The PID gains of the inverse dynamics controller.
-        Must contain keys "kp", "ki", and "kd".
-    :param pusher_geometry_dimensions: The dimensions for the pusher geometry. Radius
-        for a pusher_geometry and [W,D,H] for a pusher geometry.
+    Creates the systems for the planar pushing environment without finalizing the plant.
+    The systems still need to be connected.
     """
-
     builder = DiagramBuilder()
     multibody_plant_config = MultibodyPlantConfig(
         time_step=timestep,
@@ -209,7 +196,66 @@ def create_env(
     plant.SetDefaultFreeBodyPose(
         plant.GetBodyByName(manipuland_base_link_name), manipuland_pose
     )
-    plant.Finalize()
+
+    return (
+        builder,
+        scene_graph,
+        plant,
+        pusher_geometry_inverse_dynamics_controller,
+        pusher_geometry_state_source,
+    )
+
+
+def create_env(
+    env_params: dict,
+    timestep: float,
+    manipuland_base_link_name: str,
+    manipuland_pose: RigidTransform,
+    hydroelastic_manipuland: bool,
+    pusher_geometry_type: str,
+    pusher_geometry_starting_position: List[float],
+    pusher_geometry_pid_gains: Dict[str, float],
+    pusher_geometry_dimensions: Union[float, List[float]],
+    directive_files: List[str] = [],
+    directive_strs: List[str] = [],
+) -> Tuple[DiagramBuilder, SceneGraph, MultibodyPlant]:
+    """
+    Creates the planar pushing simulation environment without building it.
+
+    :param env_params: The dict containing environment specific parameters.
+    :param timestep: The timestep to use in seconds.
+    :param manipuland_base_link_name: The base link name of the outer manipuland.
+    :param manipuland_pose: The default pose of the outer manipuland.
+    :param hydroelastic_manipuland: Whether to use hydroelastic or point contact for the
+        inner manipuland.
+    :param pusher_geometry_type: The pusher geometry type. "sphere" or "box".
+    :param pusher_geometry_starting_position: The starting position [x, y, z] of the
+        pusher_geometry.
+    :param pusher_geometry_pid_gains: The PID gains of the inverse dynamics controller.
+        Must contain keys "kp", "ki", and "kd".
+    :param pusher_geometry_dimensions: The dimensions for the pusher geometry. Radius
+        for a pusher_geometry and [W,D,H] for a pusher geometry.
+    """
+
+    (
+        builder,
+        scene_graph,
+        plant,
+        pusher_geometry_inverse_dynamics_controller,
+        pusher_geometry_state_source,
+    ) = create_systems(
+        env_params=env_params,
+        timestep=timestep,
+        manipuland_base_link_name=manipuland_base_link_name,
+        manipuland_pose=manipuland_pose,
+        hydroelastic_manipuland=hydroelastic_manipuland,
+        pusher_geometry_type=pusher_geometry_type,
+        pusher_geometry_starting_position=pusher_geometry_starting_position,
+        pusher_geometry_pid_gains=pusher_geometry_pid_gains,
+        pusher_geometry_dimensions=pusher_geometry_dimensions,
+        directive_files=directive_files,
+        directive_strs=directive_strs,
+    )
 
     # Connect pusher_geometry state source and controller to plant
     pusher_geometry_instance = plant.GetModelInstanceByName("pusher_geometry")

@@ -22,11 +22,11 @@ class ExternalForceSystem(LeafSystem):
         self._wrench_application_point = np.zeros(3)
 
     def DoCalcAbstractOutput(self, context, output):
-        test_force = ExternallyAppliedSpatialForce()
-        test_force.body_index = self._target_body_index
-        test_force.p_BoBq_B = self._wrench_application_point
-        test_force.F_Bq_W = SpatialForce(tau=self._wrench[3:], f=self._wrench[:3])
-        output.set_value([test_force])
+        force = ExternallyAppliedSpatialForce()
+        force.body_index = self._target_body_index
+        force.p_BoBq_B = self._wrench_application_point
+        force.F_Bq_W = SpatialForce(tau=self._wrench[3:], f=self._wrench[:3])
+        output.set_value([force])
 
     def set_wrench(self, wrench: np.ndarray) -> None:
         self._wrench = wrench

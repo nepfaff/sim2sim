@@ -12,6 +12,7 @@
     <link name="ycb_mustard_bottle_base_link">
       <inertial>
         <mass>0.435</mass>
+        <pose>0.0014 0.0016 -0.0124 0 0 0</pose>
         <inertia>
           <ixx>1.0618e-03</ixx>
           <ixy>-4.7439e-06</ixy>
@@ -33,12 +34,14 @@
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
-            <uri>../../data/ycb_mustard_bottle/mustard_ring_tsdf.obj</uri>
+            <!-- <uri>../../data/ycb_mustard_bottle/mustard_ring_tsdf.obj</uri> -->
+            <uri>../../data/ycb_mustard_bottle/mustard_ring_tsdf.vtk</uri>
           </mesh>
         </geometry>
-         <drake:proximity_properties>
-          <drake:rigid_hydroelastic/>
-          <drake:mesh_resolution_hint>0.01</drake:mesh_resolution_hint>
+        <drake:proximity_properties>
+          <!-- <drake:rigid_hydroelastic/> -->
+          <drake:compliant_hydroelastic/>
+          <drake:hydroelastic_modulus>1.0e8</drake:hydroelastic_modulus>
         </drake:proximity_properties>
       </collision>
     </link>

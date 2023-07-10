@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="ycb_tomato_soup_can">
+    <link name="ycb_tomato_soup_can_base_link">
+      <inertial>
+        <mass>0.348</mass>
+        <pose>-0.0032 0.0062 0.0124 0 0 0</pose>
+        <inertia>
+          <ixx>4.0049e-04</ixx>
+          <ixy>-2.8689e-06</ixy>
+          <ixz>2.7256e-06</ixz>
+          <iyy>3.9849e-04</iyy>
+          <iyz>-1.0914e-05</iyz>
+          <izz>2.1282e-04</izz>
+        </inertia>
+      </inertial>
+      <visual name="visual">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>../../data/ycb_tomato_soup_can/tomato_soup_can_tsdf.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <!-- <collision name="collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>../../data/ycb_tomato_soup_can/tomato_soup_can_tsdf.vtk</uri>
+          </mesh>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:rigid_hydroelastic/>
+          <drake:compliant_hydroelastic/>
+          <drake:hydroelastic_modulus>1.0e8</drake:hydroelastic_modulus>
+        </drake:proximity_properties>
+      </collision> -->
+      <!-- This collision geometry has been handcrafted and is not very exact. -->
+      <collision name="collision">
+        <pose>-0.005 0.008 -0.01 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.031850</radius>
+            <length>0.103</length>
+          </cylinder>
+        </geometry>
+        <drake:proximity_properties>
+          <drake:compliant_hydroelastic/>
+          <drake:hydroelastic_modulus>1.0e8</drake:hydroelastic_modulus>
+          <drake:mesh_resolution_hint>0.01</drake:mesh_resolution_hint>
+        </drake:proximity_properties>
+      </collision>
+      
+    </link>
+  </model>
+</sdf>

@@ -218,7 +218,6 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
         List[np.ndarray],
         List[np.ndarray],
     ]:
-
         X_CW = self._generate_camera_poses()
         X_WG = convert_camera_poses_to_iiwa_eef_poses(X_CW)
 

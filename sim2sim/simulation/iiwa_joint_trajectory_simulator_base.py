@@ -94,7 +94,6 @@ class IIWAJointTrajectorySimulatorBase(SimulatorBase):
         # Add lower level info to command sequence
         low_level_command_sequence = []
         for command in command_sequence:
-
             # Compute iiwa trajectory
             iiwa_trajectory_source.set_t_start(0.0)
             iiwa_traj = iiwa_trajectory_source.compute_and_set_trajectory(
