@@ -715,7 +715,7 @@ def convert_obj_to_vtk(
     else:
         assert output_path[-3:].lower() == "vtk"
         obj_path = os.path.join(tmp_folder_path, "mesh.obj")
-        o3d.io.write_triangle_mesh(obj_path, obj_mesh)
+        o3d.io.write_triangle_mesh(obj_path, obj_meshes[0])
         vtk_path = convert(obj_path)
         vtk_file_paths.append(vtk_path)
 

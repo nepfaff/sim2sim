@@ -111,7 +111,10 @@ class CoACDMeshProcessor(MeshProcessorBase):
             output_meshes.append(open3d_part)
 
         if self._is_compliant:
-            vtk_pieces_path = os.path.join(self._logger.tmp_dir_path, "vtk_mesh_pieces")
+            vtk_pieces_path = os.path.join(
+                self._logger.tmp_dir_path,
+                "vtk_mesh_pieces" if len(output_meshes) > 1 else "processed_mesh.vtk",
+            )
             if not os.path.exists(vtk_pieces_path):
                 os.mkdir(vtk_pieces_path)
             vtk_paths = convert_obj_to_vtk(
