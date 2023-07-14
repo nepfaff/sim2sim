@@ -9,6 +9,7 @@ from pydrake.all import (
     SceneGraph,
     Simulator,
 )
+from manipulation.meshcat_utils import AddMeshcatTriad
 
 from sim2sim.logging import DynamicLogger
 from sim2sim.util import (
@@ -153,6 +154,12 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
             + f"{num_poses_feasible}/{num_poses} poses remaining."
         )
 
+        # Publish the planned camera poses to meshcat
+        for i, X_WG in enumerate(X_WG_feasible):
+            AddMeshcatTriad(
+                self._meshcat, f"X_WG{i:03d}", length=0.15, radius=0.006, X_PT=X_WG
+            )
+
         # Use wrist camera to generate image data
         gripper_frame = plant.GetFrameByName("body")
         X_WG_last = plant.CalcRelativeTransform(
@@ -169,7 +176,6 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
                     ik_position_tolerance=0.02,
                     ik_orientation_tolerance=0.02,
                     allow_no_ik_sols=False,
-                    debug=True,
                 )
             except:
                 # Try to skip failed IK solutions
