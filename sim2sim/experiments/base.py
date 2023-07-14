@@ -21,7 +21,11 @@ from sim2sim.util import (
     create_directive_str_for_sdf_path,
     MeshProcessorResult,
 )
-from sim2sim.images import SphereImageGenerator, NoneImageGenerator
+from sim2sim.images import (
+    SphereImageGenerator,
+    NoneImageGenerator,
+    IIWAWristSphereImageGenerator,
+)
 from sim2sim.inverse_graphics import IdentityInverseGraphics
 from sim2sim.mesh_processing import (
     IdentityMeshProcessor,
@@ -51,6 +55,7 @@ LOGGERS = {
 IMAGE_GENERATORS = {
     "NoneImageGenerator": NoneImageGenerator,
     "SphereImageGenerator": SphereImageGenerator,
+    "IIWAWristSphereImageGenerator": IIWAWristSphereImageGenerator,
 }
 INVERSE_GRAPHICS = {
     "IdentityInverseGraphics": IdentityInverseGraphics,
