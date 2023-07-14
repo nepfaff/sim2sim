@@ -35,6 +35,7 @@ class ImageGeneratorBase(ABC):
                 self._renderer, MakeRenderEngineGl(RenderEngineGlParams())
             )
 
+    # TODO: Refactor to return a dataclass instead of a tuple
     @abstractmethod
     def generate_images(
         self,

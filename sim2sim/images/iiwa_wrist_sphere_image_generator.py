@@ -146,13 +146,19 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
             ik_position_tolerance=0.02,
             ik_orientation_tolerance=0.02,
         )
-        print(f"Pruned {len(X_WGs)-len(X_WG_feasible)} infeasible wrist camera poses.")
+        num_poses = len(X_WGs)
+        num_poses_feasible = len(X_WG_feasible)
+        print(
+            f"Pruned {num_poses-num_poses_feasible} infeasible wrist camera poses. "
+            + f"{num_poses_feasible}/{num_poses} poses remaining."
+        )
 
         # Use wrist camera to generate image data
         gripper_frame = plant.GetFrameByName("body")
         X_WG_last = plant.CalcRelativeTransform(
             plant_context, frame_A=world_frame, frame_B=gripper_frame
         )
+        num_skipped = 0
         for X_WG in X_WG_feasible:
             iiwa_trajectory_source.set_t_start(context.get_time())
             iiwa_path = [X_WG_last, RigidTransform(X_WG)]
@@ -167,6 +173,7 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
                 )
             except:
                 # Try to skip failed IK solutions
+                num_skipped += 1
                 continue
             X_WG_last = RigidTransform(X_WG)
 
@@ -189,6 +196,10 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
             depths.append(depth_image)
             labels.append(object_labels)
             masks.append(object_masks)
+        print(
+            f"Skipped {num_skipped} of the initially feasible wrist camera poses. "
+            + f"{num_poses_feasible-num_skipped}/{num_poses} poses remaining."
+        )
 
         self._visualizer.StopRecording()
         self._visualizer.PublishRecording()
@@ -221,8 +232,8 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
         X_CW = self._generate_camera_poses()
         X_WG = convert_camera_poses_to_iiwa_eef_poses(X_CW)
 
-        # TODO: Refactor this so that script argument specifies these 3 params and both make station and this function
-        # uses the same ones
+        # TODO: Refactor this so that script argument specifies these 3 params and both
+        # make station and this function uses the same ones
         camera_info = CameraInfo(width=1920, height=1440, fov_y=np.pi / 4.0)
         intrinsics = np.array(
             [
