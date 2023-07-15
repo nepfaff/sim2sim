@@ -22,8 +22,9 @@ from sim2sim.images import SphereImageGenerator
 
 class IIWAWristSphereImageGenerator(SphereImageGenerator):
     """
-    An image generator that uses the iiwa wrist camera for generating camera data. Camera waypoints form a sphere around
-    a target point. Also returns ground truth object masks.
+    An image generator that uses the iiwa wrist camera for generating camera data.
+    Camera waypoints form a sphere around a target point. Also returns ground truth
+    object masks.
     """
 
     def __init__(
@@ -44,20 +45,26 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
         :param builder: The diagram builder.
         :param scene_graph: The scene graph.
         :param logger: The logger.
-        :param simulate_time: The time in seconds to simulate before generating the image data.
+        :param simulate_time: The time in seconds to simulate before generating the
+            image data.
         :param look_at_point: The point that the cameras should look at of shape (3,).
-        :param z_distances: The vertical distances (m) of the camera circles from `look_at_point` of shape (n,) where n
-            is the number of camera circles. It is recommended to have distances increase monotonically.
-        :param radii: The radii (m) of the camera circles of shape (n,) where n is the number of camera circles. It is
-            recommended to have radii decrease monotonically.
-        :param num_poses: The number of poses for each camera circle of shape (n,) where n is the number of camera
-            circles. The number of poses should decrease as the radius decreases.
-        :param time_between_camera_waypoints: The time in seconds that the iiwa should take to move from one wrist camera
-            waypoint to the next.
-        :param has_leg_camera: Whether the setup has an iiwa leg camera of name `camera_leg`.
-        :param num_cameras_below_table: The number of cameras below the table. NOTE: The table must have no visual element
-            for these cameras to produce useful data. These cameras must have name `camera_below_table_{i}` where i is an
-            index in range 0...num_cameras_below_table-1.
+        :param z_distances: The vertical distances (m) of the camera circles from
+            `look_at_point` of shape (n,) where n is the number of camera circles. It is
+            recommended to have distances increase monotonically.
+        :param radii: The radii (m) of the camera circles of shape (n,) where n is the
+            number of camera circles. It is recommended to have radii decrease
+            monotonically.
+        :param num_poses: The number of poses for each camera circle of shape (n,) where
+            n is the number of camera circles. The number of poses should decrease as
+            the radius decreases.
+        :param time_between_camera_waypoints: The time in seconds that the iiwa should
+            take to move from one wrist camera waypoint to the next.
+        :param has_leg_camera: Whether the setup has an iiwa leg camera of name
+            `camera_leg`.
+        :param num_cameras_below_table: The number of cameras below the table.
+            NOTE: The table must have no visual element for these cameras to produce
+            useful data. These cameras must have name `camera_below_table_{i}` where i
+            is an index in range 0...num_cameras_below_table-1.
         """
         super().__init__(
             builder,
