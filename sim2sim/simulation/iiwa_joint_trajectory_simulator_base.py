@@ -35,7 +35,8 @@ class IIWAJointTrajectorySimulatorBase(SimulatorBase):
         :param inner_scene_graph: Scene graph for the inner simulation environment.
         :param logger: The logger.
         :param is_hydroelastic: Whether hydroelastic or point contact is used.
-        :param mesh_pose: The manipuland mesh pose of form [roll, pitch, yaw, x, y, z] where angles are in radians.
+        :param mesh_pose: The manipuland mesh pose of form [roll, pitch, yaw, x, y, z]
+            where angles are in radians.
         """
 
         super().__init__(
@@ -52,7 +53,9 @@ class IIWAJointTrajectorySimulatorBase(SimulatorBase):
         self._mesh_pose = np.array(mesh_pose)
 
     def _finalize_and_build_diagrams(self) -> None:
-        """Adds visualization systems to the outer and inner diagrams and builds them."""
+        """
+        Adds visualization systems to the outer and inner diagrams and builds them.
+        """
 
         if self._skip_outer_visualization:
             self._outer_visualizer, self._outer_meshcat = None, None
