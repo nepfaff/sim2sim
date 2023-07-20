@@ -34,6 +34,7 @@ def create_env(
     timestep: float,
     manipuland_pose: RigidTransform,
     manipuland_base_link_name: str,
+    weld_manipuland: bool = False,
     directive_files: List[str] = [],
     directive_strs: List[str] = [],
     **kwargs,
@@ -44,6 +45,7 @@ def create_env(
     :param env_params: The dict containing environment specific parameters.
     :param timestep: The timestep to use in seconds.
     :param manipuland_base_link_name: The base link name of the outer manipuland.
+    :param weld_manipuland: Whether to weld the manipuland to the world.
     :param manipuland_pose: The default pose of the outer manipuland of form
         [roll, pitch, yaw, x, y, z].
     """
@@ -65,9 +67,13 @@ def create_env(
         directive = LoadModelDirectivesFromString(directive_str)
         ProcessModelDirectives(directive, parser)
 
-    plant.SetDefaultFreeBodyPose(
-        plant.GetBodyByName(manipuland_base_link_name), manipuland_pose
-    )
+    manipuland_body = plant.GetBodyByName(manipuland_base_link_name)
+    plant.SetDefaultFreeBodyPose(manipuland_body, manipuland_pose)
+    if weld_manipuland:
+        plant.WeldFrames(
+            plant.world_frame(), manipuland_body.body_frame(), manipuland_pose
+        )
+
     plant.Finalize()
 
     # Add iiwa controller

@@ -23,8 +23,9 @@ from .iiwa import (
     IIWAJointTrajectorySource,
     IIWAOptimizedJointTrajectorySource,
     WSGCommandSource,
-    prune_infeasible_eef_poses,
+    compute_joint_angles_for_eef_poses,
     IIWAControlModeSource,
+    calc_inverse_kinematics,
 )
 from .systems import ExternalForceSystem, StateSource
 from .metrics import (

@@ -21,6 +21,7 @@ from pydrake.all import (
     Context,
     ContactResults,
     VectorLogSink,
+    SaveIrisRegionsYamlFile,
 )
 from PIL import Image
 from matplotlib import pyplot as plt
@@ -141,6 +142,9 @@ class DynamicLogger:
 
         # Manipuland physics
         self._manipuland_physical_properties: PhysicalProperties = None
+
+        # Miscellaneous
+        self._iris_regions: dict = None
 
     def _create_data_directories(self) -> None:
         for path in self._data_directory_paths:
@@ -441,6 +445,7 @@ class DynamicLogger:
         outer_simulation_time: Optional[float] = None,
         inner_simulation_time: Optional[float] = None,
         experiment_description: Optional[dict] = None,
+        iris_regions: Optional[dict] = None,
         meta_data: Optional[Dict[str, Any]] = None,
     ) -> None:
         """TODO"""
@@ -466,6 +471,8 @@ class DynamicLogger:
             self._inner_simulation_time = inner_simulation_time
         if experiment_description is not None:
             self._experiment_description = experiment_description
+        if iris_regions is not None:
+            self._iris_regions = iris_regions
         if meta_data is not None:
             self._meta_data.update(meta_data)
 
@@ -921,6 +928,12 @@ class DynamicLogger:
                 # Save black image
                 mask_pil = Image.new("RGB", (image_pil.width, image_pil.height))
             mask_pil.save(os.path.join(self._masks_dir_path, f"mask{i:04d}.png"))
+
+        if self._iris_regions is not None:
+            SaveIrisRegionsYamlFile(
+                os.path.join(self._logging_path, "iris_regions.yaml"),
+                self._iris_regions,
+            )
 
         self.save_manipuland_pose_logs()
         self.save_manipuland_contact_force_logs()

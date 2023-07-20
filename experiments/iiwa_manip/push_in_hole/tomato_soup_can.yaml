@@ -37,13 +37,25 @@ logger:
 #     z_distances: [0.0, 0.06, 0.12, -0.16, -0.20]
 #     radii: [0.25, 0.2, 0.15, 0.2, 0.15]
 #     num_poses: [30, 25, 15, 25, 15]
-#     z_distances: [0.0]
-#     radii: [0.25]
-#     num_poses: [1]
 
 image_generator:
-  class: "NoneImageGenerator"
+  class: "IIWAWristSphereImageGenerator"
   args:
+    simulate_time: 0.1
+    look_at_point: [0.0, 0.5, 0.050450]
+    z_distances: [0.08, 0.12, 0.2, 0.3]
+    radii: [0.25, 0.2, 0.15, 0.1]
+    num_poses: [30, 25, 15, 15]
+    time_between_camera_waypoints: 1.5
+    has_leg_camera: false
+    num_cameras_below_table: 0
+    use_gcs: true
+    # iris_regions_path: ./tmp_iris_regions.yaml
+    iris_regions_path: ./my_iris.yaml
+
+# image_generator:
+#   class: "NoneImageGenerator"
+#   args:
 
 inverse_graphics:
   class: "IdentityInverseGraphics"

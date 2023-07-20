@@ -118,6 +118,7 @@ def run_pipeline(
         manipuland_base_link_name=manipuland_base_link_name,
         manipuland_pose=manipuland_default_pose,
         hydroelastic_manipuland=hydroelastic_manipuland,
+        weld_manipuland=True,
         directive_files=[scene_directive_path, manipuland_directive_path],
         **kwargs,
     )

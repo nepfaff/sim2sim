@@ -1,4 +1,4 @@
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Tuple
 from enum import Enum
 
 import numpy as np
@@ -39,6 +39,8 @@ from pydrake.all import (
     PortSwitch,
     AbstractValue,
     InputPortIndex,
+    Trajectory,
+    CompositeTrajectory,
 )
 from pydrake.multibody import inverse_kinematics
 from manipulation.scenarios import AddIiwa, AddWsg, AddRgbdSensors, AddPlanarIiwa
@@ -380,7 +382,7 @@ class IIWAJointTrajectorySource(LeafSystem):
         """Replaces the meshcat visualizer."""
         self._meshcat = meshcat
 
-    def set_trajectory(self, q_traj: PiecewisePolynomial, t_start: float = 0.0) -> None:
+    def set_trajectory(self, q_traj: Trajectory, t_start: float = 0.0) -> None:
         """
         :param q_traj: The trajectory to set.
         :param t_start: The trajectory start time.
@@ -463,10 +465,16 @@ class IIWAJointTrajectorySource(LeafSystem):
         if self._q_traj:
             t = context.get_time() - self._t_start
             q = self._q_traj.value(t).ravel()
-            q_dot = self._q_traj.derivative(1).value(t).ravel()
+            # If q is too large, assume the first positions are the relevant ones
+            q = q[: self._iiwa_num_position]
+            if isinstance(self._q_traj, CompositeTrajectory):
+                # TODO: Support velocities for composite trajectories
+                q_dot = np.zeros(len(q))
+            else:
+                q_dot = self._q_traj.derivative(1).value(t).ravel()
         else:
             q = self._q_nominal
-            q_dot = np.array([0.0] * self._iiwa_num_position)
+            q_dot = np.zeros(self._iiwa_num_position)
         output.SetFromVector(np.hstack([q, q_dot]))
 
     def set_t_start(self, t_start_new: float) -> None:
@@ -474,7 +482,7 @@ class IIWAJointTrajectorySource(LeafSystem):
         self._q_knots = []
         self._breaks = []
 
-    def get_q_traj(self) -> PiecewisePolynomial:
+    def get_q_traj(self) -> Trajectory:
         return self._q_traj
 
     def _calc_q_traj(self) -> PiecewisePolynomial:
@@ -652,23 +660,27 @@ class WSGCommandSource(LeafSystem):
         output.SetAtIndex(0, self._command_pos)
 
 
-def prune_infeasible_eef_poses(
+def compute_joint_angles_for_eef_poses(
     X_WGs: np.ndarray,
     plant: MultibodyPlant,
     initial_guess: np.ndarray,
     ik_position_tolerance: float,
     ik_orientation_tolerance: float,
-) -> np.ndarray:
+) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Removes all poses for which no iiwa IK can be found.
+    Tries to compute IK for all eef poses and returns the ones for which an IK solution
+    could be found.
 
     :param X_WG: The eef waypoints to prune.
     :param initial_guess: The initial joint position guess of shape (7,).
-    :param ik_position_tolerance: The position tolerance to use for the global IK optimization problem.
-    :param ik_orientation_tolerance: The orientation tolerance to use for the global IK optimization problem.
-    :return: The pruned waypoints.
+    :param ik_position_tolerance: The position tolerance to use for the global IK
+        optimization problem.
+    :param ik_orientation_tolerance: The orientation tolerance to use for the global IK
+        optimization problem.
+    :return: A tuple of the feasible eef poses and the corresponding joint angles.
     """
     X_WG_feasible = []
+    q_sols = []
     for X_WG in X_WGs:
         sol = calc_inverse_kinematics(
             plant,
@@ -679,8 +691,9 @@ def prune_infeasible_eef_poses(
         )
         if sol is not None:
             X_WG_feasible.append(X_WG)
+            q_sols.append(sol)
             initial_guess = sol
-    return np.stack(X_WG_feasible)
+    return np.stack(X_WG_feasible), np.stack(q_sols)
 
 
 class IIWAControlModeSource(LeafSystem):

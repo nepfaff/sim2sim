@@ -13,8 +13,7 @@ directives:
 # iiwa
 - add_model:
     name: iiwa
-    # file: package://drake/manipulation/models/iiwa_description/iiwa7/iiwa7_no_collision.sdf
-    file: package://drake//manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
+    file: package://drake//manipulation/models/iiwa_description/urdf/iiwa14_primitive_collision.urdf
     default_joint_positions:
         iiwa_joint_1: [1.6]
         iiwa_joint_2: [0.1]
@@ -25,7 +24,7 @@ directives:
         iiwa_joint_7: [0]
 - add_weld:
     parent: table::table_top_center
-    child: iiwa::iiwa_link_0
+    child: iiwa::base
     X_PC:
         translation: [0, -0.3, 0]
 

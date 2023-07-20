@@ -1,5 +1,6 @@
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Optional
 import os
+from collections import OrderedDict
 
 import numpy as np
 from pydrake.all import (
@@ -8,16 +9,191 @@ from pydrake.all import (
     DiagramBuilder,
     SceneGraph,
     Simulator,
+    LoadIrisRegionsYamlFile,
+    HPolyhedron,
+    MathematicalProgram,
+    Solve,
+    IrisInConfigurationSpace,
+    IrisOptions,
+    RollPitchYaw,
+    MultibodyPlant,
+    Context,
+    GraphOfConvexSetsOptions,
+    GcsTrajectoryOptimization,
+    Point,
+    PiecewisePolynomial,
 )
 from manipulation.meshcat_utils import AddMeshcatTriad
 
 from sim2sim.logging import DynamicLogger
 from sim2sim.util import (
     convert_camera_poses_to_iiwa_eef_poses,
-    prune_infeasible_eef_poses,
+    compute_joint_angles_for_eef_poses,
     IIWAJointTrajectorySource,
+    calc_inverse_kinematics,
 )
 from sim2sim.images import SphereImageGenerator
+
+
+def scale_hpolyhedron(hpoly, scale_factor):
+    # Shift to the center.
+    xc = hpoly.ChebyshevCenter()
+    A = hpoly.A()
+    b = hpoly.b() - A @ xc
+    # Scale
+    b = scale_factor * b
+    # Shift back
+    b = b + A @ xc
+    return HPolyhedron(A, b)
+
+
+def check_non_empty(region):
+    prog = MathematicalProgram()
+    x = prog.NewContinuousVariables(region.ambient_dimension())
+    region.AddPointInSetConstraints(prog, x)
+    result = Solve(prog)
+    assert result.is_success()
+
+
+# TODO: Clean up + move to utils
+def compute_iris_region(
+    plant: MultibodyPlant,
+    plant_context: Context,
+    iris_options: IrisOptions,
+    existing_regions: dict,
+    name: str,
+    seed: np.ndarray,
+    use_existing_regions_as_obstacles: bool = True,
+    regions_as_obstacles_scale_factor: float = 0.95,
+):
+    plant.SetPositions(
+        context=plant_context,
+        model_instance=plant.GetModelInstanceByName("iiwa"),
+        q=seed,
+    )
+    if use_existing_regions_as_obstacles:
+        iris_options.configuration_obstacles = [
+            scale_hpolyhedron(r, regions_as_obstacles_scale_factor)
+            for k, r in existing_regions.items()
+            if k != name
+        ]
+        for h in iris_options.configuration_obstacles:
+            check_non_empty(h)
+    else:
+        iris_options.configuration_obstacles = None
+    hpoly = IrisInConfigurationSpace(plant, plant_context, iris_options)
+
+    check_non_empty(hpoly)
+    reduced = hpoly.ReduceInequalities()
+    check_non_empty(reduced)
+
+    return reduced
+
+
+# TODO: Clean up + move this to utils
+def generate_iris_regions(
+    plant: MultibodyPlant,
+    plant_context: Context,
+    iiwa_controller_plant: MultibodyPlant,
+    iris_options: IrisOptions,
+) -> dict:
+    seeds = OrderedDict()
+    seeds["Nominal position"] = np.array([1.5, -0.4, 0.0, -1.75, 0.0, 1.5, 0.0])
+    seeds["Swan position"] = calc_inverse_kinematics(
+        plant=iiwa_controller_plant,
+        X_G=RigidTransform(RollPitchYaw(-2.05, 0.01, 3.09), [-0.04, -0.01, 0.67]),
+        initial_guess=seeds["Nominal position"],
+        position_tolerance=0.05,
+        orientation_tolerance=0.05,
+    )
+    seeds["Above (0,0.5)"] = calc_inverse_kinematics(
+        plant=iiwa_controller_plant,
+        X_G=RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.0, 0.5, 0.4]),
+        initial_guess=seeds["Nominal position"],
+        position_tolerance=0.05,
+        orientation_tolerance=0.05,
+    )
+    seeds["Above (0.25,0.25)"] = calc_inverse_kinematics(
+        plant=iiwa_controller_plant,
+        X_G=RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.25, 0.25, 0.4]),
+        initial_guess=seeds["Above (0,0.5)"],
+        position_tolerance=0.05,
+        orientation_tolerance=0.05,
+    )
+    # seeds["Above (0.5,0), Above container"] = calc_inverse_kinematics(
+    #     plant=iiwa_controller_plant,
+    #     X_G=RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [0.5, 0.0, 0.4]),
+    #     initial_guess=seeds["Above (0.25,0.25)"],
+    #     position_tolerance=0.05,
+    #     orientation_tolerance=0.05,
+    # )
+    seeds["Above container, sliding start"] = calc_inverse_kinematics(
+        plant=iiwa_controller_plant,
+        X_G=RigidTransform(RollPitchYaw(-1.90, 0.01, 3.10), [0.5, 0.29, 0.38]),
+        initial_guess=seeds["Above (0.25,0.25)"],
+        position_tolerance=0.05,
+        orientation_tolerance=0.05,
+    )
+    seeds["Above (-0.25,0.25)"] = calc_inverse_kinematics(
+        plant=iiwa_controller_plant,
+        X_G=RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [-0.25, 0.25, 0.4]),
+        initial_guess=seeds["Above (0,0.5)"],
+        position_tolerance=0.05,
+        orientation_tolerance=0.05,
+    )
+    # seeds["Way to bin"] = calc_inverse_kinematics(
+    #     plant=iiwa_controller_plant,
+    #     X_G=RigidTransform(RollPitchYaw(-1.83, 0.01, 3.10), [-0.56, 0.23, 0.38]),
+    #     initial_guess=seeds["Above (-0.25,0.25)"],
+    #     position_tolerance=0.05,
+    #     orientation_tolerance=0.05,
+    # )
+    # seeds["Above (-0.5,0), Above bin"] = calc_inverse_kinematics(
+    #     plant=iiwa_controller_plant,
+    #     X_G=RigidTransform(RollPitchYaw(-np.pi / 2, 0.0, -np.pi), [-0.5, 0.0, 0.4]),
+    #     initial_guess=seeds["Above (-0.25,0.25)"],
+    #     position_tolerance=0.05,
+    #     orientation_tolerance=0.05,
+    # )
+
+    iris_regions = dict()
+    for name, seed in seeds.items():
+        print(f"Computing IRIS region '{name}'")
+        iris_regions[name] = compute_iris_region(
+            plant=plant,
+            plant_context=plant_context,
+            iris_options=iris_options,
+            existing_regions=iris_regions,
+            name=name,
+            seed=seed,
+        )
+    return iris_regions
+
+
+def solve_gcs_trajectory_optimization(
+    plant: MultibodyPlant, iris_regions: dict, q_start: np.ndarray, q_goal: np.ndarray
+) -> Union[PiecewisePolynomial, None]:
+    assert len(q_start) == len(q_goal)
+    assert len(q_start) == iris_regions[next(iter(iris_regions))].ambient_dimension()
+
+    gcs = GcsTrajectoryOptimization(len(q_start))
+    regions = gcs.AddRegions(list(iris_regions.values()), order=1)
+    source = gcs.AddRegions([Point(q_start)], order=0)
+    target = gcs.AddRegions([Point(q_goal)], order=0)
+    gcs.AddEdges(source, regions)
+    gcs.AddEdges(regions, target)
+    gcs.AddTimeCost()
+    gcs.AddVelocityBounds(
+        np.clip(plant.GetVelocityLowerLimits(), a_min=-10, a_max=10),
+        np.clip(plant.GetVelocityUpperLimits(), a_min=-10, a_max=10),
+    )
+
+    options = GraphOfConvexSetsOptions()
+    options.preprocessing = True
+    options.convex_relaxation = True
+    options.max_rounded_paths = 15
+    traj, result = gcs.SolvePath(source, target, options)
+    return traj if result.is_success() else None
 
 
 class IIWAWristSphereImageGenerator(SphereImageGenerator):
@@ -40,6 +216,8 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
         time_between_camera_waypoints: float,
         has_leg_camera: bool,
         num_cameras_below_table: int,
+        use_gcs: bool,
+        iris_regions_path: Optional[str] = None,
     ):
         """
         :param builder: The diagram builder.
@@ -65,6 +243,11 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
             NOTE: The table must have no visual element for these cameras to produce
             useful data. These cameras must have name `camera_below_table_{i}` where i
             is an index in range 0...num_cameras_below_table-1.
+        :param use_gcs: Whether to use GCS for motion planing. Otherwise, simple
+            interpolation without collision awareness is used.
+        :param iris_regions_path: The path to the yaml file containing already computed
+            IRIS regions to use for GCS motion planing. This argument is ignored if
+            `use_gcs` is false. If None, the regions are computed from scratch.
         """
         super().__init__(
             builder,
@@ -80,6 +263,7 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
         self._time_between_camera_waypoints = time_between_camera_waypoints
         self._has_leg_camera = has_leg_camera
         self._num_cameras_below_table = num_cameras_below_table
+        self._use_gcs = use_gcs
 
         # Create meshcat
         self._visualizer, self._meshcat = self._logger.add_meshcat_visualizer(
@@ -88,6 +272,40 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
 
         # We aren't modifying the diagram but are using the existing wrist camera
         self._diagram = builder.Build()
+
+        # Ensure that have IRIS regions when using GCS
+        if use_gcs:
+            if iris_regions_path is None:
+                simulator = Simulator(self._diagram)
+                simulator.AdvanceTo(self._simulate_time)
+                plant = self._diagram.GetSubsystemByName("plant")
+                context = simulator.get_mutable_context()
+                plant_context = plant.GetMyContextFromRoot(context)
+                iiwa_controller_plant = self._diagram.GetSubsystemByName(
+                    "iiwa_inverse_dynamics_controller"
+                ).get_multibody_plant_for_control()
+                iris_options = IrisOptions()
+                iris_options.iteration_limit = 10
+                # increase num_collision_infeasible_samples to improve the (probabilistic)
+                # certificate of having no collisions.
+                iris_options.num_collision_infeasible_samples = 3
+                iris_options.require_sample_point_is_contained = True
+                iris_options.relative_termination_threshold = 0.01
+                iris_options.termination_threshold = -1
+                self._iris_regions = generate_iris_regions(
+                    plant, plant_context, iiwa_controller_plant, iris_options
+                )
+            else:
+                self._iris_regions = LoadIrisRegionsYamlFile(iris_regions_path)
+            logger.log(iris_regions=self._iris_regions)
+
+            # TODO: temp only
+            from pydrake.all import SaveIrisRegionsYamlFile
+
+            SaveIrisRegionsYamlFile(
+                os.path.join(self._logger._logging_path, "iris_regions.yaml"),
+                self._iris_regions,
+            )
 
     def _simulate_and_get_image_data(
         self,
@@ -147,12 +365,12 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
             masks.append(object_masks)
 
         # Prune camera poses that are not reachable with the wrist camera
-        X_WG_feasible = prune_infeasible_eef_poses(
+        X_WG_feasible, q_waypoints = compute_joint_angles_for_eef_poses(
             X_WGs,
             iiwa_controller_plant,
             initial_guess=iiwa_trajectory_source._q_nominal,
             ik_position_tolerance=0.02,
-            ik_orientation_tolerance=0.02,
+            ik_orientation_tolerance=0.01,
         )
         num_poses = len(X_WGs)
         num_poses_feasible = len(X_WG_feasible)
@@ -173,42 +391,114 @@ class IIWAWristSphereImageGenerator(SphereImageGenerator):
             plant_context, frame_A=world_frame, frame_B=gripper_frame
         )
         num_skipped = 0
-        for X_WG in X_WG_feasible:
-            iiwa_trajectory_source.set_t_start(context.get_time())
-            iiwa_path = [X_WG_last, RigidTransform(X_WG)]
-            try:
-                iiwa_trajectory_source.compute_and_set_trajectory(
-                    iiwa_path,
-                    time_between_breakpoints=self._time_between_camera_waypoints,
-                    ik_position_tolerance=0.02,
-                    ik_orientation_tolerance=0.02,
-                    allow_no_ik_sols=False,
+        if self._use_gcs:
+            # TODO: Clean up hardcoded nominal position
+            nominal_position = np.array([1.5, -0.4, 0.0, -1.75, 0.0, 1.5, 0.0])
+            last_q = calc_inverse_kinematics(
+                plant=iiwa_controller_plant,
+                X_G=X_WG_last,
+                initial_guess=nominal_position,
+                position_tolerance=0.05,
+                orientation_tolerance=0.05,
+            )
+            for i, next_q in enumerate(q_waypoints):
+                # Concatenate the wsg positions to the iiwa joint positions
+                q_traj = solve_gcs_trajectory_optimization(
+                    plant=plant,
+                    iris_regions=self._iris_regions,
+                    q_start=np.concatenate([last_q, [0.0, 0.0]]),
+                    q_goal=np.concatenate([next_q, [0.0, 0.0]]),
                 )
-            except:
-                # Try to skip failed IK solutions
-                num_skipped += 1
-                continue
-            X_WG_last = RigidTransform(X_WG)
+                if q_traj is not None:
+                    iiwa_trajectory_source.set_trajectory(
+                        q_traj, context.get_time() + q_traj.start_time()
+                    )
+                    traj_duration = (
+                        q_traj.end_time()
+                        - q_traj.start_time()
+                        + self._time_between_camera_waypoints
+                    )
+                    simulator.AdvanceTo(context.get_time() + traj_duration)
+                    last_q = next_q
+                else:
+                    # Try to generate a new IRIS region
 
-            simulator.AdvanceTo(
-                context.get_time() + self._time_between_camera_waypoints
-            )
+                    ### TMP start
+                    simulator1 = Simulator(self._diagram)
+                    simulator1.AdvanceTo(self._simulate_time)
+                    plant1 = self._diagram.GetSubsystemByName("plant")
+                    context1 = simulator1.get_mutable_context()
+                    plant_context1 = plant1.GetMyContextFromRoot(context1)
+                    iris_options = IrisOptions()
+                    iris_options.iteration_limit = 10
+                    # increase num_collision_infeasible_samples to improve the (probabilistic)
+                    # certificate of having no collisions.
+                    iris_options.num_collision_infeasible_samples = 3
+                    iris_options.require_sample_point_is_contained = True
+                    iris_options.relative_termination_threshold = 0.01
+                    iris_options.termination_threshold = -1
+                    name = f"camera_waypoint_{i}"
+                    print(f"Computing IRIS region '{name}'")
+                    try:
+                        self._iris_regions[name] = compute_iris_region(
+                            plant=plant1,
+                            plant_context=plant_context1,
+                            iris_options=iris_options,
+                            existing_regions=self._iris_regions,
+                            name=name,
+                            seed=next_q,
+                        )
+                        from pydrake.all import SaveIrisRegionsYamlFile
 
-            # Get actual wrist camera pose
-            X_WG_actual = plant.CalcRelativeTransform(
-                plant_context,
-                frame_A=world_frame,
-                frame_B=plant.GetFrameByName("camera_wrist"),
-            )
-            X_CWs.append(np.linalg.inv(X_WG_actual.GetAsMatrix4()))
+                        SaveIrisRegionsYamlFile(
+                            "./my_iris.yaml",
+                            self._iris_regions,
+                        )
+                    except:
+                        # Seed point is alrady inside a region
+                        pass
+                    ### TMP end
 
-            image, depth_image, object_labels, object_masks = self._get_camera_data(
-                "camera_wrist", context
-            )
-            images.append(image)
-            depths.append(depth_image)
-            labels.append(object_labels)
-            masks.append(object_masks)
+                    num_skipped += 1
+                    continue
+        else:
+            # TODO: Refactor to avoid code duplication with GCS variant
+            for X_WG in X_WG_feasible:
+                iiwa_trajectory_source.set_t_start(context.get_time())
+                iiwa_path = [X_WG_last, RigidTransform(X_WG)]
+                try:
+                    iiwa_trajectory_source.compute_and_set_trajectory(
+                        iiwa_path,
+                        time_between_breakpoints=self._time_between_camera_waypoints,
+                        ik_position_tolerance=0.02,
+                        ik_orientation_tolerance=0.02,
+                        allow_no_ik_sols=False,
+                    )
+                except:
+                    # Try to skip failed IK solutions
+                    num_skipped += 1
+                    continue
+                X_WG_last = RigidTransform(X_WG)
+
+                simulator.AdvanceTo(
+                    context.get_time() + self._time_between_camera_waypoints
+                )
+
+                # Get actual wrist camera pose
+                X_WG_actual = plant.CalcRelativeTransform(
+                    plant_context,
+                    frame_A=world_frame,
+                    frame_B=plant.GetFrameByName("camera_wrist"),
+                )
+                X_CWs.append(np.linalg.inv(X_WG_actual.GetAsMatrix4()))
+
+                image, depth_image, object_labels, object_masks = self._get_camera_data(
+                    "camera_wrist", context
+                )
+                images.append(image)
+                depths.append(depth_image)
+                labels.append(object_labels)
+                masks.append(object_masks)
         print(
             f"Skipped {num_skipped} of the initially feasible wrist camera poses. "
             + f"{num_poses_feasible-num_skipped}/{num_poses} poses remaining."
