@@ -196,7 +196,6 @@ def create_systems(
     plant.SetDefaultFreeBodyPose(
         plant.GetBodyByName(manipuland_base_link_name), manipuland_pose
     )
-    plant.Finalize()
 
     return (
         builder,
@@ -257,6 +256,7 @@ def create_env(
         directive_files=directive_files,
         directive_strs=directive_strs,
     )
+    plant.Finalize()
 
     # Connect pusher_geometry state source and controller to plant
     pusher_geometry_instance = plant.GetModelInstanceByName("pusher_geometry")

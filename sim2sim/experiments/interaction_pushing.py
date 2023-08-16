@@ -26,6 +26,7 @@ def create_env(
     pusher_geometry_starting_position: List[float],
     pusher_geometry_pid_gains: Dict[str, float],
     pusher_geometry_dimensions: Union[float, List[float]],
+    interaction_object_base_link_name: str,
     interaction_object_directive_path: str,
     interaction_object_starting_pose: List[float],
     directive_files: List[str] = [],
@@ -47,7 +48,10 @@ def create_env(
         Must contain keys "kp", "ki", and "kd".
     :param pusher_geometry_dimensions: The dimensions for the pusher geometry. Radius
         for a pusher_geometry and [W,D,H] for a pusher geometry.
-    :param interaction_object_directive_path:
+    :param interaction_object_base_link_name: The base link name of the interaction
+        object.
+    :param interaction_object_directive_path: The path to the directive specifying the
+        interaction object.
     :param interaction_object_starting_pose: The starting pose
         [roll, pitch, yaw, x, y, z] of the pusher object.
     """
@@ -78,7 +82,7 @@ def create_env(
     )
 
     plant.SetDefaultFreeBodyPose(
-        plant.GetBodyByName("ycb_mustard_bottle_base_link"),
+        plant.GetBodyByName(interaction_object_base_link_name),
         RigidTransform(
             RollPitchYaw(*interaction_object_starting_pose[:3]),
             interaction_object_starting_pose[3:],
