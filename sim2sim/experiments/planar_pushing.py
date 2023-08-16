@@ -196,6 +196,7 @@ def create_systems(
     plant.SetDefaultFreeBodyPose(
         plant.GetBodyByName(manipuland_base_link_name), manipuland_pose
     )
+    plant.Finalize()
 
     return (
         builder,
