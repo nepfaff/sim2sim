@@ -12,6 +12,7 @@ setup(
         "y-py",
         "pyrr",
         "trimesh",
+        "drake",
         "pydrake",
         "pytorch3d",
         "open3d",
