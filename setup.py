@@ -14,6 +14,7 @@ setup(
         "trimesh",
         "drake",
         "pydrake",
+        "manipulation",
         "pytorch3d",
         "open3d",
         "scipy",
