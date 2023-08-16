@@ -1,5 +1,6 @@
 from typing import Tuple, Union, List
 from abc import ABC, abstractmethod
+import os
 
 import numpy as np
 from pydrake.all import (
@@ -29,8 +30,11 @@ class ImageGeneratorBase(ABC):
         self._diagram = None
 
         # Add renderer
+        have_display = bool(os.environ.get("DISPLAY", None))
+        if not have_display:
+            print("No display available!")
         self._renderer = "ImageGeneratorRenderer"
-        if not self._scene_graph.HasRenderer(self._renderer):
+        if have_display and not self._scene_graph.HasRenderer(self._renderer):
             self._scene_graph.AddRenderer(
                 self._renderer, MakeRenderEngineGl(RenderEngineGlParams())
             )
