@@ -5,10 +5,14 @@ import numpy as np
 import trimesh
 import sklearn.mixture
 
+try:
+    from learning_real2sim.src.ellipsoid import Ellipsoid
+except:
+    print("Failed to import learning_real2sim. GMMMeshProcessor won't be working!")
+
 from .mesh_processor_base import MeshProcessorBase
 from sim2sim.util import open3d_to_trimesh, MeshProcessorResult
 from sim2sim.logging import DynamicLogger
-from learning_real2sim.src.ellipsoid import Ellipsoid
 
 DIV_EPSILON = 1e-9
 

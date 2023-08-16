@@ -2,7 +2,11 @@ import open3d as o3d
 import numpy as np
 import torch
 import trimesh
-import pointnet2_ops.pointnet2_utils as pointnet2_utils
+
+try:
+    import pointnet2_ops.pointnet2_utils as pointnet2_utils
+except:
+    print("Failed to import pointnet2_ops. SphereMeshProcessor won't be working!")
 
 from sim2sim.util import open3d_to_trimesh, MeshProcessorResult
 from sim2sim.logging import DynamicLogger

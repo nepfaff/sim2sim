@@ -1,9 +1,18 @@
 import open3d as o3d
 import numpy as np
 
+
+import trimesh
+
+try:
+    from learning_real2sim.src.meta_ball import MetaBall
+except:
+    print(
+        "Failed to import learning_real2sim. FuzzyMetaballMeshProcessor won't be working!"
+    )
+
 from .mesh_processor_base import MeshProcessorBase
 from sim2sim.logging import DynamicLogger
-from learning_real2sim.src.meta_ball import MetaBall
 from sim2sim.util import open3d_to_trimesh, MeshProcessorResult
 
 DIV_EPSILON = 1e-9
