@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import List
 
 import open3d as o3d
 
@@ -16,10 +17,10 @@ class PhysicalPropertyEstimatorBase(ABC):
 
     @abstractmethod
     def estimate_physical_properties(
-        self, mesh: o3d.geometry.TriangleMesh
-    ) -> PhysicalProperties:
+        self, meshes: List[o3d.geometry.TriangleMesh]
+    ) -> List[PhysicalProperties]:
         """
-        :param mesh: The mesh to estimate physcial properties for.
+        :param meshes: The meshes to estimate physcial properties for.
         :return: The estimated physical properties.
         """
         raise NotImplementedError

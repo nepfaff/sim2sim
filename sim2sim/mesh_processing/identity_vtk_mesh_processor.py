@@ -15,7 +15,7 @@ class IdentityVTKMeshProcessor(MeshProcessorBase):
         super().__init__(logger)
         self._vtk_path = vtk_path
 
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
+    def process_meshes(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
         return MeshProcessorResult(
             result_type=MeshProcessorResult.ResultType.VTK_PATHS,
             vtk_paths=[self._vtk_path],

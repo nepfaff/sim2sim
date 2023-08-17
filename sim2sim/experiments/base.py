@@ -1,6 +1,6 @@
 import os
 import pathlib
-from typing import Callable
+from typing import Callable, List
 
 from pydrake.all import RigidTransform, RollPitchYaw
 
@@ -94,11 +94,11 @@ def run_pipeline(
     params: dict,
     logger: PlanarPushingLogger,
     timestep: float,
-    manipuland_base_link_name: str,
-    manipuland_default_pose: RigidTransform,
+    manipuland_base_link_names: List[str],
+    manipuland_default_poses: List[RigidTransform],
     hydroelastic_manipuland: bool,
     scene_directive_path: str,
-    manipuland_directive_path: str,
+    manipuland_directive_paths: List[str],
     create_env_func: Callable,
     prefix: str = "",
     **kwargs,
@@ -115,10 +115,10 @@ def run_pipeline(
     camera_builder, camera_scene_graph, _ = create_env_func(
         env_params=params[f"{prefix}env"],
         timestep=timestep,
-        manipuland_base_link_name=manipuland_base_link_name,
-        manipuland_pose=manipuland_default_pose,
+        manipuland_base_link_names=manipuland_base_link_names,
+        manipuland_poses=manipuland_default_poses,
         hydroelastic_manipuland=hydroelastic_manipuland,
-        directive_files=[scene_directive_path, manipuland_directive_path],
+        directive_files=[scene_directive_path, *manipuland_directive_paths],
         **kwargs,
     )
     image_generator_name = f"{prefix}image_generator"
@@ -159,8 +159,8 @@ def run_pipeline(
         labels=labels,
         masks=masks,
     )
-    raw_mesh, raw_mesh_pose = inverse_graphics.run()
-    # TODO: Log 'raw_mesh_pose' and 'manipuland_default_pose_transform' as meta-data
+    raw_meshes, raw_mesh_poses = inverse_graphics.run()
+    # TODO: Log 'raw_mesh_poses' and 'manipuland_default_pose_transforms' as meta-data
     print(f"Finished running inverse graphics{f' for {prefix}' if prefix else ''}.")
 
     mesh_processor_name = f"{prefix}mesh_processor"
@@ -173,7 +173,9 @@ def run_pipeline(
             else {}
         ),
     )
-    mesh_processor_result: MeshProcessorResult = mesh_processor.process_mesh(raw_mesh)
+    mesh_processor_results: List[MeshProcessorResult] = mesh_processor.process_meshes(
+        raw_meshes
+    )
     print(f"Finished mesh processing{f' for {prefix}' if prefix else ''}.")
 
     # Compute mesh inertia and mass
@@ -189,71 +191,103 @@ def run_pipeline(
         ),
     )
     physical_properties = physical_porperty_estimator.estimate_physical_properties(
-        raw_mesh
+        raw_meshes
     )
     print(
         f"Finished estimating physical properties{f' for {prefix}' if prefix else ''}."
     )
-    logger.log_manipuland_estimated_physics(physical_properties)
+    logger.log(manipuland_physical_properties=physical_properties)
 
     # Save mesh data to create SDF files that can be added to a new simulation environment
     # Only save the raw mesh if we use it for visualization
     if not logger.is_kProximity:
-        logger.log(raw_mesh=raw_mesh)
-    logger.log(mesh_processor_result=mesh_processor_result)
-    raw_mesh_file_path, processed_mesh_file_path = logger.save_mesh_data(prefix=prefix)
-    raw_mesh_file_path = (
-        os.path.join(
-            pathlib.Path(__file__).parent.resolve(), "../..", raw_mesh_file_path
+        logger.log(raw_meshes=raw_meshes)
+    logger.log(mesh_processor_results=mesh_processor_results)
+    raw_mesh_file_paths, processed_mesh_file_paths = logger.save_mesh_data(
+        prefix=prefix
+    )
+    raw_mesh_file_paths = [
+        (
+            os.path.join(pathlib.Path(__file__).parent.resolve(), "../..", path)
+            if not logger.is_kProximity
+            else None
         )
-        if not logger.is_kProximity
-        else None
-    )
-    processed_mesh_file_path = os.path.join(
-        pathlib.Path(__file__).parent.resolve(), "../..", processed_mesh_file_path
-    )
+        for path in raw_mesh_file_paths
+    ]
+    processed_mesh_file_paths = [
+        os.path.join(pathlib.Path(__file__).parent.resolve(), "../..", path)
+        for path in processed_mesh_file_paths
+    ]
 
-    # Create a directive for processed_mesh manipuland
-    if mesh_processor_result.result_type == MeshProcessorResult.ResultType.SDF_PATH:
-        processed_mesh_directive = create_directive_str_for_sdf_path(
-            mesh_processor_result.get_result(), params[f"{prefix}env"]["obj_name"]
-        )
-    elif (
-        mesh_processor_result.result_type
-        == MeshProcessorResult.ResultType.PRIMITIVE_INFO
-    ):
-        processed_mesh_directive = create_processed_mesh_primitive_directive_str(
-            mesh_processor_result.get_result(),
-            physical_properties,
-            logger._mesh_dir_path,
-            params[f"{prefix}env"]["obj_name"],
+    # Create directives for the processed_mesh manipulands
+    processed_mesh_directives = []
+    for (
+        i,
+        (
             manipuland_base_link_name,
-            hydroelastic=hydroelastic_manipuland,
-            prefix=prefix,
-            visual_mesh_file_path=raw_mesh_file_path,
-        )
-    else:
-        processed_mesh_directive = create_processed_mesh_directive_str(
-            physical_properties,
+            mesh_processor_result,
+            physical_property,
+            raw_mesh_file_path,
             processed_mesh_file_path,
-            logger._mesh_dir_path,
-            params[f"{prefix}env"]["obj_name"],
-            manipuland_base_link_name,
-            hydroelastic=hydroelastic_manipuland,
-            prefix=prefix,
-            visual_mesh_file_path=raw_mesh_file_path,
+        ),
+    ) in enumerate(
+        zip(
+            manipuland_base_link_names,
+            mesh_processor_results,
+            physical_properties,
+            (
+                [None] * len(manipuland_base_link_names)
+                if len(raw_mesh_file_paths) == 0
+                else raw_mesh_file_paths
+            ),
+            processed_mesh_file_paths,
         )
+    ):
+        manipuland_name = manipuland_base_link_name.replace("_base_link", "")
+        if mesh_processor_result.result_type == MeshProcessorResult.ResultType.SDF_PATH:
+            processed_mesh_directive = create_directive_str_for_sdf_path(
+                mesh_processor_result.get_result(), manipuland_name
+            )
+        elif (
+            mesh_processor_result.result_type
+            == MeshProcessorResult.ResultType.PRIMITIVE_INFO
+        ):
+            processed_mesh_directive = create_processed_mesh_primitive_directive_str(
+                mesh_processor_result.get_result(),
+                physical_property,
+                logger._mesh_dir_path,
+                manipuland_name,
+                manipuland_base_link_name,
+                hydroelastic=hydroelastic_manipuland,
+                prefix=prefix,
+                idx=i,
+                visual_mesh_file_path=raw_mesh_file_path,
+            )
+        else:
+            processed_mesh_directive = create_processed_mesh_directive_str(
+                physical_property,
+                processed_mesh_file_path,
+                logger._mesh_dir_path,
+                manipuland_name,
+                manipuland_base_link_name,
+                hydroelastic=hydroelastic_manipuland,
+                prefix=prefix,
+                idx=i,
+                visual_mesh_file_path=raw_mesh_file_path,
+            )
+        processed_mesh_directives.append(processed_mesh_directive)
 
+    manipuland_poses = [
+        RigidTransform(RollPitchYaw(*pose[:3]), pose[3:]) for pose in raw_mesh_poses
+    ]
     builder, scene_graph, plant = create_env_func(
         timestep=timestep,
         env_params=params[f"{prefix}env"],
-        manipuland_base_link_name=manipuland_base_link_name,
+        manipuland_base_link_names=manipuland_base_link_names,
         hydroelastic_manipuland=hydroelastic_manipuland,
         directive_files=[scene_directive_path],
-        directive_strs=[processed_mesh_directive],
-        manipuland_pose=RigidTransform(
-            RollPitchYaw(*raw_mesh_pose[:3]), raw_mesh_pose[3:]
-        ),
+        directive_strs=processed_mesh_directives,
+        manipuland_poses=manipuland_poses,
         **kwargs,
     )
 
@@ -266,10 +300,10 @@ def run_experiment(
     sim_duration: float,
     timestep: float,
     logging_frequency_hz: float,
-    manipuland_directive: str,
+    manipuland_directives: List[str],
     scene_directive: str,
-    manipuland_base_link_name: str,
-    manipuland_default_pose: str,
+    manipuland_base_link_names: List[str],
+    manipuland_default_poses: List[List[float]],
     hydroelastic_manipuland: bool,
     is_pipeline_comparison: bool,
     create_env_func: Callable,
@@ -283,12 +317,12 @@ def run_experiment(
     :param sim_duration: The simulation duration in seconds.
     :param timestep: The timestep to use in seconds.
     :param logging_frequency_hz: The dynamics logging frequency.
-    :param manipuland_directive: The file path of the outer manipuland directive. The
-        path should be relative to this script.
+    :param manipuland_directives: The file paths of the outer manipuland directives. The
+        paths should be relative to this script.
     :param scene_directive: The file path of the scene directive. The path should be
         relative to this script.
-    :param manipuland_base_link_name: The base link name of the outer manipuland.
-    :param manipuland_default_pose: The default pose of the outer manipuland of form
+    :param manipuland_base_link_names: The base link names of the outer manipulands.
+    :param manipuland_default_poses: The default poses of the outer manipulands of form
         [roll, pitch, yaw, x, y, z].
     :param hydroelastic_manipuland: Whether to use hydroelastic or point contact for the
         inner manipuland.
@@ -297,12 +331,22 @@ def run_experiment(
     :param create_env_func: The experiment specific setup function that creates the
         Drake environment/ system.
     """
+    assert (
+        len(manipuland_directives)
+        == len(manipuland_default_poses)
+        == len(manipuland_base_link_names)
+    ), (
+        "The number of manipuland directives must equal the number of manipuland "
+        + "default poses and the number of manipuland base link names!"
+    )
+
     scene_directive_path = os.path.join(
         pathlib.Path(__file__).parent.resolve(), scene_directive
     )
-    manipuland_directive_path = os.path.join(
-        pathlib.Path(__file__).parent.resolve(), manipuland_directive
-    )
+    manipuland_directive_paths = [
+        os.path.join(pathlib.Path(__file__).parent.resolve(), directive)
+        for directive in manipuland_directives
+    ]
 
     logger_class = LOGGERS[params["logger"]["class"]]
     logger = logger_class(
@@ -312,20 +356,21 @@ def run_experiment(
     )
     logger.log(experiment_description=params)
 
-    manipuland_default_pose = RigidTransform(
-        RollPitchYaw(*manipuland_default_pose[:3]), manipuland_default_pose[3:]
-    )
+    manipuland_default_poses = [
+        RigidTransform(RollPitchYaw(*pose[:3]), pose[3:])
+        for pose in manipuland_default_poses
+    ]
     if is_pipeline_comparison:
         outer_builder, outer_scene_graph, outer_plant = run_pipeline(
             prefix="outer",
             params=params,
             logger=logger,
             timestep=timestep,
-            manipuland_base_link_name=manipuland_base_link_name,
-            manipuland_default_pose=manipuland_default_pose,
+            manipuland_base_link_names=manipuland_base_link_names,
+            manipuland_default_poses=manipuland_default_poses,
             hydroelastic_manipuland=hydroelastic_manipuland,
             scene_directive_path=scene_directive_path,
-            manipuland_directive_path=manipuland_directive_path,
+            manipuland_directive_paths=manipuland_directive_paths,
             create_env_func=create_env_func,
             **kwargs,
         )
@@ -335,11 +380,11 @@ def run_experiment(
             params=params,
             logger=logger,
             timestep=timestep,
-            manipuland_base_link_name=manipuland_base_link_name,
-            manipuland_default_pose=manipuland_default_pose,
+            manipuland_base_link_names=manipuland_base_link_names,
+            manipuland_default_poses=manipuland_default_poses,
             hydroelastic_manipuland=hydroelastic_manipuland,
             scene_directive_path=scene_directive_path,
-            manipuland_directive_path=manipuland_directive_path,
+            manipuland_directive_paths=manipuland_directive_paths,
             create_env_func=create_env_func,
             **kwargs,
         )
@@ -347,10 +392,10 @@ def run_experiment(
         outer_builder, outer_scene_graph, outer_plant = create_env_func(
             env_params=params["env"],
             timestep=timestep,
-            manipuland_base_link_name=manipuland_base_link_name,
-            manipuland_pose=manipuland_default_pose,
+            manipuland_base_link_names=manipuland_base_link_names,
+            manipuland_poses=manipuland_default_poses,
             hydroelastic_manipuland=hydroelastic_manipuland,
-            directive_files=[scene_directive_path, manipuland_directive_path],
+            directive_files=[scene_directive_path, *manipuland_directive_paths],
             **kwargs,
         )
 
@@ -358,11 +403,11 @@ def run_experiment(
             params=params,
             logger=logger,
             timestep=timestep,
-            manipuland_base_link_name=manipuland_base_link_name,
-            manipuland_default_pose=manipuland_default_pose,
+            manipuland_base_link_names=manipuland_base_link_names,
+            manipuland_default_poses=manipuland_default_poses,
             hydroelastic_manipuland=hydroelastic_manipuland,
             scene_directive_path=scene_directive_path,
-            manipuland_directive_path=manipuland_directive_path,
+            manipuland_directive_paths=manipuland_directive_paths,
             create_env_func=create_env_func,
             **kwargs,
         )

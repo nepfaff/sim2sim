@@ -11,7 +11,7 @@ class IdentityMeshProcessor(MeshProcessorBase):
     def __init__(self, logger: DynamicLogger):
         super().__init__(logger)
 
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
+    def process_meshes(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
         return MeshProcessorResult(
             result_type=MeshProcessorResult.ResultType.TRIANGLE_MESH,
             triangle_meshes=[mesh],

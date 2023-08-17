@@ -42,7 +42,7 @@ class GMMMeshProcessor(MeshProcessorBase):
 
         self._logger.log(meta_data={"mesh_processing_GMM_EM": gmm_em_params})
 
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
+    def process_meshes(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
         tmesh = open3d_to_trimesh(mesh)
         pts = trimesh.sample.sample_surface_even(tmesh, 10000)[0]
         gmm = sklearn.mixture.GaussianMixture(**self._gmm_em_params)

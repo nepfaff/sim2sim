@@ -7,12 +7,15 @@ from .inverse_graphics_base import InverseGraphicsBase
 
 
 class IdentityInverseGraphics(InverseGraphicsBase):
-    """Implements an identity `run` function that loads and directly outputs the specified mesh."""
+    """
+    Implements an identity `run` function that loads and directly outputs the specified
+    mesh.
+    """
 
     def __init__(
         self,
-        mesh_path: str,
-        mesh_pose: List[float],
+        mesh_paths: List[str],
+        mesh_poses: List[List[float]],
         images: Optional[List[np.ndarray]] = None,
         intrinsics: Optional[List[np.ndarray]] = None,
         extrinsics: Optional[List[np.ndarray]] = None,
@@ -22,18 +25,22 @@ class IdentityInverseGraphics(InverseGraphicsBase):
     ):
         """
         NOTE: All params apart from `mesh_path` and `mesh_pose` are ignored.
-        :param mesh_path: The path to load the mesh from.
-        :param mesh_pose: The pose of the mesh in form [roll, pitch, yaw, x, y, z] where angles are in radians.
+        :param mesh_paths: The paths to load the mesh from.
+        :param mesh_poses: The poses of the mesh. Each pose has form
+            [roll, pitch, yaw, x, y, z] where angles are in radians.
         """
         super().__init__(images, intrinsics, extrinsics, depth, labels, masks)
 
-        self._mesh = o3d.io.read_triangle_mesh(mesh_path, enable_post_processing=True)
-        self._mesh_pose = np.asarray(mesh_pose)
+        self._meshes = [
+            o3d.io.read_triangle_mesh(path, enable_post_processing=True)
+            for path in mesh_paths
+        ]
+        self._mesh_poses = np.asarray(mesh_poses)
 
     def run(self) -> Tuple[o3d.geometry.TriangleMesh, np.ndarray]:
         """
         Implements an identity function.
 
-        :return: :return: A tuple of (mesh, pose) where pose is all zeros.
+        :return: A tuple of (meshes, poses).
         """
-        return self._mesh, self._mesh_pose
+        return self._meshes, self._mesh_poses

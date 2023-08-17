@@ -43,23 +43,26 @@ class DynamicLogger:
         logging_path: str,
         kProximity: bool,
         label_to_mask: int,
-        manipuland_name: str,
-        manipuland_base_link_name: str,
+        manipuland_base_link_names: List[str],
     ):
         """
         :param logging_frequency_hz: The frequency at which we want to log at.
-        :param logging_path: The path to the directory that we want to write the log files to.
-        :param kProximity: Whether to visualize kProximity or kIllustration. Visualize kProximity if true.
+        :param logging_path: The path to the directory that we want to write the log
+            files to.
+        :param kProximity: Whether to visualize kProximity or kIllustration. Visualize
+            kProximity if true.
         :param label_to_mask: The label that we want to save binary masks for.
-        :param manipuland_name: The name of the manipuland. Required for pose logging.
-        :param manipuland_base_link_name: The manipuland base link name. Required for contact result force logging.
+        :param manipuland_base_link_name: The manipuland base link names.
         """
         self._logging_frequency_hz = logging_frequency_hz
         self._logging_path = logging_path
         self._kProximity = kProximity
         self._label_to_mask = label_to_mask
-        self._manipuland_name = manipuland_name
-        self._manipuland_base_link_name = manipuland_base_link_name
+        self._manipuland_base_link_names = manipuland_base_link_names
+        self._manipuland_names = [
+            link_name.replace("_base_link", "")
+            for link_name in manipuland_base_link_names
+        ]
         self._tmp_dir_path = os.path.join(logging_path, "tmp_files")
 
         self._outer_plant: Union[MultibodyPlant, None] = None
@@ -110,8 +113,8 @@ class DynamicLogger:
         self._masks: List[np.ndarray] = []
 
         # Mesh processing logs
-        self._raw_mesh: Optional[o3d.geometry.TriangleMesh] = None
-        self._mesh_processor_result: Optional[MeshProcessorResult] = None
+        self._raw_mesh: List[o3d.geometry.TriangleMesh] = []
+        self._mesh_processor_result: List[MeshProcessorResult] = []
 
         # Meta data logs
         self._outer_simulation_time: Optional[float] = None
@@ -140,7 +143,7 @@ class DynamicLogger:
         self._inner_contact_result_logger = None
 
         # Manipuland physics
-        self._manipuland_physical_properties: PhysicalProperties = None
+        self._manipuland_physical_properties: List[PhysicalProperties] = []
 
     def _create_data_directories(self) -> None:
         for path in self._data_directory_paths:
@@ -243,16 +246,20 @@ class DynamicLogger:
     def add_manipuland_pose_logging(
         self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder
     ) -> None:
+        # TODO
+        print("TODO: Fix pose logging for N manipulands")
+        return
+
         self._outer_manipuland_pose_logger = LogVectorOutput(
             self._outer_plant.get_state_output_port(
-                self._outer_plant.GetModelInstanceByName(self._manipuland_name)
+                self._outer_plant.GetModelInstanceByName(self._manipuland_names)
             ),
             outer_builder,
             1.0 / self._logging_frequency_hz,
         )
         self._inner_manipuland_pose_logger = LogVectorOutput(
             self._inner_plant.get_state_output_port(
-                self._inner_plant.GetModelInstanceByName(self._manipuland_name)
+                self._inner_plant.GetModelInstanceByName(self._manipuland_names)
             ),
             inner_builder,
             1.0 / self._logging_frequency_hz,
@@ -261,6 +268,10 @@ class DynamicLogger:
     def add_contact_result_logging(
         self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder
     ) -> None:
+        # TODO
+        print("TODO fix add_contact_result_logging for N manipulands")
+        return
+
         self._outer_contact_result_logger = outer_builder.AddSystem(
             AbstractValueLogger(ContactResults(), self._logging_frequency_hz)
         )
@@ -277,6 +288,10 @@ class DynamicLogger:
         )
 
     def log_manipuland_poses(self, context: Context, is_outer: bool) -> None:
+        # TODO
+        print("TODO fix log_manipuland_poses for N manipulands")
+        return
+
         # NOTE: This really logs state which is both pose (7,) and spatial velocity (6,)
         assert (
             self._outer_manipuland_pose_logger is not None
@@ -295,22 +310,30 @@ class DynamicLogger:
     def add_manipuland_contact_force_logging(
         self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder
     ) -> None:
+        # TODO
+        print("TODO fix add_manipuland_contact_force_logging for N manipulands")
+        return
+
         self._outer_manipuland_contact_force_logger = LogVectorOutput(
             self._outer_plant.get_generalized_contact_forces_output_port(
-                self._outer_plant.GetModelInstanceByName(self._manipuland_name)
+                self._outer_plant.GetModelInstanceByName(self._manipuland_names)
             ),
             outer_builder,
             1 / self._logging_frequency_hz,
         )
         self._inner_manipuland_contact_force_logger = LogVectorOutput(
             self._inner_plant.get_generalized_contact_forces_output_port(
-                self._inner_plant.GetModelInstanceByName(self._manipuland_name)
+                self._inner_plant.GetModelInstanceByName(self._manipuland_names)
             ),
             inner_builder,
             1 / self._logging_frequency_hz,
         )
 
     def log_manipuland_contact_forces(self, context: Context, is_outer: bool) -> None:
+        # TODO
+        print("TODO fix log_manipuland_contact_forces for N manipulands")
+        return
+
         assert (
             self._outer_manipuland_contact_force_logger is not None
             and self._inner_manipuland_contact_force_logger is not None
@@ -325,11 +348,6 @@ class DynamicLogger:
             self._inner_manipuland_contact_force_times = log.sample_times()
             self._inner_manipuland_contact_forces = log.data().T  # Shape (t, 6)
 
-    def log_manipuland_estimated_physics(
-        self, physical_properties: PhysicalProperties
-    ) -> None:
-        self._manipuland_physical_properties = physical_properties
-
     def _get_contact_result_forces(
         self, is_outer: bool, body_of_interest: str
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[float]]:
@@ -342,6 +360,10 @@ class DynamicLogger:
             - hydroelastic_contact_result_torques
             - times
         """
+        # TODO
+        print("TODO fix _get_contact_result_forces for N manipulands")
+        return
+
         logs: Tuple[List[ContactResults], List[float]] = (
             self._outer_contact_result_logger.get_logs()
             if is_outer
@@ -436,11 +458,12 @@ class DynamicLogger:
         depths: Optional[List[np.ndarray]] = None,
         labels: Optional[List[np.ndarray]] = None,
         masks: Optional[List[np.ndarray]] = None,
-        raw_mesh: Optional[o3d.geometry.TriangleMesh] = None,
-        mesh_processor_result: Optional[MeshProcessorResult] = None,
+        raw_meshes: Optional[List[o3d.geometry.TriangleMesh]] = None,
+        mesh_processor_results: Optional[List[MeshProcessorResult]] = None,
         outer_simulation_time: Optional[float] = None,
         inner_simulation_time: Optional[float] = None,
         experiment_description: Optional[dict] = None,
+        manipuland_physical_properties: Optional[List[PhysicalProperties]] = None,
         meta_data: Optional[Dict[str, Any]] = None,
     ) -> None:
         """TODO"""
@@ -456,20 +479,26 @@ class DynamicLogger:
             self._labels.extend(labels)
         if masks is not None:
             self._masks.extend(masks)
-        if raw_mesh is not None:
-            self._raw_mesh = raw_mesh
-        if mesh_processor_result is not None:
-            self._mesh_processor_result = mesh_processor_result
+        if raw_meshes is not None:
+            self._raw_mesh.extend(raw_meshes)
+        if mesh_processor_results is not None:
+            self._mesh_processor_result.extend(mesh_processor_results)
         if outer_simulation_time is not None:
             self._outer_simulation_time = outer_simulation_time
         if inner_simulation_time is not None:
             self._inner_simulation_time = inner_simulation_time
         if experiment_description is not None:
             self._experiment_description = experiment_description
+        if manipuland_physical_properties is not None:
+            self._manipuland_physical_properties.extend(manipuland_physical_properties)
         if meta_data is not None:
             self._meta_data.update(meta_data)
 
     def _create_time_series_plots(self) -> None:
+        # TODO
+        print("TODO: Fix time series plots for N manipulands")
+        return
+
         # Create pose error plots
         if (
             self._outer_manipuland_poses is not None
@@ -576,7 +605,7 @@ class DynamicLogger:
             outer_hydroelastic_contact_result_forces,
             _,
             _,
-        ) = self._get_contact_result_forces(True, self._manipuland_base_link_name)
+        ) = self._get_contact_result_forces(True, self._manipuland_base_link_names)
         (
             _,
             inner_point_contact_result_forces,
@@ -584,7 +613,7 @@ class DynamicLogger:
             inner_hydroelastic_contact_result_forces,
             _,
             _,
-        ) = self._get_contact_result_forces(False, self._manipuland_base_link_name)
+        ) = self._get_contact_result_forces(False, self._manipuland_base_link_names)
 
         def create_spatial_force_error_plot(
             outer_forces, inner_forces, ylabel, file_name
@@ -635,27 +664,28 @@ class DynamicLogger:
         """
         raw_mesh_name = f"{prefix}raw_mesh"
         processed_mesh_name = f"{prefix}processed_mesh"
-        raw_mesh_file_path = ""
-        processed_mesh_file_path = ""
+        raw_mesh_file_paths: List[str] = []
+        processed_mesh_file_paths: List[str] = []
 
-        if self._raw_mesh:
+        for i, mesh in enumerate(self._raw_mesh):
             raw_mesh_file_path = os.path.join(
-                self._mesh_dir_path, f"{raw_mesh_name}.obj"
+                self._mesh_dir_path, f"{raw_mesh_name}_{i}.obj"
             )
-            o3d.io.write_triangle_mesh(raw_mesh_file_path, self._raw_mesh)
+            o3d.io.write_triangle_mesh(raw_mesh_file_path, mesh)
+            raw_mesh_file_paths.append(raw_mesh_file_path)
 
-        if self._mesh_processor_result:
-            result_type = self._mesh_processor_result.result_type
-            result = self._mesh_processor_result.get_result()
+        for i, mesh_processor_result in enumerate(self._mesh_processor_result):
+            result_type = mesh_processor_result.result_type
+            result = mesh_processor_result.get_result()
             if result_type == MeshProcessorResult.ResultType.TRIANGLE_MESH:
                 if len(result) == 1:
                     processed_mesh_file_path = os.path.join(
-                        self._mesh_dir_path, f"{processed_mesh_name}.obj"
+                        self._mesh_dir_path, f"{processed_mesh_name}_{i}.obj"
                     )
                     o3d.io.write_triangle_mesh(processed_mesh_file_path, result[0])
                 else:
                     processed_mesh_file_path = os.path.join(
-                        self._mesh_dir_path, f"{processed_mesh_name}_pieces"
+                        self._mesh_dir_path, f"{processed_mesh_name}_pieces_{i}"
                     )
                     if not os.path.exists(processed_mesh_file_path):
                         os.mkdir(processed_mesh_file_path)
@@ -668,7 +698,7 @@ class DynamicLogger:
                         )
             elif result_type == MeshProcessorResult.ResultType.PRIMITIVE_INFO:
                 processed_mesh_file_path = os.path.join(
-                    self._mesh_dir_path, f"{processed_mesh_name}.pkl"
+                    self._mesh_dir_path, f"{processed_mesh_name}_{i}.pkl"
                 )
                 with open(processed_mesh_file_path, "wb") as f:
                     pickle.dump(result, f)
@@ -678,12 +708,12 @@ class DynamicLogger:
             elif result_type == MeshProcessorResult.ResultType.VTK_PATHS:
                 if len(result) == 1:
                     processed_mesh_file_path = os.path.join(
-                        self._mesh_dir_path, f"{processed_mesh_name}.vtk"
+                        self._mesh_dir_path, f"{processed_mesh_name}_{i}.vtk"
                     )
                     shutil.copyfile(result[0], processed_mesh_file_path)
                 else:
                     processed_mesh_file_path = os.path.join(
-                        self._mesh_dir_path, f"{processed_mesh_name}_pieces"
+                        self._mesh_dir_path, f"{processed_mesh_name}_pieces_{i}"
                     )
                     if not os.path.exists(processed_mesh_file_path):
                         os.mkdir(processed_mesh_file_path)
@@ -694,10 +724,15 @@ class DynamicLogger:
                                 processed_mesh_file_path, f"mesh_piece_{idx:03d}.vtk"
                             ),
                         )
+            processed_mesh_file_paths.append(processed_mesh_file_path)
 
-        return raw_mesh_file_path, processed_mesh_file_path
+        return raw_mesh_file_paths, processed_mesh_file_paths
 
     def save_manipuland_pose_logs(self) -> None:
+        # TODO
+        print("TODO fix save_manipuland_pose_logs for N manipulands")
+        return
+
         if self._outer_manipuland_poses is not None:
             np.savetxt(
                 os.path.join(self._time_logs_dir_path, "outer_manipuland_poses.txt"),
@@ -722,6 +757,10 @@ class DynamicLogger:
             )
 
     def save_manipuland_contact_force_logs(self) -> None:
+        # TODO
+        print("TODO fix save_manipuland_contact_force_logs for N manipulands")
+        return
+
         if self._outer_manipuland_contact_forces is not None:
             np.savetxt(
                 os.path.join(
@@ -750,6 +789,10 @@ class DynamicLogger:
             )
 
     def save_contact_result_force_logs(self, body_name: str) -> None:
+        # TODO
+        print("TODO fix save_contact_result_force_logs for N manipulands")
+        return
+
         (
             outer_point_contact_contact_result_contact_points,
             outer_point_contact_contact_result_forces,
@@ -858,18 +901,23 @@ class DynamicLogger:
         meta_data = {
             "logger_creation_timestamp": self._creation_timestamp,
             "logging_timestamp": str(datetime.datetime.now()),
-            "manipuland_mass_estimated": self._manipuland_physical_properties.mass,
-            "manipuland_inertia_estimated": self._manipuland_physical_properties.inertia.tolist(),
-            "manipuland_com_estimated": self._manipuland_physical_properties.center_of_mass.tolist(),
-            "manipuland_is_compliant_estimated": self._manipuland_physical_properties.is_compliant,
-            "manipuland_hydroelastic_modulus_estimated": self._manipuland_physical_properties.hydroelastic_modulus,
-            "manipuland_hunt_crossley_dissipation_estimated": self._manipuland_physical_properties.hunt_crossley_dissipation,
-            "manipuland_mu_dynamic_estimated": self._manipuland_physical_properties.mu_dynamic,
-            "manipuland_mu_static_estimated": self._manipuland_physical_properties.mu_static,
-            "manipuland_mesh_resolution_hint_estimated": self._manipuland_physical_properties.mesh_resolution_hint,
             "time_taken_to_simulate_outer_s": self._outer_simulation_time,
             "time_taken_to_simulate_inner_s": self._inner_simulation_time,
         }
+        for link_name, physical_properties in zip(
+            self._manipuland_base_link_names, self._manipuland_physical_properties
+        ):
+            meta_data[link_name] = {
+                "mass_estimated": physical_properties.mass,
+                "inertia_estimated": physical_properties.inertia.tolist(),
+                "com_estimated": physical_properties.center_of_mass.tolist(),
+                "is_compliant_estimated": physical_properties.is_compliant,
+                "hydroelastic_modulus_estimated": physical_properties.hydroelastic_modulus,
+                "hunt_crossley_dissipation_estimated": physical_properties.hunt_crossley_dissipation,
+                "mu_dynamic_estimated": physical_properties.mu_dynamic,
+                "mu_static_estimated": physical_properties.mu_static,
+                "mesh_resolution_hint_estimated": physical_properties.mesh_resolution_hint,
+            }
         meta_data.update(self._meta_data)
         with open(self._meta_data_file_path, "w") as f:
             yaml.dump(meta_data, f)
@@ -924,6 +972,6 @@ class DynamicLogger:
 
         self.save_manipuland_pose_logs()
         self.save_manipuland_contact_force_logs()
-        self.save_contact_result_force_logs(self._manipuland_base_link_name)
+        self.save_contact_result_force_logs(self._manipuland_base_link_names)
 
         self.postprocess_data()

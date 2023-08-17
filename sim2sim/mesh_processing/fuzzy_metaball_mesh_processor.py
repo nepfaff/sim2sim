@@ -50,7 +50,7 @@ class FuzzyMetaballMeshProcessor(MeshProcessorBase):
         self._remove_outliers = remove_outliers
         self._normalize_mesh = normalize_mesh
 
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
+    def process_meshes(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
         meta_ball = MetaBall.generate_metaballs_from_mesh(
             self._mesh_path,
             iter_num=self._num_iter,

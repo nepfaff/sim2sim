@@ -26,7 +26,7 @@ class SphereMeshProcessor(MeshProcessorBase):
         self._target_sphere_num = target_sphere_num
         self._visualize = visualize
 
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
+    def process_meshes(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
         tmesh = open3d_to_trimesh(mesh)
         points = np.array(trimesh.sample.sample_surface_even(tmesh, 10000)[0])
         points = torch.from_numpy(points).cuda().float().contiguous()[None]

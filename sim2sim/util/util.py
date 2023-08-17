@@ -188,6 +188,7 @@ def create_decomposition_processed_mesh_sdf_file(
     manipuland_base_link_name: str,
     is_hydroelastic: bool,
     prefix: str = "",
+    idx: int = 0,
     parts_are_convex: bool = True,
     visual_mesh_file_path: Optional[str] = None,
 ) -> str:
@@ -199,6 +200,7 @@ def create_decomposition_processed_mesh_sdf_file(
     :param sdf_folder: The folder to write the sdf file to.
     :param is_hydroelastic: Whether to make the body rigid hydroelastic.
     :param prefix: An optional prefix for the processed mesh sdf file name.
+    :param idx: An optional index for the processed mesh sdf file name.
     :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     """
     com = physical_properties.center_of_mass
@@ -260,7 +262,9 @@ def create_decomposition_processed_mesh_sdf_file(
             </sdf>
         """
 
-    procesed_mesh_sdf_path = os.path.join(sdf_folder, f"{prefix}processed_mesh.sdf")
+    procesed_mesh_sdf_path = os.path.join(
+        sdf_folder, f"{prefix}processed_mesh_{idx}.sdf"
+    )
     with open(procesed_mesh_sdf_path, "w") as f:
         f.write(procesed_mesh_sdf_str)
 
@@ -275,6 +279,7 @@ def create_processed_mesh_directive_str(
     manipuland_base_link_name: str,
     hydroelastic: bool,
     prefix: str = "",
+    idx: int = 0,
     visual_mesh_file_path: Optional[str] = None,
 ) -> str:
     """
@@ -287,6 +292,7 @@ def create_processed_mesh_directive_str(
     :param model_name: The name of the directive model.
     :param hydroelastic: Whether to make the body rigid hydroelastic.
     :param prefix: An optional prefix for the processed mesh sdf file name.
+    :param idx: An optional index for the processed mesh sdf file name.
     :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     """
     if os.path.isdir(processed_mesh_file_path):
@@ -304,6 +310,7 @@ def create_processed_mesh_directive_str(
             manipuland_base_link_name,
             hydroelastic,
             prefix,
+            idx,
             parts_are_convex=listed_files[0][-3:].lower() == "obj",
             visual_mesh_file_path=visual_mesh_file_path,
         )
@@ -332,10 +339,11 @@ def create_processed_mesh_primitive_sdf_file(
     manipuland_base_link_name: str,
     is_hydroelastic: bool,
     prefix: str = "",
+    idx: int = 0,
     visual_mesh_file_path: Optional[str] = None,
 ) -> str:
     """
-    Creates and saves an SDF file for a processed mesh consisting of primitive
+    Creates and saves an,rocessed mesh consisting of primitive
     geometries.
 
     :param primitive_info: A list of dicts containing primitive params. Each dict must
@@ -346,6 +354,7 @@ def create_processed_mesh_primitive_sdf_file(
     :param sdf_folder: The folder to write the sdf file to.
     :param is_hydroelastic: Whether to make the body rigid hydroelastic.
     :param prefix: An optional prefix for the processed mesh sdf file name.
+    :param idx: An optional index for the processed mesh sdf file name.
     :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     """
     com = physical_properties.center_of_mass
@@ -446,7 +455,9 @@ def create_processed_mesh_primitive_sdf_file(
             </sdf>
         """
 
-    procesed_mesh_sdf_path = os.path.join(sdf_folder, f"{prefix}processed_mesh.sdf")
+    procesed_mesh_sdf_path = os.path.join(
+        sdf_folder, f"{prefix}processed_mesh_{idx}.sdf"
+    )
     with open(procesed_mesh_sdf_path, "w") as f:
         f.write(procesed_mesh_sdf_str)
 
@@ -474,6 +485,7 @@ def create_processed_mesh_primitive_directive_str(
     manipuland_base_link_name: str,
     hydroelastic: str,
     prefix: str = "",
+    idx: int = 0,
     visual_mesh_file_path: Optional[str] = None,
 ) -> str:
     """
@@ -488,6 +500,7 @@ def create_processed_mesh_primitive_directive_str(
     :param model_name: The name of the directive model.
     :param hydroelastic: Whether to make the body rigid hydroelastic.
     :param prefix: An optional prefix for the processed mesh sdf file name.
+    :param idx: An optional index for the processed mesh sdf file name.
     :param visual_mesh_file_path: The path to the mesh to use for the visual geometry.
     """
     procesed_mesh_sdf_path = create_processed_mesh_primitive_sdf_file(
@@ -497,6 +510,7 @@ def create_processed_mesh_primitive_directive_str(
         manipuland_base_link_name,
         hydroelastic,
         prefix,
+        idx,
         visual_mesh_file_path=visual_mesh_file_path,
     )
     processed_mesh_directive = f"""

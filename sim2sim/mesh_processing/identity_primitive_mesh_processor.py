@@ -15,7 +15,7 @@ class IdentityPrimitiveMeshProcessor(MeshProcessorBase):
 
         self._primitive_info_path = primitive_info_path
 
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
+    def process_meshes(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
         with open(self._primitive_info_path, "rb") as f:
             primitive_info = pickle.load(f)
 

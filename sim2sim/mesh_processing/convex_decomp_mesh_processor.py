@@ -20,7 +20,7 @@ class ConvexDecompMeshProcessor(MeshProcessorBase):
         self._mesh_name = mesh_name
         self._preview_with_trimesh = preview_with_trimesh
 
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
+    def process_meshes(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
         mesh_trimesh = open3d_to_trimesh(mesh)
 
         if self._preview_with_trimesh:

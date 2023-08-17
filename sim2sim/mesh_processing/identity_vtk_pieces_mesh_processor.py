@@ -20,7 +20,7 @@ class IdentityVTKPiecesMeshProcessor(MeshProcessorBase):
         super().__init__(logger)
         self._vtk_pieces_path = vtk_pieces_path
 
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
+    def process_meshes(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
         vtk_pieces_paths = []
         with os.scandir(self._vtk_pieces_path) as paths:
             for path in paths:

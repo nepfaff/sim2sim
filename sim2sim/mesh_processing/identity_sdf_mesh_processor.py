@@ -18,7 +18,7 @@ class IdentitySDFMeshProcessor(MeshProcessorBase):
         super().__init__(logger)
         self._sdf_path = sdf_path
 
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
+    def process_meshes(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
         return MeshProcessorResult(
             result_type=MeshProcessorResult.ResultType.SDF_PATH,
             sdf_path=self._sdf_path,

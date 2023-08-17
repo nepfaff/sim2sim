@@ -16,7 +16,7 @@ class QuadricDecimationMeshProcessor(MeshProcessorBase):
 
         self._target_triangle_num = target_triangle_num
 
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
+    def process_meshes(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
         simplified_mesh = mesh.simplify_quadric_decimation(self._target_triangle_num)
         return MeshProcessorResult(
             result_type=MeshProcessorResult.ResultType.TRIANGLE_MESH,

@@ -21,7 +21,7 @@ class IdentityMeshPiecesMeshProcessor(MeshProcessorBase):
         super().__init__(logger)
         self._mesh_pieces_path = mesh_pieces_path
 
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
+    def process_meshes(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
         mesh_pieces = []
         with os.scandir(self._mesh_pieces_path) as paths:
             for path in paths:
