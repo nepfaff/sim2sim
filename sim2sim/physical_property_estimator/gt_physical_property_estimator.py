@@ -73,7 +73,7 @@ class GTPhysicalPropertyEstimator(PhysicalPropertyEstimatorBase):
             ),
             [None] * length if mus_dynamic is None else mus_dynamic,
             [None] * length if mus_static is None else mus_static,
-            [None] * length if mesh_resolution_hints is None else mesh_resolution_hint,
+            [None] * length if mesh_resolution_hints is None else mesh_resolution_hints,
         ):
             if compliant:
                 assert (
