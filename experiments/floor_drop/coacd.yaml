@@ -53,7 +53,7 @@ mesh_processor:
 physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
   args:
-    masses: [0.349000, 0.349000]
+    masses: [0.349000]
     inertias: [[[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]]
     centers_of_mass: [[0.0, 0.0, 0.0]]
     is_compliant: [False]
