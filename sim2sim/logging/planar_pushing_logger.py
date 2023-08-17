@@ -1,4 +1,5 @@
 import os
+from typing import List
 
 import numpy as np
 from pydrake.all import DiagramBuilder, LogVectorOutput, Context, VectorLogSink
@@ -15,8 +16,7 @@ class PlanarPushingLogger(DynamicLogger):
         logging_path: str,
         kProximity: bool,
         label_to_mask: int,
-        manipuland_name: str,
-        manipuland_base_link_name: str,
+        manipuland_base_link_names: List[str],
         pusher_geometry_name: str = "pusher_geometry",
     ):
         """
@@ -26,9 +26,7 @@ class PlanarPushingLogger(DynamicLogger):
         :param kProximity: Whether to visualize kProximity or kIllustration. Visualize
             kProximity if true.
         :param label_to_mask: The label that we want to save binary masks for.
-        :param manipuland_name: The name of the manipuland. Required for pose logging.
-        :param manipuland_base_link_name: The manipuland base link name. Required for
-            contact result force logging.
+        :param manipuland_base_link_names: The manipuland base link names.
         :param pusher_geometry_name: The name of the pusher_geometry object.
         """
         super().__init__(
@@ -36,8 +34,7 @@ class PlanarPushingLogger(DynamicLogger):
             logging_path=logging_path,
             kProximity=kProximity,
             label_to_mask=label_to_mask,
-            manipuland_name=manipuland_name,
-            manipuland_base_link_name=manipuland_base_link_name,
+            manipuland_base_link_names=manipuland_base_link_names,
         )
 
         self._pusher_geometry_name = pusher_geometry_name

@@ -113,8 +113,8 @@ class DynamicLogger:
         self._masks: List[np.ndarray] = []
 
         # Mesh processing logs
-        self._raw_mesh: List[o3d.geometry.TriangleMesh] = []
-        self._mesh_processor_result: List[MeshProcessorResult] = []
+        self._raw_meshes: List[o3d.geometry.TriangleMesh] = []
+        self._mesh_processor_results: List[MeshProcessorResult] = []
 
         # Meta data logs
         self._outer_simulation_time: Optional[float] = None
@@ -480,9 +480,11 @@ class DynamicLogger:
         if masks is not None:
             self._masks.extend(masks)
         if raw_meshes is not None:
-            self._raw_mesh.extend(raw_meshes)
+            # Overriding data is required for the pipeline comparison system
+            self._raw_meshes = raw_meshes
         if mesh_processor_results is not None:
-            self._mesh_processor_result.extend(mesh_processor_results)
+            # Overriding data is required for the pipeline comparison system
+            self._mesh_processor_results = mesh_processor_results
         if outer_simulation_time is not None:
             self._outer_simulation_time = outer_simulation_time
         if inner_simulation_time is not None:
@@ -667,14 +669,14 @@ class DynamicLogger:
         raw_mesh_file_paths: List[str] = []
         processed_mesh_file_paths: List[str] = []
 
-        for i, mesh in enumerate(self._raw_mesh):
+        for i, mesh in enumerate(self._raw_meshes):
             raw_mesh_file_path = os.path.join(
                 self._mesh_dir_path, f"{raw_mesh_name}_{i}.obj"
             )
             o3d.io.write_triangle_mesh(raw_mesh_file_path, mesh)
             raw_mesh_file_paths.append(raw_mesh_file_path)
 
-        for i, mesh_processor_result in enumerate(self._mesh_processor_result):
+        for i, mesh_processor_result in enumerate(self._mesh_processor_results):
             result_type = mesh_processor_result.result_type
             result = mesh_processor_result.get_result()
             if result_type == MeshProcessorResult.ResultType.TRIANGLE_MESH:
