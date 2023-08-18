@@ -48,7 +48,10 @@ FORCE_TORQUE_MIN_MAGNITUDE = 1e-10
 
 
 class ContactForceVisualizer:
-    """A visualizer for simultaneously visualizing both outer and inner manipulands with their contact forces."""
+    """
+    A visualizer for simultaneously visualizing both outer and inner manipulands with
+    their contact forces.
+    """
 
     def __init__(
         self,
@@ -64,15 +67,19 @@ class ContactForceVisualizer:
     ):
         """
         :param data_path: Path to the experiment data folder.
-        :param manipuland: The manipuland to visualize. Options are 'outer', 'inner', 'both', and 'none'.
-        :param separation_distance: The distance in meters that the outer and inner manipuland should be separated from
-            each other. This only has an effect if `--manipuland` is 'both'.
+        :param manipuland: The manipuland to visualize. Options are 'outer', 'inner',
+            'both', and 'none'.
+        :param separation_distance: The distance in meters that the outer and inner
+            manipuland should be separated from each other. This only has an effect if
+            `--manipuland` is 'both'.
         :param save_html: Whether to save the meshcat HTML.
         :param newtons_per_meter: Sets the length scale of the force vectors.
-        :param newton_meters_per_meter: Sets the length scale of the torque/ moment vectors.
+        :param newton_meters_per_meter: Sets the length scale of the torque/ moment
+            vectors.
         :param hydroelastic: Whether to plot hydroelastic or point contact forces.
         :param kIllustration: Whether to use kIllustration or kProximity for meshcat.
-        :param force_magnitude_theshold: Don't visualize forces that have a magnitude of less than this.
+        :param force_magnitude_theshold: Don't visualize forces that have a magnitude of
+            less than this.
         """
         assert manipuland in ["outer", "inner", "both", "none"]
 
@@ -293,8 +300,8 @@ class ContactForceVisualizer:
         rgba: Rgba = Rgba(1.0, 0.0, 0.0, 1.0),
     ) -> None:
         """
-        A contact force arrow that represents equal and opposite forces from the contact point.
-        Example: Point contact result forces.
+        A contact force arrow that represents equal and opposite forces from the contact
+            point. Example: Point contact result forces.
         """
         force_magnitude = np.linalg.norm(force)
         if force_magnitude < FORCE_TORQUE_MIN_MAGNITUDE:
@@ -302,7 +309,8 @@ class ContactForceVisualizer:
 
         # Create arrow
         height = force_magnitude / self._newtons_per_meter
-        # Cylinder gets scaled to twice the contact force length because we draw both (equal and opposite) forces
+        # Cylinder gets scaled to twice the contact force length because we draw both
+        # (equal and opposite) forces
         cylinder = Cylinder(radius, 2 * height)
         self._meshcat.SetObject(
             path=path + "/cylinder",
@@ -349,7 +357,8 @@ class ContactForceVisualizer:
         torque_rgba: Rgba = Rgba(0.0, 0.0, 1.0, 1.0),
     ) -> None:
         """
-        A contact force arrow that represents a single force from the centroid (not equal and opposite).
+        A contact force arrow that represents a single force from the centroid (not
+        equal and opposite).
         Examples: Generalized contact forces, hydroelastic contact result forces.
         """
         arrowhead_height = arrowhead_width = radius * 2.0
@@ -431,12 +440,13 @@ class ContactForceVisualizer:
         viz: bool = False,
     ) -> np.ndarray:
         """
-        Returns the vector perpendicular to both the manipuland translations and the z-axis where the translations are
-        the combined outer and inner translations.
+        Returns the vector perpendicular to both the manipuland translations and the
+        z-axis where the translations are the combined outer and inner translations.
 
         :param outer_translations: The outer translations of shape (N,3).
         :param inner_translations: The inner translations of shape (N,3).
-        :param viz: Whether to visualize the translation points with the principal component and separations vectors.
+        :param viz: Whether to visualize the translation points with the principal
+            component and separations vectors.
         :return: The separation vector of shape (3,).
         """
         combined_translations = np.concatenate(
@@ -447,8 +457,8 @@ class ContactForceVisualizer:
         separation_vec = np.cross(principle_component, z_axis)
 
         if viz:
-            # Visualize the outer translations in green, the inner translations in orange, the principal component in
-            # blue, and the separation vector in red
+            # Visualize the outer translations in green, the inner translations in
+            # orange, the principal component in blue, and the separation vector in red
             outer_pcd = o3d.geometry.PointCloud(
                 o3d.utility.Vector3dVector(outer_translations)
             )
@@ -625,9 +635,10 @@ class ContactForceVisualizer:
 
     def _visualize_contact_forces(self, time_idx: int) -> None:
         if self._hydroelastic:
-            # NOTE: The hydroelastic forces seem very different to the ones in the recorded HTMLs of the simulation.
-            # Further investigation is needed to determine why this is the case. For now, it is better to use this visualizer
-            # for point contact visualizations.
+            # NOTE: The hydroelastic forces seem very different to the ones in the
+            # recorded HTMLs of the simulation. Further investigation is needed to
+            # determine why this is the case. For now, it is better to use this
+            # visualizer for point contact visualizations.
             for i, (force, torque, centroid) in enumerate(
                 zip(
                     self._outer_hydroelastic_contact_forces[time_idx],
@@ -701,7 +712,10 @@ class ContactForceVisualizer:
         )
 
     def _save_current_html(self) -> None:
-        """Saves the HTML of the current timestep. NOTE: This overrides the previously saved HTML."""
+        """
+        Saves the HTML of the current timestep. NOTE: This overrides the previously
+        saved HTML.
+        """
         html = self._meshcat.StaticHtml()
         html_path = os.path.join(self._data_path, "contact_force_visualizer.html")
         with open(html_path, "w") as f:
