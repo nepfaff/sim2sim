@@ -8,6 +8,7 @@ from pydrake.all import (
     SceneGraph,
     Simulator,
     MultibodyPlant,
+    ModelInstanceIndex,
 )
 
 from sim2sim.logging import DynamicLogger
@@ -51,7 +52,7 @@ class EquationErrorBasicSimulator(BasicSimulator):
 
     def simulate(self, duration: float) -> None:
         # For storing the outer manipuland pose every 'reset_seconds' seconds
-        outer_manipuland_states: List[Dict[str, np.ndarray]] = []
+        outer_manipuland_state_dicts: List[Dict[ModelInstanceIndex, np.ndarray]] = []
 
         for i, (diagram, visualizer, meshcat) in enumerate(
             zip(
@@ -79,13 +80,13 @@ class EquationErrorBasicSimulator(BasicSimulator):
 
             for j, t in enumerate(np.arange(0.0, duration, self._reset_seconds)):
                 if i == 0:  # Outer
-                    state_dict = {}
+                    state_dict: Dict[ModelInstanceIndex, np.ndarray] = {}
                     for instance in manipuland_instances:
                         state = plant.GetPositionsAndVelocities(plant_context, instance)
                         state_dict[instance] = state
-                    outer_manipuland_states.append(state_dict)
+                    outer_manipuland_state_dicts.append(state_dict)
                 else:  # Inner
-                    for instance, state in outer_manipuland_states[j].items():
+                    for instance, state in outer_manipuland_state_dicts[j].items():
                         plant.SetPositionsAndVelocities(
                             plant_context,
                             instance,

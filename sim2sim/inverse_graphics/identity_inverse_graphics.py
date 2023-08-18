@@ -37,10 +37,5 @@ class IdentityInverseGraphics(InverseGraphicsBase):
         ]
         self._mesh_poses = np.asarray(mesh_poses)
 
-    def run(self) -> Tuple[o3d.geometry.TriangleMesh, np.ndarray]:
-        """
-        Implements an identity function.
-
-        :return: A tuple of (meshes, poses).
-        """
+    def run(self) -> Tuple[List[o3d.geometry.TriangleMesh], np.ndarray]:
         return self._meshes, self._mesh_poses

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 import numpy as np
 from pydrake.all import DiagramBuilder, SceneGraph
@@ -22,7 +22,8 @@ class EquationErrorPlanarPushingSimulator(PlanarPushingSimulator):
         logger: PlanarPushingLogger,
         is_hydroelastic: bool,
         settling_time: float,
-        manipuland_name: str,
+        manipuland_names: List[str],
+        target_manipuland_name: str,
         controll_period: float,
         reset_seconds: float,
         closed_loop_control: bool,
@@ -38,7 +39,9 @@ class EquationErrorPlanarPushingSimulator(PlanarPushingSimulator):
         :param is_hydroelastic: Whether hydroelastic or point contact is used.
         :param settling_time: The time in seconds to simulate initially to allow the
             scene to settle.
-        :param manipuland_name: The name of the manipuland model instance.
+        :param manipuland_names: The names of the manipuland model instances.
+        :param target_manipuland_name: The name of the manipuland that is the pushing
+            target.
         :param controll_period: Period at which to update the control command.
         :param reset_seconds: The inner manipuland pose is set equal to the outer
             manipuland pose every `reset_seconds` seconds. NOTE: This must be an integer
@@ -57,7 +60,8 @@ class EquationErrorPlanarPushingSimulator(PlanarPushingSimulator):
             logger,
             is_hydroelastic,
             settling_time,
-            manipuland_name,
+            manipuland_names,
+            target_manipuland_name,
             controll_period,
             closed_loop_control,
             num_meters_to_move_in_manpuland_direction,
