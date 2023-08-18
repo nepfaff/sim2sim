@@ -143,12 +143,24 @@ class DynamicLogger:
         """Inner manipuland pose times of shape (t,) where t are the logging times."""
 
         # Manipuland contact force logs
-        self._outer_manipuland_contact_force_logger: VectorLogSink = None
+        self._outer_manipuland_contact_force_loggers: List[VectorLogSink] = None
+        """Outer manipuland contact force loggers of shape (M,) where M is the number of
+        manipulands."""
         self._outer_manipuland_contact_forces: np.ndarray = None
+        """Outer manipuland contact forces of shape (M, t, 6) where M is the number of
+        manipulands, t is the number of logged time steps, and 6 is the force."""
         self._outer_manipuland_contact_force_times: np.ndarray = None
-        self._inner_manipuland_contact_force_logger: VectorLogSink = None
+        """Outer manipuland contact force times of shape (t,) where t are the logging
+        times."""
+        self._inner_manipuland_contact_force_loggers: List[VectorLogSink] = None
+        """Inner manipuland contact force loggers of shape (M,) where M is the number of
+        manipulands."""
         self._inner_manipuland_contact_forces: np.ndarray = None
+        """Inner manipuland contact forces of shape (M, t, 6) where M is the number of
+        manipulands, t is the number of logged time steps, and 6 is the force."""
         self._inner_manipuland_contact_force_times: np.ndarray = None
+        """Inner manipuland contact force times of shape (t,) where t are the logging
+        times."""
 
         # Contact result logs
         self._outer_contact_result_logger = None
@@ -283,10 +295,6 @@ class DynamicLogger:
     def add_contact_result_logging(
         self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder
     ) -> None:
-        # TODO
-        print("TODO fix add_contact_result_logging for N manipulands")
-        return
-
         self._outer_contact_result_logger = outer_builder.AddSystem(
             AbstractValueLogger(ContactResults(), self._logging_frequency_hz)
         )
@@ -312,16 +320,14 @@ class DynamicLogger:
         poses: List[np.ndarray] = []
         if is_outer:
             for logger in self._outer_manipuland_pose_loggers:
-                log = logger.FindLog(context)
-                poses.append(log.data().T)  # Shape (t, 13)
+                poses.append(logger.FindLog(context).data().T)  # Shape (t, 13)
             self._outer_manipuland_poses = np.asarray(poses)  # Shape (M, t, 13)
             self._outer_manipuland_pose_times = (
                 self._outer_manipuland_pose_loggers[0].FindLog(context).sample_times()
             )  # Shape (t,)
         else:
             for logger in self._inner_manipuland_pose_loggers:
-                log = logger.FindLog(context)
-                poses.append(log.data().T)  # Shape (t, 13)
+                poses.append(logger.FindLog(context).data().T)  # Shape (t, 13)
             self._inner_manipuland_poses = np.asarray(poses)
             self._inner_manipuland_pose_times = (
                 self._inner_manipuland_pose_loggers[0].FindLog(context).sample_times()
@@ -330,43 +336,57 @@ class DynamicLogger:
     def add_manipuland_contact_force_logging(
         self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder
     ) -> None:
-        # TODO
-        print("TODO fix add_manipuland_contact_force_logging for N manipulands")
-        return
-
-        self._outer_manipuland_contact_force_logger = LogVectorOutput(
-            self._outer_plant.get_generalized_contact_forces_output_port(
-                self._outer_plant.GetModelInstanceByName(self._manipuland_names)
-            ),
-            outer_builder,
-            1 / self._logging_frequency_hz,
-        )
-        self._inner_manipuland_contact_force_logger = LogVectorOutput(
-            self._inner_plant.get_generalized_contact_forces_output_port(
-                self._inner_plant.GetModelInstanceByName(self._manipuland_names)
-            ),
-            inner_builder,
-            1 / self._logging_frequency_hz,
-        )
+        self._outer_manipuland_contact_force_loggers: List[VectorLogSink] = []
+        self._inner_manipuland_contact_force_loggers: List[VectorLogSink] = []
+        for name in self._manipuland_names:
+            self._outer_manipuland_contact_force_loggers.append(
+                LogVectorOutput(
+                    self._outer_plant.get_generalized_contact_forces_output_port(
+                        self._outer_plant.GetModelInstanceByName(name)
+                    ),
+                    outer_builder,
+                    1 / self._logging_frequency_hz,
+                )
+            )
+            self._inner_manipuland_contact_force_loggers.append(
+                LogVectorOutput(
+                    self._inner_plant.get_generalized_contact_forces_output_port(
+                        self._inner_plant.GetModelInstanceByName(name)
+                    ),
+                    inner_builder,
+                    1 / self._logging_frequency_hz,
+                )
+            )
 
     def log_manipuland_contact_forces(self, context: Context, is_outer: bool) -> None:
-        # TODO
-        print("TODO fix log_manipuland_contact_forces for N manipulands")
-        return
-
         assert (
-            self._outer_manipuland_contact_force_logger is not None
-            and self._inner_manipuland_contact_force_logger is not None
+            self._outer_manipuland_contact_force_loggers is not None
+            and self._inner_manipuland_contact_force_loggers is not None
         )
 
+        forces: List[np.ndarray] = []
         if is_outer:
-            log = self._outer_manipuland_contact_force_logger.FindLog(context)
-            self._outer_manipuland_contact_force_times = log.sample_times()
-            self._outer_manipuland_contact_forces = log.data().T  # Shape (t, 6)
+            for logger in self._outer_manipuland_contact_force_loggers:
+                forces.append(logger.FindLog(context).data().T)  # Shape (t, 6)
+            self._outer_manipuland_contact_forces = np.asarray(
+                forces
+            )  # Shape (M, t, 6)
+            self._outer_manipuland_contact_force_times = (
+                self._outer_manipuland_contact_force_loggers[0]
+                .FindLog(context)
+                .sample_times()
+            )  # Shape (t,)
         else:
-            log = self._inner_manipuland_contact_force_logger.FindLog(context)
-            self._inner_manipuland_contact_force_times = log.sample_times()
-            self._inner_manipuland_contact_forces = log.data().T  # Shape (t, 6)
+            for logger in self._inner_manipuland_contact_force_loggers:
+                forces.append(logger.FindLog(context).data().T)  # Shape (t, 6)
+            self._inner_manipuland_contact_forces = np.asarray(
+                forces
+            )  # Shape (M, t, 6)
+            self._inner_manipuland_contact_force_times = (
+                self._inner_manipuland_contact_force_loggers[0]
+                .FindLog(context)
+                .sample_times()
+            )  # Shape (t,)
 
     def _get_contact_result_forces(
         self, is_outer: bool, body_of_interest: str
@@ -380,10 +400,6 @@ class DynamicLogger:
             - hydroelastic_contact_result_torques
             - times
         """
-        # TODO
-        print("TODO fix _get_contact_result_forces for N manipulands")
-        return
-
         logs: Tuple[List[ContactResults], List[float]] = (
             self._outer_contact_result_logger.get_logs()
             if is_outer
@@ -578,54 +594,65 @@ class DynamicLogger:
                 )
                 plt.close()
 
-        # TODO
-        print("TODO: Fix time series plots for N manipulands")
-        return
-
         # Create contact force error plots
         if (
             self._outer_manipuland_contact_forces is not None
             and self._inner_manipuland_contact_forces is not None
         ):
-            contact_force_error = (
-                self._outer_manipuland_contact_forces
-                - self._inner_manipuland_contact_forces
-            )
-            contact_force_error_angular = contact_force_error[:, :3]
-            contact_force_error_translational = contact_force_error[:, 3:]
-
-            plt.plot(times, np.linalg.norm(contact_force_error, axis=1))
-            plt.xlabel("Time (s)")
-            plt.ylabel("Generalized contact force error magnitude (N)")
-            plt.savefig(
-                os.path.join(
-                    self._time_logs_dir_path,
-                    "generalized_contact_force_error_magnitude.png",
+            for i, (outer_forces, inner_forces) in enumerate(
+                zip(
+                    self._outer_manipuland_contact_forces,
+                    self._inner_manipuland_contact_forces,
                 )
-            )
-            plt.close()
+            ):
+                contact_force_error = outer_forces - inner_forces
+                contact_force_error_angular = contact_force_error[:, :3]
+                contact_force_error_translational = contact_force_error[:, 3:]
 
-            plt.plot(times, np.linalg.norm(contact_force_error_angular, axis=1))
-            plt.xlabel("Time (s)")
-            plt.ylabel("Gemeralized angular contact force error magnitude (N)")
-            plt.savefig(
-                os.path.join(
-                    self._time_logs_dir_path,
-                    "generalized_angular_contact_force_error_magnitude.png",
+                plt.plot(times, np.linalg.norm(contact_force_error, axis=1))
+                plt.xlabel("Time (s)")
+                plt.ylabel("Generalized contact force error magnitude (N)")
+                plt.title(f"Generalized contact force error magnitude - Manipuland {i}")
+                plt.savefig(
+                    os.path.join(
+                        self._time_logs_dir_path,
+                        f"generalized_contact_force_error_magnitude_{i}.png",
+                    )
                 )
-            )
-            plt.close()
+                plt.close()
 
-            plt.plot(times, np.linalg.norm(contact_force_error_translational, axis=1))
-            plt.xlabel("Time (s)")
-            plt.ylabel("Generalized translational contact force error magnitude (N)")
-            plt.savefig(
-                os.path.join(
-                    self._time_logs_dir_path,
-                    "generalized_translational_contact_force_error_magnitude.png",
+                plt.plot(times, np.linalg.norm(contact_force_error_angular, axis=1))
+                plt.xlabel("Time (s)")
+                plt.ylabel("Generalized angular contact force error magnitude (N)")
+                plt.title(
+                    f"Generalized angular contact force error magnitude - Manipuland {i}"
                 )
-            )
-            plt.close()
+                plt.savefig(
+                    os.path.join(
+                        self._time_logs_dir_path,
+                        f"generalized_angular_contact_force_error_magnitude_{i}.png",
+                    )
+                )
+                plt.close()
+
+                plt.plot(
+                    times, np.linalg.norm(contact_force_error_translational, axis=1)
+                )
+                plt.xlabel("Time (s)")
+                plt.ylabel(
+                    "Generalized translational contact force error magnitude (N)"
+                )
+                plt.title(
+                    "Generalized translational contact force error magnitude - "
+                    + f"Manipuland {i}"
+                )
+                plt.savefig(
+                    os.path.join(
+                        self._time_logs_dir_path,
+                        f"generalized_translational_contact_force_error_magnitude_{i}.png",
+                    )
+                )
+                plt.close()
 
         # Create contact result force error plots
         (
@@ -783,42 +810,34 @@ class DynamicLogger:
             )
 
     def save_manipuland_contact_force_logs(self) -> None:
-        # TODO
-        print("TODO fix save_manipuland_contact_force_logs for N manipulands")
-        return
-
         if self._outer_manipuland_contact_forces is not None:
-            np.savetxt(
+            np.save(
                 os.path.join(
-                    self._time_logs_dir_path, "outer_manipuland_contact_forces.txt"
+                    self._time_logs_dir_path, "outer_manipuland_contact_forces.npy"
                 ),
                 self._outer_manipuland_contact_forces,
             )
-            np.savetxt(
+            np.save(
                 os.path.join(
-                    self._time_logs_dir_path, "outer_manipuland_contact_force_times.txt"
+                    self._time_logs_dir_path, "outer_manipuland_contact_force_times.npy"
                 ),
                 self._outer_manipuland_contact_force_times,
             )
         if self._inner_manipuland_contact_forces is not None:
-            np.savetxt(
+            np.save(
                 os.path.join(
-                    self._time_logs_dir_path, "inner_manipuland_contact_forces.txt"
+                    self._time_logs_dir_path, "inner_manipuland_contact_forces.npy"
                 ),
                 self._inner_manipuland_contact_forces,
             )
-            np.savetxt(
+            np.save(
                 os.path.join(
-                    self._time_logs_dir_path, "inner_manipuland_contact_force_times.txt"
+                    self._time_logs_dir_path, "inner_manipuland_contact_force_times.npy"
                 ),
                 self._inner_manipuland_contact_force_times,
             )
 
     def save_contact_result_force_logs(self, body_name: str) -> None:
-        # TODO
-        print("TODO fix save_contact_result_force_logs for N manipulands")
-        return
-
         (
             outer_point_contact_contact_result_contact_points,
             outer_point_contact_contact_result_forces,
