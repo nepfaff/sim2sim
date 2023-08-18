@@ -123,12 +123,24 @@ class DynamicLogger:
         self._meta_data: Dict[str, Any] = {}
 
         # Manipuland pose logs
-        self._outer_manipuland_pose_logger: VectorLogSink = None
+        self._outer_manipuland_pose_loggers: List[VectorLogSink] = None
+        """Outer manipuland pose loggers of shape (M,) where M is the number of
+        manipulands."""
         self._outer_manipuland_poses: np.ndarray = None
+        """Outer manipuland poses of shape (M, t, 13) where M is the number of
+        manipulands, t is the number of logged time steps, and 13 is the manipuland
+        state."""
         self._outer_manipuland_pose_times: np.ndarray = None
-        self._inner_manipuland_pose_logger: VectorLogSink = None
+        """Outer manipuland pose times of shape (t,) where t are the logging times."""
+        self._inner_manipuland_pose_loggers: List[VectorLogSink] = None
+        """Inner manipuland pose loggers of shape (M,) where M is the number of
+        manipulands."""
         self._inner_manipuland_poses: np.ndarray = None
+        """Inner manipuland poses of shape (M, t, 13) where M is the number of
+        manipulands, t is the number of logged time steps, and 13 is the manipuland
+        state."""
         self._inner_manipuland_pose_times: np.ndarray = None
+        """Inner manipuland pose times of shape (t,) where t are the logging times."""
 
         # Manipuland contact force logs
         self._outer_manipuland_contact_force_logger: VectorLogSink = None
@@ -246,24 +258,27 @@ class DynamicLogger:
     def add_manipuland_pose_logging(
         self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder
     ) -> None:
-        # TODO
-        print("TODO: Fix pose logging for N manipulands")
-        return
-
-        self._outer_manipuland_pose_logger = LogVectorOutput(
-            self._outer_plant.get_state_output_port(
-                self._outer_plant.GetModelInstanceByName(self._manipuland_names)
-            ),
-            outer_builder,
-            1.0 / self._logging_frequency_hz,
-        )
-        self._inner_manipuland_pose_logger = LogVectorOutput(
-            self._inner_plant.get_state_output_port(
-                self._inner_plant.GetModelInstanceByName(self._manipuland_names)
-            ),
-            inner_builder,
-            1.0 / self._logging_frequency_hz,
-        )
+        self._outer_manipuland_pose_loggers: List[VectorLogSink] = []
+        self._inner_manipuland_pose_loggers: List[VectorLogSink] = []
+        for name in self._manipuland_names:
+            self._outer_manipuland_pose_loggers.append(
+                LogVectorOutput(
+                    self._outer_plant.get_state_output_port(
+                        self._outer_plant.GetModelInstanceByName(name)
+                    ),
+                    outer_builder,
+                    1.0 / self._logging_frequency_hz,
+                )
+            )
+            self._inner_manipuland_pose_loggers.append(
+                LogVectorOutput(
+                    self._inner_plant.get_state_output_port(
+                        self._inner_plant.GetModelInstanceByName(name)
+                    ),
+                    inner_builder,
+                    1.0 / self._logging_frequency_hz,
+                )
+            )
 
     def add_contact_result_logging(
         self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder
@@ -288,24 +303,29 @@ class DynamicLogger:
         )
 
     def log_manipuland_poses(self, context: Context, is_outer: bool) -> None:
-        # TODO
-        print("TODO fix log_manipuland_poses for N manipulands")
-        return
-
         # NOTE: This really logs state which is both pose (7,) and spatial velocity (6,)
         assert (
-            self._outer_manipuland_pose_logger is not None
-            and self._inner_manipuland_pose_logger is not None
+            self._outer_manipuland_pose_loggers is not None
+            and self._inner_manipuland_pose_loggers is not None
         )
 
+        poses: List[np.ndarray] = []
         if is_outer:
-            log = self._outer_manipuland_pose_logger.FindLog(context)
-            self._outer_manipuland_pose_times = log.sample_times()
-            self._outer_manipuland_poses = log.data().T  # Shape (t, 13)
+            for logger in self._outer_manipuland_pose_loggers:
+                log = logger.FindLog(context)
+                poses.append(log.data().T)  # Shape (t, 13)
+            self._outer_manipuland_poses = np.asarray(poses)  # Shape (M, t, 13)
+            self._outer_manipuland_pose_times = (
+                self._outer_manipuland_pose_loggers[0].FindLog(context).sample_times()
+            )  # Shape (t,)
         else:
-            log = self._inner_manipuland_pose_logger.FindLog(context)
-            self._inner_manipuland_pose_times = log.sample_times()
-            self._inner_manipuland_poses = log.data().T  # Shape (t, 13)
+            for logger in self._inner_manipuland_pose_loggers:
+                log = logger.FindLog(context)
+                poses.append(log.data().T)  # Shape (t, 13)
+            self._inner_manipuland_poses = np.asarray(poses)
+            self._inner_manipuland_pose_times = (
+                self._inner_manipuland_pose_loggers[0].FindLog(context).sample_times()
+            )  # Shape (t,)
 
     def add_manipuland_contact_force_logging(
         self, outer_builder: DiagramBuilder, inner_builder: DiagramBuilder
@@ -497,62 +517,70 @@ class DynamicLogger:
             self._meta_data.update(meta_data)
 
     def _create_time_series_plots(self) -> None:
-        # TODO
-        print("TODO: Fix time series plots for N manipulands")
-        return
-
         # Create pose error plots
         if (
             self._outer_manipuland_poses is not None
             and self._inner_manipuland_poses is not None
         ):
-            state_error = self._outer_manipuland_poses - self._inner_manipuland_poses
             times = self._outer_manipuland_pose_times
-            orientation_error = state_error[:, :4]  # Quaternions
-            translation_error = state_error[:, 4:7]
-            angular_velocity_error = state_error[:, 7:10]
-            translational_velocity_error = state_error[:, 10:]
+            for i, (outer_poses, inner_poses) in enumerate(
+                zip(self._outer_manipuland_poses, self._inner_manipuland_poses)
+            ):
+                state_error = outer_poses - inner_poses
+                orientation_error = state_error[:, :4]  # Quaternions
+                translation_error = state_error[:, 4:7]
+                angular_velocity_error = state_error[:, 7:10]
+                translational_velocity_error = state_error[:, 10:]
 
-            plt.plot(times, np.linalg.norm(translation_error, axis=1))
-            plt.xlabel("Time (s)")
-            plt.ylabel("Translation error magnitude (m)")
-            plt.savefig(
-                os.path.join(
-                    self._time_logs_dir_path, "translation_error_magnitude.png"
+                plt.plot(times, np.linalg.norm(translation_error, axis=1))
+                plt.xlabel("Time (s)")
+                plt.ylabel("Translation error magnitude (m)")
+                plt.title(f"Translation error magnitude - Manipuland {i}")
+                plt.savefig(
+                    os.path.join(
+                        self._time_logs_dir_path, f"translation_error_magnitude_{i}.png"
+                    )
                 )
-            )
-            plt.close()
+                plt.close()
 
-            plt.plot(times, np.linalg.norm(orientation_error, axis=1))
-            plt.xlabel("Time (s)")
-            plt.ylabel("Orientation error magnitude (quaternions)")
-            plt.savefig(
-                os.path.join(
-                    self._time_logs_dir_path, "orientation_error_magnitude.png"
+                plt.plot(times, np.linalg.norm(orientation_error, axis=1))
+                plt.xlabel("Time (s)")
+                plt.ylabel("Orientation error magnitude (quaternions)")
+                plt.title(f"Orientation error magnitude - Manipuland {i}")
+                plt.savefig(
+                    os.path.join(
+                        self._time_logs_dir_path, f"orientation_error_magnitude_{i}.png"
+                    )
                 )
-            )
-            plt.close()
+                plt.close()
 
-            plt.plot(times, np.linalg.norm(translational_velocity_error, axis=1))
-            plt.xlabel("Time (s)")
-            plt.ylabel("Translational velocity error magnitude (m/s)")
-            plt.savefig(
-                os.path.join(
-                    self._time_logs_dir_path,
-                    "translational_velocity_error_magnitude.png",
+                plt.plot(times, np.linalg.norm(translational_velocity_error, axis=1))
+                plt.xlabel("Time (s)")
+                plt.ylabel("Translational velocity error magnitude (m/s)")
+                plt.title(f"Translation velocity error magnitude - Manipuland {i}")
+                plt.savefig(
+                    os.path.join(
+                        self._time_logs_dir_path,
+                        f"translational_velocity_error_magnitude_{i}.png",
+                    )
                 )
-            )
-            plt.close()
+                plt.close()
 
-            plt.plot(times, np.linalg.norm(angular_velocity_error, axis=1))
-            plt.xlabel("Time (s)")
-            plt.ylabel("Angular velocity error magnitude (rad/s)")
-            plt.savefig(
-                os.path.join(
-                    self._time_logs_dir_path, "angular_velocity_error_magnitude.png"
+                plt.plot(times, np.linalg.norm(angular_velocity_error, axis=1))
+                plt.xlabel("Time (s)")
+                plt.ylabel("Angular velocity error magnitude (rad/s)")
+                plt.title(f"Angular velocity error magnitude - Manipuland {i}")
+                plt.savefig(
+                    os.path.join(
+                        self._time_logs_dir_path,
+                        f"angular_velocity_error_magnitude_{i}.png",
+                    )
                 )
-            )
-            plt.close()
+                plt.close()
+
+        # TODO
+        print("TODO: Fix time series plots for N manipulands")
+        return
 
         # Create contact force error plots
         if (
@@ -731,29 +759,25 @@ class DynamicLogger:
         return raw_mesh_file_paths, processed_mesh_file_paths
 
     def save_manipuland_pose_logs(self) -> None:
-        # TODO
-        print("TODO fix save_manipuland_pose_logs for N manipulands")
-        return
-
         if self._outer_manipuland_poses is not None:
-            np.savetxt(
-                os.path.join(self._time_logs_dir_path, "outer_manipuland_poses.txt"),
+            np.save(
+                os.path.join(self._time_logs_dir_path, "outer_manipuland_poses.npy"),
                 self._outer_manipuland_poses,
             )
-            np.savetxt(
+            np.save(
                 os.path.join(
-                    self._time_logs_dir_path, "outer_manipuland_pose_times.txt"
+                    self._time_logs_dir_path, "outer_manipuland_pose_times.npy"
                 ),
                 self._outer_manipuland_pose_times,
             )
         if self._inner_manipuland_poses is not None:
-            np.savetxt(
-                os.path.join(self._time_logs_dir_path, "inner_manipuland_poses.txt"),
+            np.save(
+                os.path.join(self._time_logs_dir_path, "inner_manipuland_poses.npy"),
                 self._inner_manipuland_poses,
             )
-            np.savetxt(
+            np.save(
                 os.path.join(
-                    self._time_logs_dir_path, "inner_manipuland_pose_times.txt"
+                    self._time_logs_dir_path, "inner_manipuland_pose_times.npy"
                 ),
                 self._inner_manipuland_pose_times,
             )

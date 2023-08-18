@@ -36,7 +36,9 @@ logger:
   class: "PlanarPushingLogger"
   args:
     label_to_mask: -1 # NOTE: Does not correspond to anything
-    manipuland_base_link_names: ["ycb_tomato_soup_can_base_link"]
+    manipuland_base_link_names: [
+      ycb_tomato_soup_can_base_link, ycb_mustard_bottle_base_link
+    ]
     kProximity: false
 
 image_generator:
