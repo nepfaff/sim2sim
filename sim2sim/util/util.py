@@ -586,7 +586,7 @@ def vector_pose_to_rigidtransform(pose: np.ndarray) -> RigidTransform:
     """Converts a pose of form [qw, qx, qy, qz, x, y, z] into a Drake RigidTransform."""
     quat = pose[:4]
     quat_normalized = quat / np.linalg.norm(quat)
-    return RigidTransform(Quaternion(quat_normalized), pose[4:])
+    return RigidTransform(Quaternion(quat_normalized), pose[4:7])
 
 
 def get_principal_component(points: np.ndarray) -> np.ndarray:

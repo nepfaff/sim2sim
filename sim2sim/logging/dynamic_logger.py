@@ -791,9 +791,9 @@ class DynamicLogger:
                 os.path.join(self._time_logs_dir_path, "outer_manipuland_poses.npy"),
                 self._outer_manipuland_poses,
             )
-            np.save(
+            np.savetxt(
                 os.path.join(
-                    self._time_logs_dir_path, "outer_manipuland_pose_times.npy"
+                    self._time_logs_dir_path, "outer_manipuland_pose_times.txt"
                 ),
                 self._outer_manipuland_pose_times,
             )
@@ -802,9 +802,9 @@ class DynamicLogger:
                 os.path.join(self._time_logs_dir_path, "inner_manipuland_poses.npy"),
                 self._inner_manipuland_poses,
             )
-            np.save(
+            np.savetxt(
                 os.path.join(
-                    self._time_logs_dir_path, "inner_manipuland_pose_times.npy"
+                    self._time_logs_dir_path, "inner_manipuland_pose_times.txt"
                 ),
                 self._inner_manipuland_pose_times,
             )
@@ -817,9 +817,9 @@ class DynamicLogger:
                 ),
                 self._outer_manipuland_contact_forces,
             )
-            np.save(
+            np.savetxt(
                 os.path.join(
-                    self._time_logs_dir_path, "outer_manipuland_contact_force_times.npy"
+                    self._time_logs_dir_path, "outer_manipuland_contact_force_times.txt"
                 ),
                 self._outer_manipuland_contact_force_times,
             )
@@ -830,9 +830,9 @@ class DynamicLogger:
                 ),
                 self._inner_manipuland_contact_forces,
             )
-            np.save(
+            np.savetxt(
                 os.path.join(
-                    self._time_logs_dir_path, "inner_manipuland_contact_force_times.npy"
+                    self._time_logs_dir_path, "inner_manipuland_contact_force_times.txt"
                 ),
                 self._inner_manipuland_contact_force_times,
             )
@@ -883,9 +883,9 @@ class DynamicLogger:
                 ),
                 np.array(outer_hydroelastic_contact_result_torques, dtype=object),
             )
-            np.save(
+            np.savetxt(
                 os.path.join(
-                    self._time_logs_dir_path, "outer_contact_result_times.npy"
+                    self._time_logs_dir_path, "outer_contact_result_times.txt"
                 ),
                 np.array(outer_contact_result_times),
             )
@@ -934,9 +934,9 @@ class DynamicLogger:
                 ),
                 np.array(inner_hydroelastic_contact_result_torques, dtype=object),
             )
-            np.save(
+            np.savetxt(
                 os.path.join(
-                    self._time_logs_dir_path, "inner_contact_result_times.npy"
+                    self._time_logs_dir_path, "inner_contact_result_times.txt"
                 ),
                 np.array(inner_contact_result_times),
             )
