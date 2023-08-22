@@ -240,24 +240,25 @@ def average_mean_contact_point_gradient_magnitude(
         points into the object frame.
     """
     assert len(contact_points.shape) == 3  # Shape (N, M, 3)
+    assert len(states.shape) == 2  # Shape (N, 13)
 
     # Transform contact points into object frame
-    X_WO = _states_to_poses(states)  # Shape (N,4,4)
+    X_WO = _states_to_poses(states)  # Shape (N, 4, 4)
     X_OW = np.linalg.inv(X_WO)
     points_object_frame = (
         contact_points @ X_OW[:, :3, :3].transpose((0, 2, 1))
         + X_OW[:, :3, 3][:, np.newaxis, :]
-    )  # Shape (N,M,3)
+    )  # Shape (N, M, 3)
 
     contact_point_magnitudes = np.linalg.norm(
         points_object_frame, axis=-1
-    )  # Shape (N,M)
+    )  # Shape (N, M)
     mean_contact_point_magnitudes = np.mean(
         contact_point_magnitudes, axis=-1
     )  # Shape (N,)
     mean_contact_point_magnitude_gradients = np.gradient(
         mean_contact_point_magnitudes, axis=0
-    )  # Shape (N,3)
+    )  # Shape (N, 3)
     return np.mean(np.abs(mean_contact_point_magnitude_gradients))
 
 

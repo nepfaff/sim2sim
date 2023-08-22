@@ -43,8 +43,8 @@ def main():
         "--separation_distance",
         default=0.0,
         type=float,
-        help="The distance in meters that the outer and inner manipuland should be separated from each other. "
-        + "This only has an effect if `--manipuland` is 'both'.",
+        help="The distance in meters that the outer and inner manipuland should be "
+        + "separated from each other. This only has an effect if `--manipuland` is 'both'.",
     )
     parser.add_argument(
         "--save_html", action="store_true", help="Whether to save the meshcat HTML."

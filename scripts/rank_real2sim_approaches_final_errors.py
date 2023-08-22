@@ -1,8 +1,10 @@
 """
-Script for ranking different real2sim approaches based on final errors in translation, rotation, and velocity.
+Script for ranking different real2sim approaches based on final errors in translation,
+rotation, and velocity.
 
-NOTE: Each approach is described completely with an experiment description file. For fair comparison, the experiment
-should be the same between files with some of the real2sim pipeline components being different.
+NOTE: Each approach is described completely with an experiment description file. For
+fair comparison, the experiment should be the same between files with some of the
+real2sim pipeline components being different.
 """
 
 import os
@@ -29,13 +31,15 @@ def main():
         "--experiment_descriptions",
         required=True,
         type=str,
-        help="The path to the folder containing the experiment descriptions for the different experiments.",
+        help="The path to the folder containing the experiment descriptions for the "
+        + "different experiments.",
     )
     parser.add_argument(
         "--logging_path",
         required=False,
         type=str,
-        help="The path to log the results to. A temporary folder will be created and deleted if not given.",
+        help="The path to log the results to. A temporary folder will be created and "
+        + "deleted if not given.",
     )
     args = parser.parse_args()
     experiment_descriptions_path = args.experiment_descriptions
