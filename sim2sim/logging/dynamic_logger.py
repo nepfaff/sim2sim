@@ -389,7 +389,7 @@ class DynamicLogger:
             )  # Shape (t,)
 
     def _get_contact_result_forces(
-        self, is_outer: bool, body_of_interest: str
+        self, is_outer: bool, bodies_of_interest: List[str]
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[float]]:
         """
         :returns: A tuple of
@@ -400,6 +400,7 @@ class DynamicLogger:
             - hydroelastic_contact_result_torques
             - times
         """
+        # TODO: Collect separate logs for each manipuland in `bodies_of_interest`
         logs: Tuple[List[ContactResults], List[float]] = (
             self._outer_contact_result_logger.get_logs()
             if is_outer
@@ -427,8 +428,8 @@ class DynamicLogger:
                 body_ia_index = contact_info_i.bodyA_index()
                 body_ib_index = contact_info_i.bodyB_index()
                 if (
-                    body_of_interest == plant.get_body(body_ib_index).name()
-                    or body_of_interest == plant.get_body(body_ia_index).name()
+                    plant.get_body(body_ib_index).name() in bodies_of_interest
+                    or plant.get_body(body_ia_index).name() in bodies_of_interest
                 ):
                     contact_point = contact_info_i.contact_point()
                     point_contact_contact_result_contact_point.append(contact_point)
@@ -457,8 +458,8 @@ class DynamicLogger:
                 body_ib_frame_id = inspector.GetFrameId(body_ib_geometry_id)
                 body_ib = plant.GetBodyFromFrameId(body_ib_frame_id)
                 if (
-                    body_of_interest == body_ia.name()
-                    or body_of_interest == body_ib.name()
+                    body_ia.name() in bodies_of_interest
+                    or body_ib.name() in bodies_of_interest
                 ):
                     contact_point = contact_surface.centroid()
                     hydroelastic_contact_result_centroid.append(contact_point)
@@ -761,7 +762,7 @@ class DynamicLogger:
                     pickle.dump(result, f)
             elif result_type == MeshProcessorResult.ResultType.SDF_PATH:
                 # The SDF is already saved when creating the Drake directive
-                pass
+                processed_mesh_file_path = ""
             elif result_type == MeshProcessorResult.ResultType.VTK_PATHS:
                 if len(result) == 1:
                     processed_mesh_file_path = os.path.join(
@@ -781,6 +782,10 @@ class DynamicLogger:
                                 processed_mesh_file_path, f"mesh_piece_{idx:03d}.vtk"
                             ),
                         )
+            else:
+                raise NotImplementedError(
+                    f"Saving {result_type} mesh data is not supported!"
+                )
             processed_mesh_file_paths.append(processed_mesh_file_path)
 
         return raw_mesh_file_paths, processed_mesh_file_paths
