@@ -4,7 +4,6 @@ experiment_id: "iiwa_manip_push_in_hole_tomato_soup_can_dualsdf_sphere"
 env:
   contact_model: "point"
   solver: "tamsi"
-  obj_name: "ycb_tomato_soup_can"
 
 script:
   name: "iiwa_manip"
@@ -13,10 +12,12 @@ script:
     timestep: 0.001
     logging_frequency_hz: 100
     hydroelastic_manipuland: false
-    manipuland_name: "ycb_tomato_soup_can"
-    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
-    manipuland_directive: "../../models/iiwa_manip/iiwa_manip_tomato_soup_can_manipuland_directive.yaml"
-    manipuland_default_pose: [-1.57, 0.0, 0.0, 0.0, 0.5, 0.050450]
+    manipuland_names: ["ycb_tomato_soup_can"]
+    manipuland_base_link_names: ["ycb_tomato_soup_can_base_link"]
+    manipuland_directives: [
+      "../../models/iiwa_manip/iiwa_manip_tomato_soup_can_manipuland_directive.yaml"
+    ]
+    manipuland_default_poses: [[-1.57, 0.0, 0.0, 0.0, 0.5, 0.050450]]
     is_pipeline_comparison: false
 
 # Component specifications
@@ -24,9 +25,9 @@ script:
 logger:
   class: "DynamicLogger"
   args:
-    label_to_mask: 22 # This label corresponds to the tomato soup can in the iiwa_manip_tomato_soup_can setup
-    manipuland_name: "ycb_tomato_soup_can"
-    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
+    # This label corresponds to the tomato soup can in the iiwa_manip_tomato_soup_can setup
+    label_to_mask: 22
+    manipuland_base_link_names: ["ycb_tomato_soup_can_base_link"]
     kProximity: false
 
 image_generator:
@@ -36,22 +37,22 @@ image_generator:
 inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
-    mesh_path: ./data/pepper_instant_ngp.obj
-    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.5, 0.050450]
+    mesh_paths: [./data/pepper_instant_ngp.obj]
+    mesh_poses: [[0.0, 0.0, 0.0, 0.0, 0.5, 0.050450]]
 
 mesh_processor:
   class: "IdentityPrimitiveMeshProcessor"
   args:
-    primitive_info_path: ./data/tomato_soup_can_dualsdf_sphere.pkl
+    primitive_info_paths: [./data/tomato_soup_can_dualsdf_sphere.pkl]
 
 physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
   args:
-    mass: 0.349000
-    inertia: [[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]
-    center_of_mass: [0.0, 0.0, 0.0]
-    is_compliant: False
-    mesh_resolution_hint: 0.01
+    masses: [0.349000]
+    inertias: [[[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]]
+    centers_of_mass: [[0.0, 0.0, 0.0]]
+    is_compliant: [False]
+    mesh_resolution_hints: [0.01]
 
 simulator:
   class: "IIWAPushInHoleSimulator"

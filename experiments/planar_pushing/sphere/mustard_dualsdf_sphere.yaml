@@ -3,7 +3,6 @@ experiment_id: "sphere_pushing_mustard_dualsdf_sphere"
 env:
   contact_model: "point"
   solver: "tamsi"
-  obj_name: "ycb_mustard_bottle"
 
 script:
   name: "planar_pushing"
@@ -11,9 +10,11 @@ script:
     sim_duration: 1.0
     timestep: 0.001
     logging_frequency_hz: 1000
-    manipuland_directive: "../../models/manipulands/mustard_bottle_manipuland_directive.yaml"
-    manipuland_base_link_name: "ycb_mustard_bottle_base_link"
-    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
+    manipuland_directives: [
+      "../../models/manipulands/mustard_bottle_manipuland_directive.yaml"
+    ]
+    manipuland_base_link_names: ["ycb_mustard_bottle_base_link"]
+    manipuland_default_poses: [[0.0, 0.0, 0.0, 0.0, 0.0, 0.1]]
     hydroelastic_manipuland: false
     pusher_geometry_starting_position: [0.3, 0.0, 0.1]
     pusher_geometry_pid_gains:
@@ -30,8 +31,7 @@ logger:
   class: "PlanarPushingLogger"
   args:
     label_to_mask: -1 # NOTE: Does not correspond to anything
-    manipuland_name: "ycb_mustard_bottle"
-    manipuland_base_link_name: "ycb_mustard_bottle_base_link"
+    manipuland_base_link_names: ["ycb_mustard_bottle_base_link"]
     kProximity: true
 
 image_generator:
@@ -41,28 +41,28 @@ image_generator:
 inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
-    mesh_path: ./data/ycb_mustard_bottle/mustard_bottle_instant_ngp.obj
-    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
+    mesh_paths: [./data/ycb_mustard_bottle/mustard_bottle_instant_ngp.obj]
+    mesh_poses: [[0.0, 0.0, 0.0, 0.0, 0.0, 0.1]]
 
 mesh_processor:
   class: "IdentityPrimitiveMeshProcessor"
   args:
-    primitive_info_path: ./data/ycb_mustard_bottle/mustard_bottle_dualsdf_sphere.pkl
+    primitive_info_paths: [./data/ycb_mustard_bottle/mustard_bottle_dualsdf_sphere.pkl]
 
 physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
   args:
-    mass: 0.6030
-    inertia: [[0.002009, 0.0, 0.0], [0.0, 0.000633, 0.0], [0.0, 0.0, 0.002302]]
-    center_of_mass: [0.0, 0.0, 0.0]
-    is_compliant: False
-    mesh_resolution_hint: 0.01
+    masses: [0.6030]
+    inertias: [[[0.002009, 0.0, 0.0], [0.0, 0.000633, 0.0], [0.0, 0.0, 0.002302]]]
+    centers_of_mass: [[0.0, 0.0, 0.0]]
+    is_compliant: [False]
 
 simulator:
   class: "PlanarPushingSimulator"
   args:
     settling_time: 0.2
-    manipuland_name: ycb_mustard_bottle
+    manipuland_names: [ycb_mustard_bottle]
+    target_manipuland_name: ycb_mustard_bottle
     controll_period: 0.01
     closed_loop_control: True
     num_meters_to_move_in_manpuland_direction: 0.6

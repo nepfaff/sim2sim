@@ -4,7 +4,6 @@ experiment_id: "floor_drop_gmm"
 env:
   contact_model: "point"
   solver: "tamsi"
-  obj_name: "ycb_tomato_soup_can"
 
 script:
   name: "floor_drop"
@@ -12,9 +11,11 @@ script:
     sim_duration: 0.5
     timestep: 0.01
     logging_frequency_hz: 1000
-    manipuland_directive: "../../models/random_force/random_force_manipuland_directive.yaml"
-    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
-    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
+    manipuland_directives: [
+      "../../models/random_force/random_force_manipuland_directive.yaml"
+    ]
+    manipuland_base_link_names: ["ycb_tomato_soup_can_base_link"]
+    manipuland_default_poses: [[0.0, 0.0, 0.0, 0.0, 0.0, 0.1]]
     hydroelastic_manipuland: false
     is_pipeline_comparison: false
 
@@ -24,8 +25,7 @@ logger:
   class: "DynamicLogger"
   args:
     label_to_mask: -1 # NOTE: Does not correspond to anything
-    manipuland_name: "ycb_tomato_soup_can"
-    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
+    manipuland_base_link_names: ["ycb_tomato_soup_can_base_link"]
     kProximity: true
 
 image_generator:
@@ -35,8 +35,8 @@ image_generator:
 inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
-    mesh_path: ./data/tomato_soup_can_instant_ngp.obj
-    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
+    mesh_paths: [./data/tomato_soup_can_instant_ngp.obj]
+    mesh_poses: [[0.0, 0.0, 0.0, 0.0, 0.0, 0.1]]
 
 mesh_processor:
   class: "GMMMeshProcessor"
@@ -53,10 +53,10 @@ mesh_processor:
 physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
   args:
-    mass: 0.349000
-    inertia: [[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]
-    center_of_mass: [0.0, 0.0, 0.0]
-    is_compliant: False
+    masses: [0.349000]
+    inertias: [[[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]]
+    centers_of_mass: [[0.0, 0.0, 0.0]]
+    is_compliant: [False]
 
 simulator:
   class: "BasicSimulator"

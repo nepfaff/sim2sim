@@ -3,7 +3,6 @@ experiment_id: "sphere_pushing_quadric_decimation"
 env:
   contact_model: "point"
   solver: "tamsi"
-  obj_name: "ycb_tomato_soup_can"
 
 script:
   name: "planar_pushing"
@@ -11,9 +10,11 @@ script:
     sim_duration: 1.0
     timestep: 0.001
     logging_frequency_hz: 1000
-    manipuland_directive: "../../models/random_force/random_force_manipuland_directive.yaml"
-    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
-    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
+    manipuland_directives: [
+      "../../models/random_force/random_force_manipuland_directive.yaml"
+    ]
+    manipuland_base_link_names: ["ycb_tomato_soup_can_base_link"]
+    manipuland_default_poses: [[0.0, 0.0, 0.0, 0.0, 0.0, 0.1]]
     hydroelastic_manipuland: false
     pusher_geometry_starting_position: [0.3, 0.0, 0.1]
     pusher_geometry_pid_gains:
@@ -30,8 +31,7 @@ logger:
   class: "PlanarPushingLogger"
   args:
     label_to_mask: -1 # NOTE: Does not correspond to anything
-    manipuland_name: "ycb_tomato_soup_can"
-    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
+    manipuland_base_link_names: ["ycb_tomato_soup_can_base_link"]
     kProximity: true
 
 image_generator:
@@ -41,8 +41,8 @@ image_generator:
 inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
-    mesh_path: ./data/tomato_soup_can_instant_ngp.obj
-    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
+    mesh_paths: [./data/tomato_soup_can_instant_ngp.obj]
+    mesh_poses: [[0.0, 0.0, 0.0, 0.0, 0.0, 0.1]]
 
 mesh_processor:
   class: "QuadricDecimationMeshProcessor"
@@ -52,16 +52,18 @@ mesh_processor:
 physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
   args:
-    mass: 0.349000
-    inertia: [[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]
-    center_of_mass: [0.0, 0.0, 0.0]
-    is_compliant: False
+    masses: [0.349000]
+    inertias: [[[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]]
+    centers_of_mass: [[0.0, 0.0, 0.0]]
+    is_compliant: [False]
+    mesh_resolution_hints: [0.01]
 
 simulator:
   class: "PlanarPushingSimulator"
   args:
     settling_time: 0.2
-    manipuland_name: ycb_tomato_soup_can
+    manipuland_names: [ycb_tomato_soup_can]
+    target_manipuland_name: ycb_tomato_soup_can
     controll_period: 0.01
     closed_loop_control: True
     num_meters_to_move_in_manpuland_direction: 0.6

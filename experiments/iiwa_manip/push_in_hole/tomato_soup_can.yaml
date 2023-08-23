@@ -4,7 +4,6 @@ experiment_id: "iiwa_manip_push_in_hole_tomato_soup_can"
 env:
   contact_model: "hydroelastic_with_fallback"
   solver: "sap"
-  obj_name: "ycb_tomato_soup_can"
 
 script:
   name: "iiwa_manip"
@@ -13,10 +12,12 @@ script:
     timestep: 0.005
     logging_frequency_hz: 100
     hydroelastic_manipuland: true
-    manipuland_name: "ycb_tomato_soup_can"
-    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
-    manipuland_directive: "../../models/iiwa_manip/iiwa_manip_tomato_soup_can_manipuland_directive.yaml"
-    manipuland_default_pose: [-1.57, 0.0, 0.0, 0.0, 0.5, 0.050450]
+    manipuland_names: ["ycb_tomato_soup_can"]
+    manipuland_base_link_names: ["ycb_tomato_soup_can_base_link"]
+    manipuland_directives: [
+      "../../models/iiwa_manip/iiwa_manip_tomato_soup_can_manipuland_directive.yaml"
+    ]
+    manipuland_default_poses: [[-1.57, 0.0, 0.0, 0.0, 0.5, 0.050450]]
     is_pipeline_comparison: false
 
 # Component specifications
@@ -24,9 +25,9 @@ script:
 logger:
   class: "DynamicLogger"
   args:
-    label_to_mask: 22 # This label corresponds to the tomato soup can in the iiwa_manip_tomato_soup_can setup
-    manipuland_name: "ycb_tomato_soup_can"
-    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
+    # This label corresponds to the tomato soup can in the iiwa_manip_tomato_soup_can setup
+    label_to_mask: 22
+    manipuland_base_link_names: ["ycb_tomato_soup_can_base_link"]
     kProximity: false
 
 # image_generator:
@@ -48,8 +49,8 @@ image_generator:
 inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
-    mesh_path: ./data/tomato_soup_can_instant_ngp.obj
-    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.5, 0.050450] # NOTE: Identical to `X_WManipuland` specified in `table_pid.py`
+    mesh_paths: [./data/tomato_soup_can_instant_ngp.obj]
+    mesh_poses: [[0.0, 0.0, 0.0, 0.0, 0.5, 0.050450]]
 
 mesh_processor:
   class: "QuadricDecimationMeshProcessor"
@@ -63,4 +64,5 @@ physical_property_estimator:
 simulator:
   class: "IIWAPushInHoleSimulator"
   args:
-    mesh_pose: [0.0, 0.0, 0.0, 0.00120209, 0.4993256, 0.04823579] # NOTE: From aligning NeRF with world
+    # NOTE: From aligning NeRF with world
+    mesh_pose: [0.0, 0.0, 0.0, 0.00120209, 0.4993256, 0.04823579]

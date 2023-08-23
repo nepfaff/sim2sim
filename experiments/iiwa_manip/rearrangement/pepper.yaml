@@ -4,7 +4,6 @@ experiment_id: "iiwa_manip_rearrangement_pepper"
 env:
   contact_model: "hydroelastic_with_fallback"
   solver: "sap"
-  obj_name: "pepper"
 
 script:
   name: "iiwa_manip"
@@ -13,10 +12,12 @@ script:
     timestep: 0.005
     logging_frequency_hz: 100
     hydroelastic_manipuland: true
-    manipuland_name: "pepper"
-    manipuland_base_link_name: "pepper_base_link"
-    manipuland_directive: "../../models/iiwa_manip/iiwa_manip_pepper_manipuland_directive.yaml"
-    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.45, 0.035]
+    manipuland_names: ["pepper"]
+    manipuland_base_link_names: ["pepper_base_link"]
+    manipuland_directives: [
+      "../../models/iiwa_manip/iiwa_manip_pepper_manipuland_directive.yaml"
+    ]
+    manipuland_default_poses: [[0.0, 0.0, 0.0, 0.0, 0.45, 0.035]]
     is_pipeline_comparison: false
 
 # Component specifications
@@ -24,9 +25,9 @@ script:
 logger:
   class: "DynamicLogger"
   args:
-    label_to_mask: 22 # This label corresponds to the tomato soup can in the iiwa_manip_pepper setup
-    manipuland_name: "pepper"
-    manipuland_base_link_name: "pepper_base_link"
+    # This label corresponds to the tomato soup can in the iiwa_manip_pepper setup
+    label_to_mask: 22
+    manipuland_base_link_names: ["pepper_base_link"]
     kProximity: false
 
 # image_generator:
@@ -48,8 +49,8 @@ image_generator:
 inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
-    mesh_path: ./data/pepper_instant_ngp.obj
-    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.45, 0.035] # NOTE: Identical to `X_WManipuland` specified in `table_pid.py`
+    mesh_paths: [./data/pepper_instant_ngp.obj]
+    mesh_poses: [[0.0, 0.0, 0.0, 0.0, 0.45, 0.035]]
 
 mesh_processor:
   class: "QuadricDecimationMeshProcessor"
