@@ -177,17 +177,22 @@ def log_performance_time_plots(
 
 def process_contact_points_arr(arr: np.ndarray) -> np.ndarray:
     max_count = 0
-    for el in arr:
-        max_count = max(max_count, len(el))
+    for manip in arr:
+        for el in manip:
+            max_count = max(max_count, len(el))
 
-    return np.array(
-        [
-            np.concatenate([el, np.zeros((max_count - len(el), 3))], axis=0)
-            if len(el) > 0
-            else np.zeros((max_count, 3))
-            for el in arr
-        ]
-    )
+    processed_arrs = []
+    for manip in arr:
+        processed_arrs.append(
+            [
+                np.concatenate([el, np.zeros((max_count - len(el), 3))], axis=0)
+                if len(el) > 0
+                else np.zeros((max_count, 3))
+                for el in manip
+            ]
+        )
+
+    return np.asarray(processed_arrs)
 
 
 def rank_based_on_metrics(
@@ -272,7 +277,7 @@ def rank_based_on_metrics(
         )
         contact_points_raw = (
             hydroelastic_contact_points_raw
-            if any(hydroelastic_contact_points_raw)
+            if any(hydroelastic_contact_points_raw[0])
             else point_contact_points_raw
         )
         inner_contact_points = process_contact_points_arr(contact_points_raw)
@@ -316,11 +321,9 @@ def rank_based_on_metrics(
             average_displacement_error_translation_only(outer, inner)
             for outer, inner in zip(outer_states, inner_states)
         ]  # Shape (M,)
-        # TODO: Filter contact points based on manipuland and only consider the ones
-        # belonging to the manipuland whose states are used
         average_mean_contact_point_gradient_magnitudes = [
-            average_mean_contact_point_gradient_magnitude(inner_contact_points, states)
-            for states in inner_states
+            average_mean_contact_point_gradient_magnitude(contact_points, states)
+            for contact_points, states in zip(inner_contact_points, inner_states)
         ]  # Shape (M,)
         average_generalized_contact_force_gradient_magnitudes = [
             average_generalized_contact_force_gradient_magnitude(forces)
