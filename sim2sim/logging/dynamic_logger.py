@@ -399,8 +399,11 @@ class DynamicLogger:
             - hydroelastic_contact_result_forces
             - hydroelastic_contact_result_torques
             - times
+
+        times has shape (N,) and all other return types have shape (M, N, K, 3) where
+        M is the number of bodies of interest, N is the number of timesteps, and K is
+        the number of contact points.
         """
-        # TODO: Collect separate logs for each manipuland in `bodies_of_interest`
         logs: Tuple[List[ContactResults], List[float]] = (
             self._outer_contact_result_logger.get_logs()
             if is_outer
@@ -415,38 +418,37 @@ class DynamicLogger:
             else self._inner_scene_graph.model_inspector()
         )
 
-        point_contact_contact_result_contact_points = []
-        point_contact_contact_result_forces = []
-        hydroelastic_contact_result_centroids = []
-        hydroelastic_contact_result_forces = []
-        hydroelastic_contact_result_torques = []
-        for contact_result in contact_results:
-            point_contact_contact_result_contact_point = []
-            point_contact_contact_result_force = []
+        init_result_lists = lambda: [
+            [[] for _ in range(len(times))] for _ in range(len(bodies_of_interest))
+        ]  # Shape (M, N, K, 3)
+        point_contact_contact_result_contact_points = init_result_lists()
+        point_contact_contact_result_forces = init_result_lists()
+        hydroelastic_contact_result_centroids = init_result_lists()
+        hydroelastic_contact_result_forces = init_result_lists()
+        hydroelastic_contact_result_torques = init_result_lists()
+        # Each timestep has one associated contact result
+        for timestep, contact_result in enumerate(contact_results):
             for i in range(contact_result.num_point_pair_contacts()):
                 contact_info_i = contact_result.point_pair_contact_info(i)
                 body_ia_index = contact_info_i.bodyA_index()
                 body_ib_index = contact_info_i.bodyB_index()
-                if (
-                    plant.get_body(body_ib_index).name() in bodies_of_interest
-                    or plant.get_body(body_ia_index).name() in bodies_of_interest
-                ):
-                    contact_point = contact_info_i.contact_point()
-                    point_contact_contact_result_contact_point.append(contact_point)
+                for manip_idx, body_of_interest in enumerate(bodies_of_interest):
+                    if (
+                        plant.get_body(body_ib_index).name() == body_of_interest
+                        or plant.get_body(body_ia_index).name() == body_of_interest
+                    ):
+                        contact_point = contact_info_i.contact_point()
+                        point_contact_contact_result_contact_points[manip_idx][
+                            timestep
+                        ].append(
+                            contact_point
+                        )  # Shape (M, N, K, 3)
 
-                    contact_force = contact_info_i.contact_force()
-                    point_contact_contact_result_force.append(contact_force)
+                        contact_force = contact_info_i.contact_force()
+                        point_contact_contact_result_forces[manip_idx][timestep].append(
+                            contact_force
+                        )  # Shape (M, N, K, 3)
 
-            point_contact_contact_result_contact_points.append(
-                point_contact_contact_result_contact_point
-            )
-            point_contact_contact_result_forces.append(
-                point_contact_contact_result_force
-            )
-
-            hydroelastic_contact_result_centroid = []
-            hydroelastic_contact_result_force = []
-            hydroelastic_contact_result_torque = []
             for i in range(contact_result.num_hydroelastic_contacts()):
                 contact_info_i = contact_result.hydroelastic_contact_info(i)
                 contact_surface = contact_info_i.contact_surface()
@@ -457,26 +459,27 @@ class DynamicLogger:
                 body_ib_geometry_id = contact_surface.id_N()
                 body_ib_frame_id = inspector.GetFrameId(body_ib_geometry_id)
                 body_ib = plant.GetBodyFromFrameId(body_ib_frame_id)
-                if (
-                    body_ia.name() in bodies_of_interest
-                    or body_ib.name() in bodies_of_interest
-                ):
-                    contact_point = contact_surface.centroid()
-                    hydroelastic_contact_result_centroid.append(contact_point)
+                for manip_idx, body_of_interest in enumerate(bodies_of_interest):
+                    if (
+                        body_ia.name() == body_of_interest
+                        or body_ib.name() == body_of_interest
+                    ):
+                        contact_point = contact_surface.centroid()
+                        hydroelastic_contact_result_centroids[manip_idx][
+                            timestep
+                        ].append(
+                            contact_point
+                        )  # Shape (M, N, K, 3)
 
-                    contact_spatial_force = contact_info_i.F_Ac_W()
-                    contact_force = contact_spatial_force.translational()
-                    hydroelastic_contact_result_force.append(contact_force)
-                    contact_torque = contact_spatial_force.rotational()
-                    hydroelastic_contact_result_torque.append(contact_torque)
-
-            hydroelastic_contact_result_centroids.append(
-                hydroelastic_contact_result_centroid
-            )
-            hydroelastic_contact_result_forces.append(hydroelastic_contact_result_force)
-            hydroelastic_contact_result_torques.append(
-                hydroelastic_contact_result_torque
-            )
+                        contact_spatial_force = contact_info_i.F_Ac_W()
+                        contact_force = contact_spatial_force.translational()
+                        hydroelastic_contact_result_forces[manip_idx][timestep].append(
+                            contact_force
+                        )  # Shape (M, N, K, 3)
+                        contact_torque = contact_spatial_force.rotational()
+                        hydroelastic_contact_result_torques[manip_idx][timestep].append(
+                            contact_torque
+                        )  # Shape (M, N, K, 3)
 
         return (
             point_contact_contact_result_contact_points,
@@ -674,7 +677,7 @@ class DynamicLogger:
         ) = self._get_contact_result_forces(False, self._manipuland_base_link_names)
 
         def create_spatial_force_error_plot(
-            outer_forces, inner_forces, ylabel, file_name
+            outer_forces, inner_forces, ylabel, title, file_name
         ):
             if len(outer_forces) > 0 and len(inner_forces) > 0:
                 outer_forces = np.array(
@@ -694,21 +697,37 @@ class DynamicLogger:
             plt.plot(times, np.linalg.norm(force_error, axis=1))
             plt.xlabel("Time (s)")
             plt.ylabel(ylabel)
+            plt.title(title)
             plt.savefig(os.path.join(self._time_logs_dir_path, file_name))
             plt.close()
 
-        create_spatial_force_error_plot(
-            outer_point_contact_result_forces,
-            inner_point_contact_result_forces,
-            "Point contact force error magnitude (N)",
-            "point_contact_force_error_magnitude.png",
-        )
-        create_spatial_force_error_plot(
-            outer_hydroelastic_contact_result_forces,
-            inner_hydroelastic_contact_result_forces,
-            "Hydroelastic spatial contact force error magnitude (N)",
-            "hydroelastic_spatial_contact_force_error_magnitude.png",
-        )
+        for i, (
+            outer_point,
+            inner_point,
+            outer_hydroelastic,
+            inner_hydroelastic,
+        ) in enumerate(
+            zip(
+                outer_point_contact_result_forces,
+                inner_point_contact_result_forces,
+                outer_hydroelastic_contact_result_forces,
+                inner_hydroelastic_contact_result_forces,
+            )
+        ):
+            create_spatial_force_error_plot(
+                outer_point,
+                inner_point,
+                "Point contact force error magnitude (N)",
+                f"Point contact force error mangitude - Manipuland {i}",
+                f"point_contact_force_error_magnitude_{i}.png",
+            )
+            create_spatial_force_error_plot(
+                outer_hydroelastic,
+                inner_hydroelastic,
+                "Hydroelastic spatial contact force error magnitude (N)",
+                f"Hydroelastic spatial contact force error magnitude - Manipuland {i}",
+                f"hydroelastic_spatial_contact_force_error_magnitude_{i}.png",
+            )
 
     def postprocess_data(self) -> None:
         self._create_time_series_plots()
