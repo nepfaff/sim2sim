@@ -6,7 +6,8 @@ setup(
     packages=["sim2sim"],
     install_requires=[
         "numpy",
-        "matplotlib",
+        "matplotlib==3.4.3",
+        "plotly",
         "pre-commit",
         "py",
         "y-py",

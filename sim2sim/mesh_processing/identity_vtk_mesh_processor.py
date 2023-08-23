@@ -1,3 +1,5 @@
+from typing import List
+
 import open3d as o3d
 
 from sim2sim.logging import DynamicLogger
@@ -11,12 +13,19 @@ class IdentityVTKMeshProcessor(MeshProcessorBase):
     to a given VTK file.
     """
 
-    def __init__(self, logger: DynamicLogger, vtk_path: str):
+    def __init__(self, logger: DynamicLogger, vtk_paths: List[str]):
         super().__init__(logger)
-        self._vtk_path = vtk_path
+        self._vtk_paths = vtk_paths
 
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
-        return MeshProcessorResult(
-            result_type=MeshProcessorResult.ResultType.VTK_PATHS,
-            vtk_paths=[self._vtk_path],
-        )
+    def process_meshes(
+        self, meshes: List[o3d.geometry.TriangleMesh]
+    ) -> List[MeshProcessorResult]:
+        processed_mesh_results = []
+        for path in self._vtk_paths:
+            processed_mesh_results.append(
+                MeshProcessorResult(
+                    result_type=MeshProcessorResult.ResultType.VTK_PATHS,
+                    vtk_paths=[path],
+                )
+            )
+        return processed_mesh_results

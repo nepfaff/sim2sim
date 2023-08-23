@@ -100,8 +100,8 @@ def add_pusher_geometry(
 def create_systems(
     env_params: dict,
     timestep: float,
-    manipuland_base_link_name: str,
-    manipuland_pose: RigidTransform,
+    manipuland_base_link_names: List[str],
+    manipuland_poses: List[RigidTransform],
     hydroelastic_manipuland: bool,
     pusher_geometry_type: str,
     pusher_geometry_starting_position: List[float],
@@ -139,8 +139,8 @@ def create_systems(
     )
     if hydroelastic_manipuland:
         print(
-            "Enabling hydroelastic for pusher_geometry. This might take a while. Increase the "
-            + "resolution hint to make this faster."
+            "Enabling hydroelastic for pusher_geometry. This might take a while. "
+            + "Increase the resolution hint to make this faster."
         )
         # Make pusher_geometry complient hydroelastic
         pusher_geometry = plant.GetBodyByName("pusher_geometry")
@@ -148,7 +148,8 @@ def create_systems(
         inspector = scene_graph.model_inspector()
         for geometry_id in geometry_ids:
             new_proximity_properties = ProximityProperties()
-            # NOTE: Setting hydroelastic properties becomes slow as the resolution hint decreases
+            # NOTE: Setting hydroelastic properties becomes slow as the resolution hint
+            # decreases
             AddCompliantHydroelasticProperties(
                 resolution_hint=0.1,
                 hydroelastic_modulus=1e8,
@@ -193,9 +194,8 @@ def create_systems(
         "pusher_geometry_inverse_dynamics_controller"
     )
 
-    plant.SetDefaultFreeBodyPose(
-        plant.GetBodyByName(manipuland_base_link_name), manipuland_pose
-    )
+    for link_name, pose in zip(manipuland_base_link_names, manipuland_poses):
+        plant.SetDefaultFreeBodyPose(plant.GetBodyByName(link_name), pose)
 
     return (
         builder,
@@ -209,8 +209,8 @@ def create_systems(
 def create_env(
     env_params: dict,
     timestep: float,
-    manipuland_base_link_name: str,
-    manipuland_pose: RigidTransform,
+    manipuland_base_link_names: List[str],
+    manipuland_poses: List[RigidTransform],
     hydroelastic_manipuland: bool,
     pusher_geometry_type: str,
     pusher_geometry_starting_position: List[float],
@@ -224,8 +224,8 @@ def create_env(
 
     :param env_params: The dict containing environment specific parameters.
     :param timestep: The timestep to use in seconds.
-    :param manipuland_base_link_name: The base link name of the outer manipuland.
-    :param manipuland_pose: The default pose of the outer manipuland.
+    :param manipuland_base_link_names: The base link names of the outer manipulands.
+    :param manipuland_poses: The default poses of the outer manipulands.
     :param hydroelastic_manipuland: Whether to use hydroelastic or point contact for the
         inner manipuland.
     :param pusher_geometry_type: The pusher geometry type. "sphere" or "box".
@@ -246,8 +246,8 @@ def create_env(
     ) = create_systems(
         env_params=env_params,
         timestep=timestep,
-        manipuland_base_link_name=manipuland_base_link_name,
-        manipuland_pose=manipuland_pose,
+        manipuland_base_link_names=manipuland_base_link_names,
+        manipuland_poses=manipuland_poses,
         hydroelastic_manipuland=hydroelastic_manipuland,
         pusher_geometry_type=pusher_geometry_type,
         pusher_geometry_starting_position=pusher_geometry_starting_position,

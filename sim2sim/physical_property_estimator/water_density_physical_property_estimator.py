@@ -1,3 +1,5 @@
+from typing import List
+
 import open3d as o3d
 
 from sim2sim.util import calc_mesh_inertia, PhysicalProperties
@@ -13,15 +15,19 @@ class WaterDensityPhysicalPropertyEstimator(PhysicalPropertyEstimatorBase):
         super().__init__()
 
     def estimate_physical_properties(
-        self, mesh: o3d.geometry.TriangleMesh
-    ) -> PhysicalProperties:
+        self, meshes: List[o3d.geometry.TriangleMesh]
+    ) -> List[PhysicalProperties]:
         """
-        :param mesh: The mesh to estimate physcial properties for.
+        :param meshes: The meshes to estimate physcial properties for.
         :return: The estimated physical properties.
         """
-        mass, inertia, com = calc_mesh_inertia(mesh)
-        # TODO: Also estimate compliant Hydroelastic properties
-        properties = PhysicalProperties(
-            mass=mass, inertia=inertia, center_of_mass=com, is_compliant=False
-        )
+        properties = []
+        for mesh in meshes:
+            mass, inertia, com = calc_mesh_inertia(mesh)
+            # TODO: Also estimate compliant Hydroelastic properties
+            properties.append(
+                PhysicalProperties(
+                    mass=mass, inertia=inertia, center_of_mass=com, is_compliant=False
+                )
+            )
         return properties

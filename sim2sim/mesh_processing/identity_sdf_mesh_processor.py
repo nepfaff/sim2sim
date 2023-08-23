@@ -1,3 +1,5 @@
+from typing import List
+
 import open3d as o3d
 
 from sim2sim.logging import DynamicLogger
@@ -14,12 +16,19 @@ class IdentitySDFMeshProcessor(MeshProcessorBase):
     physical property estimation and other specified properties having no effect.
     """
 
-    def __init__(self, logger: DynamicLogger, sdf_path: str):
+    def __init__(self, logger: DynamicLogger, sdf_paths: List[str]):
         super().__init__(logger)
-        self._sdf_path = sdf_path
+        self._sdf_paths = sdf_paths
 
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
-        return MeshProcessorResult(
-            result_type=MeshProcessorResult.ResultType.SDF_PATH,
-            sdf_path=self._sdf_path,
-        )
+    def process_meshes(
+        self, meshes: List[o3d.geometry.TriangleMesh]
+    ) -> List[MeshProcessorResult]:
+        mesh_processor_results = []
+        for path in self._sdf_paths:
+            mesh_processor_results.append(
+                MeshProcessorResult(
+                    result_type=MeshProcessorResult.ResultType.SDF_PATH,
+                    sdf_path=path,
+                )
+            )
+        return mesh_processor_results

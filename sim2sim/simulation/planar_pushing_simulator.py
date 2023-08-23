@@ -1,9 +1,16 @@
 import os
 import time
-from typing import Optional
+from typing import Optional, List, Tuple, Dict
 
 import numpy as np
-from pydrake.all import DiagramBuilder, SceneGraph, Simulator, MultibodyPlant
+from pydrake.all import (
+    DiagramBuilder,
+    SceneGraph,
+    Simulator,
+    MultibodyPlant,
+    ModelInstanceIndex,
+    Context,
+)
 
 from sim2sim.logging import PlanarPushingLogger
 from sim2sim.simulation import SimulatorBase
@@ -22,7 +29,8 @@ class PlanarPushingSimulator(SimulatorBase):
         logger: PlanarPushingLogger,
         is_hydroelastic: bool,
         settling_time: float,
-        manipuland_name: str,
+        manipuland_names: List[str],
+        target_manipuland_name: str,
         controll_period: float,
         closed_loop_control: bool,
         num_meters_to_move_in_manpuland_direction: Optional[float] = None,
@@ -37,7 +45,9 @@ class PlanarPushingSimulator(SimulatorBase):
         :param is_hydroelastic: Whether hydroelastic or point contact is used.
         :param settling_time: The time in seconds to simulate initially to allow the
             scene to settle.
-        :param manipuland_name: The name of the manipuland model instance.
+        :param manipuland_names: The names of the manipuland model instances.
+        :param target_manipuland_name: The name of the manipuland that is the pushing
+            target.
         :param controll_period: Period at which to update the control command.
         :param closed_loop_control: Whether to update the control actions based on the
             actual pusher geometry position.
@@ -56,7 +66,8 @@ class PlanarPushingSimulator(SimulatorBase):
         )
 
         self._settling_time = settling_time
-        self._manipuland_name = manipuland_name
+        self._manipuland_names = manipuland_names
+        self._target_manipuland_name = target_manipuland_name
         self._controll_period = controll_period
         self._closed_loop_control = closed_loop_control
         self._num_meters_to_move_in_manpuland_direction = (
@@ -109,9 +120,30 @@ class PlanarPushingSimulator(SimulatorBase):
             round(sim_time / self._reset_seconds),
         )
 
+    def _get_states(
+        self,
+        plant: MultibodyPlant,
+        plant_context: Context,
+        manipuland_instances: List[ModelInstanceIndex],
+        pusher_geometry_instance: ModelInstanceIndex,
+    ) -> Tuple[Dict[ModelInstanceIndex, np.ndarray], np.ndarray]:
+        """
+        Returns a tuple of (manipuland state dict, pusher geometry state).
+        """
+        manipuland_state_dict: Dict[ModelInstanceIndex, np.ndarray] = {}
+        for instance in manipuland_instances:
+            state = plant.GetPositionsAndVelocities(plant_context, instance)
+            manipuland_state_dict[instance] = state
+
+        pusher_geometry_state = plant.GetPositionsAndVelocities(
+            plant_context, pusher_geometry_instance
+        )
+
+        return manipuland_state_dict, pusher_geometry_state
+
     def simulate(self, duration: float) -> None:
-        outer_manipuland_states = []
-        outer_pusher_geometry_states = []
+        outer_manipuland_state_dicts: List[Dict[ModelInstanceIndex, np.ndarray]] = []
+        outer_pusher_geometry_states: List[np.ndarray] = []
 
         for i, (diagram, visualizer, meshcat) in enumerate(
             zip(
@@ -127,15 +159,13 @@ class PlanarPushingSimulator(SimulatorBase):
             )
             plant: MultibodyPlant = diagram.GetSubsystemByName("plant")
             plant_context = plant.GetMyMutableContextFromRoot(context)
-            manipuland_instance = plant.GetModelInstanceByName(self._manipuland_name)
-            pusher_geometry_instance = plant.GetModelInstanceByName("pusher_geometry")
-
-            get_states = lambda: (
-                plant.GetPositionsAndVelocities(plant_context, manipuland_instance),
-                plant.GetPositionsAndVelocities(
-                    plant_context, pusher_geometry_instance
-                ),
+            target_manipuland_instance = plant.GetModelInstanceByName(
+                self._target_manipuland_name
             )
+            manipuland_instances = [
+                plant.GetModelInstanceByName(name) for name in self._manipuland_names
+            ]
+            pusher_geometry_instance = plant.GetModelInstanceByName("pusher_geometry")
 
             if i == 1 or not self._skip_outer_visualization:
                 # TODO: Move `StartRecording` and `StopRecording` into logger using
@@ -158,7 +188,7 @@ class PlanarPushingSimulator(SimulatorBase):
                     action_log = []
                     for sim_time in sim_times:
                         manipuland_translation = plant.GetPositions(
-                            plant_context, manipuland_instance
+                            plant_context, target_manipuland_instance
                         )[4:]
 
                         pusher_geometry_state_source.set_desired_position(
@@ -167,14 +197,22 @@ class PlanarPushingSimulator(SimulatorBase):
                         action_log.append(manipuland_translation)
 
                         if self._is_reset_time(sim_time):
-                            manipuland_state, pusher_geometry_state = get_states()
-                            outer_manipuland_states.append(manipuland_state)
+                            (
+                                manipuland_state_dict,
+                                pusher_geometry_state,
+                            ) = self._get_states(
+                                plant,
+                                plant_context,
+                                manipuland_instances,
+                                pusher_geometry_instance,
+                            )
+                            outer_manipuland_state_dicts.append(manipuland_state_dict)
                             outer_pusher_geometry_states.append(pusher_geometry_state)
 
                         simulator.AdvanceTo(sim_time)
                 else:
                     manipuland_translation = plant.GetPositions(
-                        plant_context, manipuland_instance
+                        plant_context, target_manipuland_instance
                     )[4:]
                     pusher_geometry_instance = plant.GetModelInstanceByName(
                         "pusher_geometry"
@@ -207,8 +245,16 @@ class PlanarPushingSimulator(SimulatorBase):
                         pusher_geometry_state_source.set_desired_position(action)
 
                         if self._is_reset_time(sim_time):
-                            manipuland_state, pusher_geometry_state = get_states()
-                            outer_manipuland_states.append(manipuland_state)
+                            (
+                                manipuland_state_dict,
+                                pusher_geometry_state,
+                            ) = self._get_states(
+                                plant,
+                                plant_context,
+                                manipuland_instances,
+                                pusher_geometry_instance,
+                            )
+                            outer_manipuland_state_dicts.append(manipuland_state_dict)
                             outer_pusher_geometry_states.append(pusher_geometry_state)
 
                         simulator.AdvanceTo(sim_time)
@@ -218,11 +264,14 @@ class PlanarPushingSimulator(SimulatorBase):
                     pusher_geometry_state_source.set_desired_position(action)
 
                     if self._is_reset_time(sim_time):
-                        plant.SetPositionsAndVelocities(
-                            plant_context,
-                            manipuland_instance,
-                            outer_manipuland_states[idx],
-                        )
+                        for instance, state in outer_manipuland_state_dicts[
+                            idx
+                        ].items():
+                            plant.SetPositionsAndVelocities(
+                                plant_context,
+                                instance,
+                                state,
+                            )
                         plant.SetPositionsAndVelocities(
                             plant_context,
                             pusher_geometry_instance,

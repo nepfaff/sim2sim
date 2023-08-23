@@ -3,7 +3,6 @@ experiment_id: "random_force_gmm"
 env:
   contact_model: "hydroelastic_with_fallback"
   solver: "sap"
-  obj_name: "ycb_tomato_soup_can"
 
 script:
   name: "random_force"
@@ -11,9 +10,12 @@ script:
     sim_duration: 0.5
     timestep: 0.001
     logging_frequency_hz: 1000
-    manipuland_directive: "../../models/random_force/random_force_manipuland_directive.yaml"
-    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
-    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
+    manipuland_directives: [
+      "../../models/random_force/random_force_manipuland_directive.yaml"
+    ]
+    manipuland_base_link_names: ["ycb_tomato_soup_can_base_link"]
+    manipuland_default_poses: [[0.0, 0.0, 0.0, 0.0, 0.0, 0.1]]
+    force_target_manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
     hydroelastic_manipuland: true
     is_pipeline_comparison: false
 
@@ -23,8 +25,7 @@ logger:
   class: "DynamicLogger"
   args:
     label_to_mask: -1 # NOTE: Does not correspond to anything
-    manipuland_name: "ycb_tomato_soup_can"
-    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
+    manipuland_base_link_names: ["ycb_tomato_soup_can_base_link"]
     kProximity: true
 
 image_generator:
@@ -34,8 +35,8 @@ image_generator:
 inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
-    mesh_path: ./data/tomato_soup_can_instant_ngp.obj
-    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.1]
+    mesh_paths: [./data/tomato_soup_can_instant_ngp.obj]
+    mesh_poses: [[0.0, 0.0, 0.0, 0.0, 0.0, 0.1]]
 
 mesh_processor:
   class: "GMMMeshProcessor"
@@ -52,11 +53,11 @@ mesh_processor:
 physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
   args:
-    mass: 0.349000
-    inertia: [[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]
-    center_of_mass: [0.0, 0.0, 0.0]
-    is_compliant: False
-    mesh_resolution_hint: 0.01
+    masses: [0.349000]
+    inertias: [[[0.000402, 0.0, 0.0], [0.0, 0.000200, 0.0], [0.0, 0.0, 0.000402]]]
+    centers_of_mass: [[0.0, 0.0, 0.0]]
+    is_compliant: [False]
+    mesh_resolution_hints: [0.01]
 
 simulator:
   class: "RandomForceSimulator"

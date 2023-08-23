@@ -88,13 +88,14 @@ def rank_based_on_final_errors(
         )
 
         time_logs_path = os.path.join(logging_path, "time_logs")
-        outer_states = np.loadtxt(
-            os.path.join(time_logs_path, "outer_manipuland_poses.txt")
+        outer_states = np.load(
+            os.path.join(time_logs_path, "outer_manipuland_poses.npy")
         )
-        inner_states = np.loadtxt(
-            os.path.join(time_logs_path, "inner_manipuland_poses.txt")
+        inner_states = np.load(
+            os.path.join(time_logs_path, "inner_manipuland_poses.npy")
         )
-        final_state_error = outer_states[-1] - inner_states[-1]
+        # Take mean over manipulands
+        final_state_error = np.mean(outer_states[:, -1] - inner_states[:, -1], axis=0)
         quaternion_error = np.linalg.norm(final_state_error[:4])
         translation_error = np.linalg.norm(final_state_error[4:7])
         angular_velocity_error = np.linalg.norm(final_state_error[7:10])
@@ -115,7 +116,8 @@ def rank_based_on_final_errors(
         )
 
         print(
-            f"Mesh: {name}, Translation err: {translation_error}, Quaternion err: {quaternion_error}, "
+            f"Mesh: {name}, Translation err: {translation_error}, "
+            + f"Quaternion err: {quaternion_error}, "
             + f"Translational velocity err: {translational_velocity_error}, "
             + f"Angular velocity err: {angular_velocity_error}"
         )
@@ -175,17 +177,22 @@ def log_performance_time_plots(
 
 def process_contact_points_arr(arr: np.ndarray) -> np.ndarray:
     max_count = 0
-    for el in arr:
-        max_count = max(max_count, len(el))
+    for manip in arr:
+        for el in manip:
+            max_count = max(max_count, len(el))
 
-    return np.array(
-        [
-            np.concatenate([el, np.zeros((max_count - len(el), 3))], axis=0)
-            if len(el) > 0
-            else np.zeros((max_count, 3))
-            for el in arr
-        ]
-    )
+    processed_arrs = []
+    for manip in arr:
+        processed_arrs.append(
+            [
+                np.concatenate([el, np.zeros((max_count - len(el), 3))], axis=0)
+                if len(el) > 0
+                else np.zeros((max_count, 3))
+                for el in manip
+            ]
+        )
+
+    return np.asarray(processed_arrs)
 
 
 def rank_based_on_metrics(
@@ -242,19 +249,19 @@ def rank_based_on_metrics(
 
         time_logs_path = os.path.join(logging_path, "time_logs")
         # States
-        outer_states = np.loadtxt(
-            os.path.join(time_logs_path, "outer_manipuland_poses.txt")
+        outer_states = np.load(
+            os.path.join(time_logs_path, "outer_manipuland_poses.npy")
         )
-        inner_states = np.loadtxt(
-            os.path.join(time_logs_path, "inner_manipuland_poses.txt")
+        inner_states = np.load(
+            os.path.join(time_logs_path, "inner_manipuland_poses.npy")
         )
         # Generalized contact forces
-        inner_generalized_contact_force_torques = np.loadtxt(
-            os.path.join(time_logs_path, "inner_manipuland_contact_forces.txt")
+        inner_generalized_contact_force_torques = np.load(
+            os.path.join(time_logs_path, "inner_manipuland_contact_forces.npy")
         )
         inner_generalized_contact_forces = inner_generalized_contact_force_torques[
-            :, 3:
-        ]
+            :, :, 3:
+        ]  # Shape (M, N, 3)
         # Contact points
         hydroelastic_contact_points_raw = np.load(
             os.path.join(
@@ -270,7 +277,7 @@ def rank_based_on_metrics(
         )
         contact_points_raw = (
             hydroelastic_contact_points_raw
-            if any(hydroelastic_contact_points_raw)
+            if any(hydroelastic_contact_points_raw[0])
             else point_contact_points_raw
         )
         inner_contact_points = process_contact_points_arr(contact_points_raw)
@@ -279,37 +286,69 @@ def rank_based_on_metrics(
         meta_data = yaml.safe_load(open(meta_data_path))
 
         start_time = time.time()
-        errors = create_table_dict(
-            name=name,
-            trajectory_IoU_margin_01=trajectory_IoU(
-                outer_states,
-                inner_states,
+        # Compute metric for each manipuland separately
+        trajectory_IoU_margins_01 = [
+            trajectory_IoU(
+                outer,
+                inner,
                 margin=0.1,
                 num_samples=num_trajectory_iou_samples,
-            ),
-            trajectory_IoU_margin_1=trajectory_IoU(
-                outer_states,
-                inner_states,
+            )
+            for outer, inner in zip(outer_states, inner_states)
+        ]  # Shape (M,)
+        trajectory_IoU_margins_1 = [
+            trajectory_IoU(
+                outer,
+                inner,
                 margin=1.0,
                 num_samples=num_trajectory_iou_samples,
+            )
+            for outer, inner in zip(outer_states, inner_states)
+        ]  # Shape (M,)
+        orientation_considered_final_errors = [
+            orientation_considered_final_displacement_error(outer, inner)
+            for outer, inner in zip(outer_states, inner_states)
+        ]  # Shape (M,)
+        orientation_considered_average_errors = [
+            orientation_considered_average_displacement_error(outer, inner)
+            for outer, inner in zip(outer_states, inner_states)
+        ]  # Shape (M,)
+        final_displacement_errors_translation_only = [
+            final_displacement_error_translation_only(outer, inner)
+            for outer, inner in zip(outer_states, inner_states)
+        ]  # Shape (M,)
+        average_displacement_errors_translation_only = [
+            average_displacement_error_translation_only(outer, inner)
+            for outer, inner in zip(outer_states, inner_states)
+        ]  # Shape (M,)
+        average_mean_contact_point_gradient_magnitudes = [
+            average_mean_contact_point_gradient_magnitude(contact_points, states)
+            for contact_points, states in zip(inner_contact_points, inner_states)
+        ]  # Shape (M,)
+        average_generalized_contact_force_gradient_magnitudes = [
+            average_generalized_contact_force_gradient_magnitude(forces)
+            for forces in inner_generalized_contact_forces
+        ]  # Shape (M,)
+        # Average metrics over manipulands
+        errors = create_table_dict(
+            name=name,
+            trajectory_IoU_margin_01=np.mean(trajectory_IoU_margins_01),
+            trajectory_IoU_margin_1=np.mean(trajectory_IoU_margins_1),
+            orientation_considered_final_error=np.mean(
+                orientation_considered_final_errors
             ),
-            orientation_considered_final_error=orientation_considered_final_displacement_error(
-                outer_states, inner_states
+            orientation_considered_average_error=np.mean(
+                orientation_considered_average_errors
             ),
-            orientation_considered_average_error=orientation_considered_average_displacement_error(
-                outer_states, inner_states
+            final_translation_error=np.mean(final_displacement_errors_translation_only),
+            average_translation_error=np.mean(
+                average_displacement_errors_translation_only
             ),
-            final_translation_error=final_displacement_error_translation_only(
-                outer_states, inner_states
+            average_mean_contact_point_gradient_magnitude=np.mean(
+                average_mean_contact_point_gradient_magnitudes
             ),
-            average_translation_error=average_displacement_error_translation_only(
-                outer_states, inner_states
-            ),
-            average_mean_contact_point_gradient_magnitude=average_mean_contact_point_gradient_magnitude(
-                inner_contact_points, inner_states
-            ),
-            average_generalized_contact_force_gradient_magnitude=average_generalized_contact_force_gradient_magnitude(
-                inner_generalized_contact_forces
+            average_generalized_contact_force_gradient_magnitude=np.mean(
+                average_generalized_contact_force_gradient_magnitudes
             ),
             simulation_time=meta_data["time_taken_to_simulate_inner_s"],
             simulation_time_ratio=meta_data["time_taken_to_simulate_inner_s"]

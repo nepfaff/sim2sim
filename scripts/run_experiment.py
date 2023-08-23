@@ -10,7 +10,6 @@ from sim2sim.experiments import (
     run_floor_drop,
     run_random_force,
     run_planar_pushing,
-    run_interaction_pushing,
 )
 
 ENTRYPOINTS = {
@@ -19,7 +18,6 @@ ENTRYPOINTS = {
     "floor_drop": run_floor_drop,
     "random_force": run_random_force,
     "planar_pushing": run_planar_pushing,
-    "interaction_pushing": run_interaction_pushing,
 }
 
 

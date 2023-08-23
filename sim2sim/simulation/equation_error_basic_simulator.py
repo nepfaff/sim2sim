@@ -1,5 +1,6 @@
 import os
 import time
+from typing import List, Dict
 
 import numpy as np
 from pydrake.all import (
@@ -7,6 +8,7 @@ from pydrake.all import (
     SceneGraph,
     Simulator,
     MultibodyPlant,
+    ModelInstanceIndex,
 )
 
 from sim2sim.logging import DynamicLogger
@@ -27,7 +29,7 @@ class EquationErrorBasicSimulator(BasicSimulator):
         inner_scene_graph: SceneGraph,
         logger: DynamicLogger,
         is_hydroelastic: bool,
-        manipuland_name: str,
+        manipuland_names: List[str],
         reset_seconds: float,
         skip_outer_visualization: bool = False,
     ):
@@ -45,12 +47,12 @@ class EquationErrorBasicSimulator(BasicSimulator):
             skip_outer_visualization,
         )
 
-        self._manipuland_name = manipuland_name
+        self._manipuland_names = manipuland_names
         self._reset_seconds = reset_seconds
 
     def simulate(self, duration: float) -> None:
         # For storing the outer manipuland pose every 'reset_seconds' seconds
-        outer_manipuland_states = []
+        outer_manipuland_state_dicts: List[Dict[ModelInstanceIndex, np.ndarray]] = []
 
         for i, (diagram, visualizer, meshcat) in enumerate(
             zip(
@@ -70,22 +72,26 @@ class EquationErrorBasicSimulator(BasicSimulator):
             context = simulator.get_mutable_context()
             plant: MultibodyPlant = diagram.GetSubsystemByName("plant")
             plant_context = plant.GetMyMutableContextFromRoot(context)
-            manipuland_instance = plant.GetModelInstanceByName(self._manipuland_name)
+            manipuland_instances = [
+                plant.GetModelInstanceByName(name) for name in self._manipuland_names
+            ]
 
             start_time = time.time()
 
             for j, t in enumerate(np.arange(0.0, duration, self._reset_seconds)):
                 if i == 0:  # Outer
-                    state = plant.GetPositionsAndVelocities(
-                        plant_context, manipuland_instance
-                    )
-                    outer_manipuland_states.append(state)
+                    state_dict: Dict[ModelInstanceIndex, np.ndarray] = {}
+                    for instance in manipuland_instances:
+                        state = plant.GetPositionsAndVelocities(plant_context, instance)
+                        state_dict[instance] = state
+                    outer_manipuland_state_dicts.append(state_dict)
                 else:  # Inner
-                    plant.SetPositionsAndVelocities(
-                        plant_context,
-                        manipuland_instance,
-                        outer_manipuland_states[j],
-                    )
+                    for instance, state in outer_manipuland_state_dicts[j].items():
+                        plant.SetPositionsAndVelocities(
+                            plant_context,
+                            instance,
+                            state,
+                        )
                 simulator.AdvanceTo(t)
 
             time_taken_to_simulate = time.time() - start_time

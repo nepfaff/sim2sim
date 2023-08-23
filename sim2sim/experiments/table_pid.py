@@ -54,8 +54,8 @@ def create_env(
     timestep: float,
     final_table_angle: float,
     no_command_time: float,
-    manipuland_base_link_name: str,
-    manipuland_pose: RigidTransform,
+    manipuland_base_link_names: List[str],
+    manipuland_poses: List[RigidTransform],
     directive_files: List[str] = [],
     directive_strs: List[str] = [],
     **kwargs,
@@ -65,8 +65,8 @@ def create_env(
 
     :param env_params: The dict containing environment specific parameters.
     :param timestep: The timestep to use in seconds.
-    :param manipuland_base_link_name: The base link name of the outer manipuland.
-    :param manipuland_pose: The default pose of the outer manipuland of form
+    :param manipuland_base_link_names: The base link names of the outer manipulands.
+    :param manipuland_poses: The default poses of the outer manipulands of form
         [roll, pitch, yaw, x, y, z].
     """
     # Create plant
@@ -85,9 +85,8 @@ def create_env(
         directive = LoadModelDirectivesFromString(directive_str)
         ProcessModelDirectives(directive, parser)
 
-    plant.SetDefaultFreeBodyPose(
-        plant.GetBodyByName(manipuland_base_link_name), manipuland_pose
-    )
+    for link_name, pose in zip(manipuland_base_link_names, manipuland_poses):
+        plant.SetDefaultFreeBodyPose(plant.GetBodyByName(link_name), pose)
     plant.Finalize()
 
     # Table controller

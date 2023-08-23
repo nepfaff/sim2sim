@@ -4,12 +4,10 @@ experiment_id: "box_pushing_mustard_raw_tsdf_rigid_vs_compliant_hydroelastic"
 outer_env:
   contact_model: "hydroelastic_with_fallback"
   solver: "sap"
-  obj_name: "ycb_mustard_bottle"
 
 inner_env:
   contact_model: "hydroelastic_with_fallback"
   solver: "sap"
-  obj_name: "ycb_mustard_bottle"
 
 script:
   name: "planar_pushing"
@@ -17,9 +15,11 @@ script:
     sim_duration: 1.0
     timestep: 0.001
     logging_frequency_hz: 1000
-    manipuland_directive: "../../models/manipulands/mustard_bottle_manipuland_directive.yaml"
-    manipuland_base_link_name: "ycb_mustard_bottle_base_link"
-    manipuland_default_pose: [1.57, 1.57, 0, 0.0, 0.0, 0.032]
+    manipuland_directives: [
+      "../../models/manipulands/mustard_bottle_manipuland_directive.yaml"
+    ]
+    manipuland_base_link_names: ["ycb_mustard_bottle_base_link"]
+    manipuland_default_poses: [[1.57, 1.57, 0, 0.0, 0.0, 0.032]]
     hydroelastic_manipuland: True
     pusher_geometry_starting_position: [0.15, 0.03, 0.03]
     pusher_geometry_pid_gains:
@@ -36,8 +36,7 @@ logger:
   class: "PlanarPushingLogger"
   args:
     label_to_mask: -1 # NOTE: Does not correspond to anything
-    manipuland_name: "ycb_mustard_bottle"
-    manipuland_base_link_name: "ycb_mustard_bottle_base_link"
+    manipuland_base_link_names: ["ycb_mustard_bottle_base_link"]
     kProximity: False
 
 outer_image_generator:
@@ -51,14 +50,14 @@ inner_image_generator:
 outer_inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
-    mesh_path: ./data/ycb_mustard_bottle/mustard_ring_tsdf.obj
-    mesh_pose: [1.57, 1.57, 0, 0.0, 0.0, 0.032]
+    mesh_paths: [./data/ycb_mustard_bottle/mustard_ring_tsdf.obj]
+    mesh_poses: [[1.57, 1.57, 0, 0.0, 0.0, 0.032]]
 
 inner_inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
-    mesh_path: ./data/ycb_mustard_bottle/mustard_ring_tsdf.obj
-    mesh_pose: [1.57, 1.57, 0, 0.0, 0.0, 0.032]
+    mesh_paths: [./data/ycb_mustard_bottle/mustard_ring_tsdf.obj]
+    mesh_poses: [[1.57, 1.57, 0, 0.0, 0.0, 0.032]]
 
 outer_mesh_processor:
   class: "IdentityMeshProcessor"
@@ -67,38 +66,39 @@ outer_mesh_processor:
 inner_mesh_processor:
   class: "IdentityVTKMeshProcessor"
   args:
-    vtk_path: ./data/ycb_mustard_bottle/mustard_ring_tsdf.vtk
+    vtk_paths: [./data/ycb_mustard_bottle/mustard_ring_tsdf.vtk]
 
 outer_physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
   args:
-    mass: 0.435
-    inertia: [
+    masses: [0.435]
+    inertias: [[
       [ 1.0618e-03, -4.7439e-06, -4.0405e-06],
       [-4.7439e-06, 9.3767e-04, -1.6208e-05],
       [-4.0405e-06, -1.6208e-05, 2.4569e-04]
-    ]
-    center_of_mass: [ 0.0014, 0.0016, -0.0124]
-    is_compliant: False
+    ]]
+    centers_of_mass: [[0.0014, 0.0016, -0.0124]]
+    is_compliant: [False]
 
 inner_physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
   args:
-    mass: 0.435
-    inertia: [
+    masses: [0.435]
+    inertias: [[
       [ 1.0618e-03, -4.7439e-06, -4.0405e-06],
       [-4.7439e-06, 9.3767e-04, -1.6208e-05],
       [-4.0405e-06, -1.6208e-05, 2.4569e-04]
-    ]
-    center_of_mass: [ 0.0014, 0.0016, -0.0124]
-    is_compliant: True
-    hydroelastic_modulus: 5.0e4
+    ]]
+    centers_of_mass: [[0.0014, 0.0016, -0.0124]]
+    is_compliant: [True]
+    hydroelastic_moduli: [5.0e4]
 
 simulator:
   class: "PlanarPushingSimulator"
   args:
     settling_time: 0.2
-    manipuland_name: ycb_mustard_bottle
+    manipuland_names: [ycb_mustard_bottle]
+    target_manipuland_name: ycb_mustard_bottle
     controll_period: 0.01
     closed_loop_control: false
     num_meters_to_move_in_manpuland_direction: 0.6

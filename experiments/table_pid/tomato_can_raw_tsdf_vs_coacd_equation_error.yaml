@@ -4,12 +4,10 @@ experiment_id: "table_pid_tomato_can_raw_tsdf_vs_coacd_equation_error"
 outer_env:
   contact_model: "hydroelastic_with_fallback"
   solver: "sap"
-  obj_name: "ycb_tomato_soup_can"
 
 inner_env:
   contact_model: "hydroelastic_with_fallback"
   solver: "sap"
-  obj_name: "ycb_tomato_soup_can"
 
 script:
   name: "table_pid"
@@ -19,9 +17,11 @@ script:
     timestep: 0.001
     final_table_angle: 0.7854
     logging_frequency_hz: 1000
-    manipuland_directive: "../../models/manipulands/tomato_can_manipuland_directive.yaml"
-    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
-    manipuland_default_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
+    manipuland_directives: [
+      "../../models/manipulands/tomato_can_manipuland_directive.yaml"
+    ]
+    manipuland_base_link_names: ["ycb_tomato_soup_can_base_link"]
+    manipuland_default_poses: [[0.0, 0.0, 0.0, 0.0, 0.0, 0.6]]
     hydroelastic_manipuland: true # No effect if 'contact_model' is 'point'
     is_pipeline_comparison: True
 
@@ -31,8 +31,7 @@ logger:
   class: "DynamicLogger"
   args:
     label_to_mask: -1 # NOTE: Does not correspond to anything
-    manipuland_name: "ycb_tomato_soup_can"
-    manipuland_base_link_name: "ycb_tomato_soup_can_base_link"
+    manipuland_base_link_names: ["ycb_tomato_soup_can_base_link"]
     kProximity: false
 
 outer_image_generator:
@@ -46,14 +45,14 @@ inner_image_generator:
 outer_inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
-    mesh_path: ./data/ycb_tomato_soup_can/tomato_soup_can_tsdf.obj
-    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
+    mesh_paths: [./data/ycb_tomato_soup_can/tomato_soup_can_tsdf.obj]
+    mesh_poses: [[0.0, 0.0, 0.0, 0.0, 0.0, 0.6]]
 
 inner_inverse_graphics:
   class: "IdentityInverseGraphics"
   args:
-    mesh_path: ./data/ycb_tomato_soup_can/tomato_soup_can_tsdf.obj
-    mesh_pose: [0.0, 0.0, 0.0, 0.0, 0.0, 0.6]
+    mesh_paths: [./data/ycb_tomato_soup_can/tomato_soup_can_tsdf.obj]
+    mesh_poses: [[0.0, 0.0, 0.0, 0.0, 0.0, 0.6]]
 
 outer_mesh_processor:
   class: "IdentityMeshProcessor"
@@ -74,30 +73,30 @@ inner_mesh_processor:
 outer_physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
   args:
-    mass: 0.348
-    inertia: [
+    masses: [0.348]
+    inertias: [[
       [4.0049e-04, 2.8689e-06, -2.7256e-06],
       [2.8689e-06, 3.9849e-04, -1.0914e-05],
       [-2.7256e-06, -1.0914e-05, 2.1282e-04]
-    ]
-    center_of_mass: [-0.0032, 0.0062, -0.0124]
-    is_compliant: False
+    ]]
+    centers_of_mass: [[-0.0032, 0.0062, -0.0124]]
+    is_compliant: [False]
 
 inner_physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
   args:
-    mass: 0.348
-    inertia: [
+    masses: [0.348]
+    inertias: [[
       [4.0049e-04, 2.8689e-06, -2.7256e-06],
       [2.8689e-06, 3.9849e-04, -1.0914e-05],
       [-2.7256e-06, -1.0914e-05, 2.1282e-04]
-    ]
-    center_of_mass: [-0.0032, 0.0062, -0.0124]
-    is_compliant: False
+    ]]
+    centers_of_mass: [[-0.0032, 0.0062, -0.0124]]
+    is_compliant: [False]
 
 simulator:
   class: "EquationErrorBasicSimulator"
   args:
-    manipuland_name: "ycb_tomato_soup_can"
+    manipuland_names: ["ycb_tomato_soup_can"]
     reset_seconds: 0.1
  

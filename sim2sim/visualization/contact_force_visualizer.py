@@ -3,7 +3,7 @@
 import os
 import yaml
 import time
-from typing import Tuple
+from typing import Tuple, List
 
 import numpy as np
 import open3d as o3d
@@ -48,7 +48,10 @@ FORCE_TORQUE_MIN_MAGNITUDE = 1e-10
 
 
 class ContactForceVisualizer:
-    """A visualizer for simultaneously visualizing both outer and inner manipulands with their contact forces."""
+    """
+    A visualizer for simultaneously visualizing both outer and inner manipulands with
+    their contact forces.
+    """
 
     def __init__(
         self,
@@ -64,15 +67,19 @@ class ContactForceVisualizer:
     ):
         """
         :param data_path: Path to the experiment data folder.
-        :param manipuland: The manipuland to visualize. Options are 'outer', 'inner', 'both', and 'none'.
-        :param separation_distance: The distance in meters that the outer and inner manipuland should be separated from
-            each other. This only has an effect if `--manipuland` is 'both'.
+        :param manipuland: The manipuland to visualize. Options are 'outer', 'inner',
+            'both', and 'none'.
+        :param separation_distance: The distance in meters that the outer and inner
+            manipuland should be separated from each other. This only has an effect if
+            `--manipuland` is 'both'.
         :param save_html: Whether to save the meshcat HTML.
         :param newtons_per_meter: Sets the length scale of the force vectors.
-        :param newton_meters_per_meter: Sets the length scale of the torque/ moment vectors.
+        :param newton_meters_per_meter: Sets the length scale of the torque/ moment
+            vectors.
         :param hydroelastic: Whether to plot hydroelastic or point contact forces.
         :param kIllustration: Whether to use kIllustration or kProximity for meshcat.
-        :param force_magnitude_theshold: Don't visualize forces that have a magnitude of less than this.
+        :param force_magnitude_theshold: Don't visualize forces that have a magnitude of
+            less than this.
         """
         assert manipuland in ["outer", "inner", "both", "none"]
 
@@ -108,7 +115,7 @@ class ContactForceVisualizer:
         # Create Drake environment for visualizing SDF files
         self._builder = DiagramBuilder()
         self._plant, self._scene_graph = AddMultibodyPlantSceneGraph(
-            self._builder, 1e-3
+            self._builder, 1e-6
         )
         self._parser = get_parser(self._plant)
 
@@ -119,12 +126,13 @@ class ContactForceVisualizer:
         self._experiment_description = yaml.safe_load(
             open(experiment_description_path, "r")
         )
-        self._manipuland_name = self._experiment_description["logger"]["args"][
-            "manipuland_name"
+        self._manipuland_base_link_names: List[str] = self._experiment_description[
+            "logger"
+        ]["args"]["manipuland_base_link_names"]
+        self._manipuland_names = [
+            link_name.replace("_base_link", "")
+            for link_name in self._manipuland_base_link_names
         ]
-        self._manipuland_base_link_name = self._experiment_description["logger"][
-            "args"
-        ]["manipuland_base_link_name"]
         self._is_pipeline_comparison = self._experiment_description["script"]["args"][
             "is_pipeline_comparison"
         ]
@@ -153,8 +161,11 @@ class ContactForceVisualizer:
         ) = self._load_data(self._log_dir, outer=False)
 
         if self._manipuland == "both" and self._separation_distance > 0.0:
+            # NOTE: This only considers the first manipuland to compute the separation
+            # vector. Using a mean value might produce improved results.
             separation_direction_vec = self._get_separation_direction_vec(
-                self._outer_manipuland_poses[:, 4:], self._inner_manipuland_poses[:, 4:]
+                self._outer_manipuland_poses[0, :, 4:7],
+                self._inner_manipuland_poses[0, :, 4:7],
             )
             separation_direction_vec_unit = separation_direction_vec / np.linalg.norm(
                 separation_direction_vec
@@ -166,8 +177,12 @@ class ContactForceVisualizer:
             self._modify_data_for_side_by_side_visualization()
 
     def _modify_data_for_side_by_side_visualization(self) -> None:
+        # Data has shape (M, N, K, 3) where K is not constant
         add_force_vec = lambda a, vec: np.array(
-            [el + vec if np.linalg.norm(el) > 0.0 else el for el in a]
+            [
+                [el + vec if np.linalg.norm(el) > 0.0 else el for el in manip]
+                for manip in a
+            ]
         )
 
         self._outer_hydroelastic_centroids = add_force_vec(
@@ -176,7 +191,7 @@ class ContactForceVisualizer:
         self._outer_point_contact_points = add_force_vec(
             self._outer_point_contact_points, self._separation_vec
         )
-        self._outer_manipuland_poses[:, 4:] += self._separation_vec
+        self._outer_manipuland_poses[..., 4:7] += self._separation_vec
 
         self._inner_hydroelastic_centroids = add_force_vec(
             self._inner_hydroelastic_centroids, -self._separation_vec
@@ -184,36 +199,39 @@ class ContactForceVisualizer:
         self._inner_point_contact_points = add_force_vec(
             self._inner_point_contact_points, -self._separation_vec
         )
-        self._inner_manipuland_poses[:, 4:] -= self._separation_vec
+        self._inner_manipuland_poses[..., 4:7] -= self._separation_vec
 
     def _visualize_manipulands(self) -> None:
         """Visualizes the manipuland(s) at the world origin."""
         if self._manipuland in ["outer", "both"]:
             if self._is_pipeline_comparison:
-                outer_manipuland_sdf_path = os.path.join(
-                    self._data_path, "meshes", f"outer_processed_mesh.sdf"
+                for i, name in enumerate(self._manipuland_names):
+                    outer_manipuland_sdf_path = os.path.join(
+                        self._data_path, "meshes", f"outer_processed_mesh_{i}.sdf"
+                    )
+                    self._parser.AddModelFromFile(outer_manipuland_sdf_path, name)
+            else:
+                for directive in self._experiment_description["script"]["args"][
+                    "manipuland_directives"
+                ]:
+                    outer_manipuland_directive_path = os.path.join(
+                        self._data_path,
+                        directive,
+                    )
+                    outer_manipuland_directive = LoadModelDirectives(
+                        outer_manipuland_directive_path
+                    )
+                    ProcessModelDirectives(outer_manipuland_directive, self._parser)
+        if self._manipuland in ["inner", "both"]:
+            for i in range(len(self._manipuland_names)):
+                inner_manipuland_sdf_path = os.path.join(
+                    self._data_path,
+                    "meshes",
+                    f"{'inner_' if self._is_pipeline_comparison else ''}processed_mesh_{i}.sdf",
                 )
                 self._parser.AddModelFromFile(
-                    outer_manipuland_sdf_path, self._manipuland_name
+                    inner_manipuland_sdf_path, f"inner_manipuland_{i}"
                 )
-            else:
-                outer_manipuland_directive_path = os.path.join(
-                    self._data_path,
-                    self._experiment_description["script"]["args"][
-                        "manipuland_directive"
-                    ],
-                )
-                outer_manipuland_directive = LoadModelDirectives(
-                    outer_manipuland_directive_path
-                )
-                ProcessModelDirectives(outer_manipuland_directive, self._parser)
-        if self._manipuland in ["inner", "both"]:
-            inner_manipuland_sdf_path = os.path.join(
-                self._data_path,
-                "meshes",
-                f"{'inner_' if self._is_pipeline_comparison else ''}processed_mesh.sdf",
-            )
-            self._parser.AddModelFromFile(inner_manipuland_sdf_path, "inner_manipuland")
 
     @staticmethod
     def _load_data(log_dir: str, outer: bool):
@@ -221,21 +239,26 @@ class ContactForceVisualizer:
 
         def process_array(arr):
             max_count = 0
-            for el in arr:
-                max_count = max(max_count, len(el))
+            for manip in arr:
+                for el in manip:
+                    max_count = max(max_count, len(el))
 
-            return np.array(
-                [
-                    np.concatenate([el, np.zeros((max_count - len(el), 3))], axis=0)
-                    if len(el) > 0
-                    else np.zeros((max_count, 3))
-                    for el in arr
-                ]
-            )
+            processed_arrs = []
+            for manip in arr:
+                processed_arrs.append(
+                    [
+                        np.concatenate([el, np.zeros((max_count - len(el), 3))], axis=0)
+                        if len(el) > 0
+                        else np.zeros((max_count, 3))
+                        for el in manip
+                    ]
+                )
+
+            return np.asarray(processed_arrs)
 
         # Generalized contact forces
-        generalized_contact_forces = np.loadtxt(
-            os.path.join(log_dir, f"{prefix}_manipuland_contact_forces.txt")
+        generalized_contact_forces = np.load(
+            os.path.join(log_dir, f"{prefix}_manipuland_contact_forces.npy")
         )
 
         # Hydroelastic
@@ -270,9 +293,9 @@ class ContactForceVisualizer:
         point_contact_forces = process_array(point_contact_result_forces_raw)
 
         # Manipuland poses
-        manipuland_poses = np.loadtxt(
-            os.path.join(log_dir, f"{prefix}_manipuland_poses.txt")
-        )[:, :7]
+        manipuland_poses = np.load(
+            os.path.join(log_dir, f"{prefix}_manipuland_poses.npy")
+        )[..., :7]
 
         return (
             generalized_contact_forces,
@@ -293,8 +316,8 @@ class ContactForceVisualizer:
         rgba: Rgba = Rgba(1.0, 0.0, 0.0, 1.0),
     ) -> None:
         """
-        A contact force arrow that represents equal and opposite forces from the contact point.
-        Example: Point contact result forces.
+        A contact force arrow that represents equal and opposite forces from the contact
+            point. Example: Point contact result forces.
         """
         force_magnitude = np.linalg.norm(force)
         if force_magnitude < FORCE_TORQUE_MIN_MAGNITUDE:
@@ -302,7 +325,8 @@ class ContactForceVisualizer:
 
         # Create arrow
         height = force_magnitude / self._newtons_per_meter
-        # Cylinder gets scaled to twice the contact force length because we draw both (equal and opposite) forces
+        # Cylinder gets scaled to twice the contact force length because we draw both
+        # (equal and opposite) forces
         cylinder = Cylinder(radius, 2 * height)
         self._meshcat.SetObject(
             path=path + "/cylinder",
@@ -349,7 +373,8 @@ class ContactForceVisualizer:
         torque_rgba: Rgba = Rgba(0.0, 0.0, 1.0, 1.0),
     ) -> None:
         """
-        A contact force arrow that represents a single force from the centroid (not equal and opposite).
+        A contact force arrow that represents a single force from the centroid (not
+        equal and opposite).
         Examples: Generalized contact forces, hydroelastic contact result forces.
         """
         arrowhead_height = arrowhead_width = radius * 2.0
@@ -431,12 +456,13 @@ class ContactForceVisualizer:
         viz: bool = False,
     ) -> np.ndarray:
         """
-        Returns the vector perpendicular to both the manipuland translations and the z-axis where the translations are
-        the combined outer and inner translations.
+        Returns the vector perpendicular to both the manipuland translations and the
+        z-axis where the translations are the combined outer and inner translations.
 
         :param outer_translations: The outer translations of shape (N,3).
         :param inner_translations: The inner translations of shape (N,3).
-        :param viz: Whether to visualize the translation points with the principal component and separations vectors.
+        :param viz: Whether to visualize the translation points with the principal
+            component and separations vectors.
         :return: The separation vector of shape (3,).
         """
         combined_translations = np.concatenate(
@@ -447,8 +473,8 @@ class ContactForceVisualizer:
         separation_vec = np.cross(principle_component, z_axis)
 
         if viz:
-            # Visualize the outer translations in green, the inner translations in orange, the principal component in
-            # blue, and the separation vector in red
+            # Visualize the outer translations in green, the inner translations in
+            # orange, the principal component in blue, and the separation vector in red
             outer_pcd = o3d.geometry.PointCloud(
                 o3d.utility.Vector3dVector(outer_translations)
             )
@@ -576,132 +602,155 @@ class ContactForceVisualizer:
         ):
             self._toggle_inner_manipuland_button_clicks += 1
             self._inner_manipuland_visible = not self._inner_manipuland_visible
-        self._meshcat.SetProperty(
-            f"visualizer/inner_manipuland", "visible", self._inner_manipuland_visible
-        )
+        for i in range(len(self._manipuland_names)):
+            self._meshcat.SetProperty(
+                f"visualizer/inner_manipuland_{i}",
+                "visible",
+                self._inner_manipuland_visible,
+            )
         if (
             self._meshcat.GetButtonClicks(TOGGLE_OUTER_MANIPULAND_BUTTON_NAME)
             > self._toggle_outer_manipuland_button_clicks
         ):
             self._toggle_outer_manipuland_button_clicks += 1
             self._outer_manipuland_visible = not self._outer_manipuland_visible
-        self._meshcat.SetProperty(
-            f"visualizer/{self._manipuland_name}",
-            "visible",
-            self._outer_manipuland_visible,
-        )
+        for name in self._manipuland_names:
+            self._meshcat.SetProperty(
+                f"visualizer/{name}",
+                "visible",
+                self._outer_manipuland_visible,
+            )
 
     def _visualize_generalized_contact_forces(self, time_idx: int) -> None:
-        outer_generalized_contact_force = self._outer_generalized_contact_forces[
-            time_idx
-        ]
-        if (
-            np.linalg.norm(outer_generalized_contact_force)
-            > self._force_magnitude_theshold
+        for i, (forces, poses) in enumerate(
+            zip(self._outer_generalized_contact_forces, self._outer_manipuland_poses)
         ):
-            self._add_single_direction_force_arrow(
-                path="contact_forces/outer_sim_generalized",
-                force=outer_generalized_contact_force[3:],
-                torque=outer_generalized_contact_force[:3],
-                centroid=self._outer_manipuland_poses[time_idx][4:],
-                force_rgba=Rgba(0.0, 0.0, 1.0, 1.0),  # blue
-                torque_rgba=Rgba(0.6, 0.6, 1.0, 1.0),  # purple
-            )
-        inner_generalized_contact_force = self._inner_generalized_contact_forces[
-            time_idx
-        ]
-        if (
-            np.linalg.norm(inner_generalized_contact_force)
-            > self._force_magnitude_theshold
+            outer_generalized_contact_force = forces[time_idx]
+            if (
+                np.linalg.norm(outer_generalized_contact_force)
+                > self._force_magnitude_theshold
+            ):
+                self._add_single_direction_force_arrow(
+                    path=f"contact_forces/outer_sim_generalized/manip_{i}",
+                    force=outer_generalized_contact_force[3:],
+                    torque=outer_generalized_contact_force[:3],
+                    centroid=poses[time_idx][4:7],
+                    force_rgba=Rgba(0.0, 0.0, 1.0, 1.0),  # blue
+                    torque_rgba=Rgba(0.6, 0.6, 1.0, 1.0),  # purple
+                )
+        for i, (forces, poses) in enumerate(
+            zip(self._inner_generalized_contact_forces, self._inner_manipuland_poses)
         ):
-            self._add_single_direction_force_arrow(
-                path="contact_forces/inner_sim_generalized",
-                force=inner_generalized_contact_force[3:],
-                torque=inner_generalized_contact_force[:3],
-                centroid=self._inner_manipuland_poses[time_idx][4:],
-                force_rgba=Rgba(1.0, 0.0, 0.5, 1.0),  # pink
-                torque_rgba=Rgba(1.0, 0.6, 0.8, 1.0),  # light pink
-            )
+            inner_generalized_contact_force = forces[time_idx]
+            if (
+                np.linalg.norm(inner_generalized_contact_force)
+                > self._force_magnitude_theshold
+            ):
+                self._add_single_direction_force_arrow(
+                    path=f"contact_forces/inner_sim_generalized/manip_{i}",
+                    force=inner_generalized_contact_force[3:],
+                    torque=inner_generalized_contact_force[:3],
+                    centroid=poses[time_idx][4:7],
+                    force_rgba=Rgba(1.0, 0.0, 0.5, 1.0),  # pink
+                    torque_rgba=Rgba(1.0, 0.6, 0.8, 1.0),  # light pink
+                )
 
     def _visualize_contact_forces(self, time_idx: int) -> None:
         if self._hydroelastic:
-            # NOTE: The hydroelastic forces seem very different to the ones in the recorded HTMLs of the simulation.
-            # Further investigation is needed to determine why this is the case. For now, it is better to use this visualizer
-            # for point contact visualizations.
-            for i, (force, torque, centroid) in enumerate(
+            # NOTE: The hydroelastic forces seem very different to the ones in the
+            # recorded HTMLs of the simulation. Further investigation is needed to
+            # determine why this is the case. For now, it is better to use this
+            # visualizer for point contact visualizations.
+            for i, (forces, torques, centroids) in enumerate(
                 zip(
-                    self._outer_hydroelastic_contact_forces[time_idx],
-                    self._outer_hydroelastic_contact_torques[time_idx],
-                    self._outer_hydroelastic_centroids[time_idx],
+                    self._outer_hydroelastic_contact_forces,
+                    self._outer_hydroelastic_contact_torques,
+                    self._outer_hydroelastic_centroids,
                 )
             ):
-                if np.linalg.norm(force) > self._force_magnitude_theshold:
-                    self._add_single_direction_force_arrow(
-                        path=f"contact_forces/outer_sim/force_{i}",
-                        force=force,
-                        torque=torque,
-                        centroid=centroid,
-                        force_rgba=Rgba(0.0, 1.0, 0.0, 1.0),
-                        torque_rgba=Rgba(0.0, 1.0, 1.0, 1.0),  # light blue
-                    )
+                for j, (force, torque, centroid) in enumerate(
+                    zip(forces[time_idx], torques[time_idx], centroids[time_idx])
+                ):
+                    if np.linalg.norm(force) > self._force_magnitude_theshold:
+                        self._add_single_direction_force_arrow(
+                            path=f"contact_forces/outer_sim/manip_{i}/force_{j}",
+                            force=force,
+                            torque=torque,
+                            centroid=centroid,
+                            force_rgba=Rgba(0.0, 1.0, 0.0, 1.0),
+                            torque_rgba=Rgba(0.0, 1.0, 1.0, 1.0),  # light blue
+                        )
 
-            for i, (force, torque, centroid) in enumerate(
+            for i, (forces, torques, centroids) in enumerate(
                 zip(
-                    self._inner_hydroelastic_contact_forces[time_idx],
-                    self._inner_hydroelastic_contact_torques[time_idx],
-                    self._inner_hydroelastic_centroids[time_idx],
+                    self._inner_hydroelastic_contact_forces,
+                    self._inner_hydroelastic_contact_torques,
+                    self._inner_hydroelastic_centroids,
                 )
             ):
-                if np.linalg.norm(force) > self._force_magnitude_theshold:
-                    self._add_single_direction_force_arrow(
-                        path=f"contact_forces/inner_sim/force_{i}",
-                        force=force,
-                        torque=torque,
-                        centroid=centroid,
-                        force_rgba=Rgba(1.0, 0.0, 0.0, 1.0),
-                        torque_rgba=Rgba(1.0, 0.5, 0.0, 1.0),  # orange
-                    )
+                for j, (force, torque, centroid) in enumerate(
+                    zip(forces[time_idx], torques[time_idx], centroids[time_idx])
+                ):
+                    if np.linalg.norm(force) > self._force_magnitude_theshold:
+                        self._add_single_direction_force_arrow(
+                            path=f"contact_forces/inner_sim/manip_{i}/force_{j}",
+                            force=force,
+                            torque=torque,
+                            centroid=centroid,
+                            force_rgba=Rgba(1.0, 0.0, 0.0, 1.0),
+                            torque_rgba=Rgba(1.0, 0.5, 0.0, 1.0),  # orange
+                        )
         else:
-            for i, (force, point) in enumerate(
-                zip(
-                    self._outer_point_contact_forces[time_idx],
-                    self._outer_point_contact_points[time_idx],
-                )
+            for i, (forces, points) in enumerate(
+                zip(self._outer_point_contact_forces, self._outer_point_contact_points)
             ):
-                if np.linalg.norm(force) > self._force_magnitude_theshold:
-                    self._add_equal_opposite_force_arrow(
-                        path=f"contact_forces/outer_sim/force_{i}",
-                        force=force,
-                        contact_point=point,
-                        rgba=Rgba(0.0, 1.0, 0.0, 1.0),
-                    )
+                for j, (force, point) in enumerate(
+                    zip(forces[time_idx], points[time_idx])
+                ):
+                    if np.linalg.norm(force) > self._force_magnitude_theshold:
+                        self._add_equal_opposite_force_arrow(
+                            path=f"contact_forces/outer_sim/manip_{i}/force_{j}",
+                            force=force,
+                            contact_point=point,
+                            rgba=Rgba(0.0, 1.0, 0.0, 1.0),
+                        )
 
-            for i, (force, point) in enumerate(
-                zip(
-                    self._inner_point_contact_forces[time_idx],
-                    self._inner_point_contact_points[time_idx],
-                )
+            for i, (forces, points) in enumerate(
+                zip(self._inner_point_contact_forces, self._inner_point_contact_points)
             ):
-                if np.linalg.norm(force) > self._force_magnitude_theshold:
-                    self._add_equal_opposite_force_arrow(
-                        path=f"contact_forces/inner_sim/force_{i}",
-                        force=force,
-                        contact_point=point,
-                        rgba=Rgba(1.0, 0.0, 0.0, 1.0),
-                    )
+                for j, (force, point) in enumerate(
+                    zip(forces[time_idx], points[time_idx])
+                ):
+                    if np.linalg.norm(force) > self._force_magnitude_theshold:
+                        self._add_equal_opposite_force_arrow(
+                            path=f"contact_forces/inner_sim/manip_{i}/force_{j}",
+                            force=force,
+                            contact_point=point,
+                            rgba=Rgba(1.0, 0.0, 0.0, 1.0),
+                        )
 
     def _update_manipuland_poses(self, time_idx: int) -> None:
-        self._meshcat.SetTransform(
-            f"visualizer/{self._manipuland_name}/{self._manipuland_base_link_name}",
-            vector_pose_to_rigidtransform(self._outer_manipuland_poses[time_idx]),
-        )
-        self._meshcat.SetTransform(
-            f"visualizer/inner_manipuland/{self._manipuland_base_link_name}",
-            vector_pose_to_rigidtransform(self._inner_manipuland_poses[time_idx]),
-        )
+        for i, (name, link_name) in enumerate(
+            zip(self._manipuland_names, self._manipuland_base_link_names)
+        ):
+            self._meshcat.SetTransform(
+                f"visualizer/{name}/{link_name}",
+                vector_pose_to_rigidtransform(
+                    self._outer_manipuland_poses[i, time_idx]
+                ),
+            )
+            self._meshcat.SetTransform(
+                f"visualizer/inner_manipuland_{i}/{link_name}",
+                vector_pose_to_rigidtransform(
+                    self._inner_manipuland_poses[i, time_idx]
+                ),
+            )
 
     def _save_current_html(self) -> None:
-        """Saves the HTML of the current timestep. NOTE: This overrides the previously saved HTML."""
+        """
+        Saves the HTML of the current timestep. NOTE: This overrides the previously
+        saved HTML.
+        """
         html = self._meshcat.StaticHtml()
         html_path = os.path.join(self._data_path, "contact_force_visualizer.html")
         with open(html_path, "w") as f:

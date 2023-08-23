@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import List
 
 import open3d as o3d
 
@@ -19,9 +20,11 @@ class MeshProcessorBase(ABC):
         self._logger = logger
 
     @abstractmethod
-    def process_mesh(self, mesh: o3d.geometry.TriangleMesh) -> MeshProcessorResult:
+    def process_meshes(
+        self, meshes: List[o3d.geometry.TriangleMesh]
+    ) -> List[MeshProcessorResult]:
         """
-        :param mesh: The mesh to process.
-        :return: The mesh processor result.
+        :param meshes: The meshes to process.
+        :return: The mesh processor results.
         """
         raise NotImplementedError

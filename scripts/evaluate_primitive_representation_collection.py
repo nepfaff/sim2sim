@@ -1,8 +1,11 @@
 """
-Script for ranking different real2sim approaches based on final errors in translation, rotation, and velocity.
+Script for ranking different real2sim approaches based on final errors in translation,
+rotation, and velocity.
 
-NOTE: Each approach is described completely with an experiment description file. For fair comparison, the experiment
-should be the same between files with some of the real2sim pipeline components being different.
+NOTE: Each approach is described completely with an experiment description file. For
+fair comparison, the experiment
+should be the same between files with some of the real2sim pipeline components being
+different.
 """
 
 import os
@@ -14,6 +17,7 @@ import time
 import copy
 import json
 import random
+import re
 
 import wandb
 
@@ -25,20 +29,26 @@ def make_outer_deterministic(
     experiment_description: dict,
     logging_path: str,
     skip_outer_visualization: bool,
+    num_manipulands: int = 1,
 ) -> dict:
     """
     Ensure that the outer sim is deterministic by re-using the SDFormat file from the
     first experiment.
     """
     first_experiment_name = experiment_specifications[0]["experiment_id"]
-    outer_sdf_path = os.path.join(
-        logging_path,
-        first_experiment_name,
-        "meshes/outer_processed_mesh.sdf",
-    )
     experiment_description["outer_mesh_processor"]["class"] = "IdentitySDFMeshProcessor"
+
+    outer_sdf_paths = [
+        os.path.join(
+            logging_path,
+            first_experiment_name,
+            "meshes",
+            f"outer_processed_mesh_{i}.sdf",
+        )
+        for i in range(num_manipulands)
+    ]
     experiment_description["outer_mesh_processor"]["args"] = {
-        "sdf_path": outer_sdf_path
+        "sdf_paths": outer_sdf_paths
     }
 
     # No need to visualize outer sim as will be a copy of the first visualization
@@ -201,26 +211,27 @@ def main():
         """Make representation collection specific edits to the experiment description."""
 
         # Outer physical properties
+        # TODO: Extend `pysical_properties` dict to N manipulands
         experiment_description["outer_physical_property_estimator"]["args"][
-            "mass"
-        ] = pysical_properties["mass"]
+            "masses"
+        ] = [pysical_properties["mass"]]
         experiment_description["outer_physical_property_estimator"]["args"][
-            "inertia"
-        ] = pysical_properties["inertia"]
+            "inertias"
+        ] = [pysical_properties["inertia"]]
         experiment_description["outer_physical_property_estimator"]["args"][
-            "center_of_mass"
-        ] = pysical_properties["com"]
+            "centers_of_mass"
+        ] = [pysical_properties["com"]]
 
         # Inner physical properties
         experiment_description["inner_physical_property_estimator"]["args"][
-            "mass"
-        ] = pysical_properties["mass"]
+            "masses"
+        ] = [pysical_properties["mass"]]
         experiment_description["inner_physical_property_estimator"]["args"][
-            "inertia"
-        ] = pysical_properties["inertia"]
+            "inertias"
+        ] = [pysical_properties["inertia"]]
         experiment_description["inner_physical_property_estimator"]["args"][
-            "center_of_mass"
-        ] = pysical_properties["com"]
+            "centers_of_mass"
+        ] = [pysical_properties["com"]]
 
         adjusted_descriptions = []
         if args.eval_contact_model:
@@ -260,8 +271,8 @@ def main():
 
                     # Add collision geometry
                     experiment_description["inner_inverse_graphics"]["args"][
-                        "mesh_path"
-                    ] = path.path
+                        "mesh_paths"
+                    ] = [path.path]
                     experiment_description["inner_mesh_processor"][
                         "class"
                     ] = "IdentityMeshProcessor"
@@ -297,8 +308,8 @@ def main():
                     ] = "IdentityMeshPiecesMeshProcessor"
                     experiment_description["inner_mesh_processor"]["args"] = {}
                     experiment_description["inner_mesh_processor"]["args"][
-                        "mesh_pieces_path"
-                    ] = path.path
+                        "mesh_pieces_paths"
+                    ] = [path.path]
 
                     # Make edits based on representation collection
                     adjusted_experiment_specifications = adjust_experiment_description(
@@ -328,8 +339,8 @@ def main():
 
                 # Add primitive info
                 experiment_description["inner_mesh_processor"]["args"][
-                    "primitive_info_path"
-                ] = os.path.join(path.path, "primitive_info.pkl")
+                    "primitive_info_paths"
+                ] = [os.path.join(path.path, "primitive_info.pkl")]
 
                 # Make edits based on representation collection
                 adjusted_experiment_specifications = adjust_experiment_description(

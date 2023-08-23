@@ -104,13 +104,14 @@ def main():
         )
 
         time_logs_path = os.path.join(logging_path, "time_logs")
-        outer_states = np.loadtxt(
-            os.path.join(time_logs_path, "outer_manipuland_poses.txt")
+        outer_states = np.load(
+            os.path.join(time_logs_path, "outer_manipuland_poses.npy")
         )
-        inner_states = np.loadtxt(
-            os.path.join(time_logs_path, "inner_manipuland_poses.txt")
+        inner_states = np.load(
+            os.path.join(time_logs_path, "inner_manipuland_poses.npy")
         )
-        final_state_error = outer_states[-1] - inner_states[-1]
+        # Take mean error of all manipulands
+        final_state_error = np.mean(outer_states[:, -1] - inner_states[:, -1], axis=0)
         quaternion_error = np.linalg.norm(final_state_error[:4])
         translation_error = np.linalg.norm(final_state_error[4:7])
         angular_velocity_error = np.linalg.norm(final_state_error[7:10])
@@ -131,8 +132,9 @@ def main():
         )
 
         print(
-            f"Mesh: {mesh_name}, Translation err: {translation_error}, Quaternion err: {quaternion_error}, "
-            + f"Translational velocity err: {translational_velocity_error}, Angular velocity err: {angular_velocity_error}"
+            f"Mesh: {mesh_name}, Translation err: {translation_error}, Quaternion err: "
+            + f"{quaternion_error}, Translational velocity err: "
+            + f"{translational_velocity_error}, Angular velocity err: {angular_velocity_error}"
         )
 
     table = create_evaluation_results_table(eval_data)
