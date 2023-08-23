@@ -177,8 +177,12 @@ class ContactForceVisualizer:
             self._modify_data_for_side_by_side_visualization()
 
     def _modify_data_for_side_by_side_visualization(self) -> None:
+        # Data has shape (M, N, K, 3) where K is not constant
         add_force_vec = lambda a, vec: np.array(
-            [el + vec if np.linalg.norm(el) > 0.0 else el for el in a]
+            [
+                [el + vec if np.linalg.norm(el) > 0.0 else el for el in manip]
+                for manip in a
+            ]
         )
 
         self._outer_hydroelastic_centroids = add_force_vec(
@@ -235,17 +239,22 @@ class ContactForceVisualizer:
 
         def process_array(arr):
             max_count = 0
-            for el in arr:
-                max_count = max(max_count, len(el))
+            for manip in arr:
+                for el in manip:
+                    max_count = max(max_count, len(el))
 
-            return np.array(
-                [
-                    np.concatenate([el, np.zeros((max_count - len(el), 3))], axis=0)
-                    if len(el) > 0
-                    else np.zeros((max_count, 3))
-                    for el in arr
-                ]
-            )
+            processed_arrs = []
+            for manip in arr:
+                processed_arrs.append(
+                    [
+                        np.concatenate([el, np.zeros((max_count - len(el), 3))], axis=0)
+                        if len(el) > 0
+                        else np.zeros((max_count, 3))
+                        for el in manip
+                    ]
+                )
+
+            return np.asarray(processed_arrs)
 
         # Generalized contact forces
         generalized_contact_forces = np.load(
@@ -652,67 +661,73 @@ class ContactForceVisualizer:
             # recorded HTMLs of the simulation. Further investigation is needed to
             # determine why this is the case. For now, it is better to use this
             # visualizer for point contact visualizations.
-            for i, (force, torque, centroid) in enumerate(
+            for i, (forces, torques, centroids) in enumerate(
                 zip(
-                    self._outer_hydroelastic_contact_forces[time_idx],
-                    self._outer_hydroelastic_contact_torques[time_idx],
-                    self._outer_hydroelastic_centroids[time_idx],
+                    self._outer_hydroelastic_contact_forces,
+                    self._outer_hydroelastic_contact_torques,
+                    self._outer_hydroelastic_centroids,
                 )
             ):
-                if np.linalg.norm(force) > self._force_magnitude_theshold:
-                    self._add_single_direction_force_arrow(
-                        path=f"contact_forces/outer_sim/force_{i}",
-                        force=force,
-                        torque=torque,
-                        centroid=centroid,
-                        force_rgba=Rgba(0.0, 1.0, 0.0, 1.0),
-                        torque_rgba=Rgba(0.0, 1.0, 1.0, 1.0),  # light blue
-                    )
+                for j, (force, torque, centroid) in enumerate(
+                    zip(forces[time_idx], torques[time_idx], centroids[time_idx])
+                ):
+                    if np.linalg.norm(force) > self._force_magnitude_theshold:
+                        self._add_single_direction_force_arrow(
+                            path=f"contact_forces/outer_sim/manip_{i}/force_{j}",
+                            force=force,
+                            torque=torque,
+                            centroid=centroid,
+                            force_rgba=Rgba(0.0, 1.0, 0.0, 1.0),
+                            torque_rgba=Rgba(0.0, 1.0, 1.0, 1.0),  # light blue
+                        )
 
-            for i, (force, torque, centroid) in enumerate(
+            for i, (forces, torques, centroids) in enumerate(
                 zip(
-                    self._inner_hydroelastic_contact_forces[time_idx],
-                    self._inner_hydroelastic_contact_torques[time_idx],
-                    self._inner_hydroelastic_centroids[time_idx],
+                    self._inner_hydroelastic_contact_forces,
+                    self._inner_hydroelastic_contact_torques,
+                    self._inner_hydroelastic_centroids,
                 )
             ):
-                if np.linalg.norm(force) > self._force_magnitude_theshold:
-                    self._add_single_direction_force_arrow(
-                        path=f"contact_forces/inner_sim/force_{i}",
-                        force=force,
-                        torque=torque,
-                        centroid=centroid,
-                        force_rgba=Rgba(1.0, 0.0, 0.0, 1.0),
-                        torque_rgba=Rgba(1.0, 0.5, 0.0, 1.0),  # orange
-                    )
+                for j, (force, torque, centroid) in enumerate(
+                    zip(forces[time_idx], torques[time_idx], centroids[time_idx])
+                ):
+                    if np.linalg.norm(force) > self._force_magnitude_theshold:
+                        self._add_single_direction_force_arrow(
+                            path=f"contact_forces/inner_sim/manip_{i}/force_{j}",
+                            force=force,
+                            torque=torque,
+                            centroid=centroid,
+                            force_rgba=Rgba(1.0, 0.0, 0.0, 1.0),
+                            torque_rgba=Rgba(1.0, 0.5, 0.0, 1.0),  # orange
+                        )
         else:
-            for i, (force, point) in enumerate(
-                zip(
-                    self._outer_point_contact_forces[time_idx],
-                    self._outer_point_contact_points[time_idx],
-                )
+            for i, (forces, points) in enumerate(
+                zip(self._outer_point_contact_forces, self._outer_point_contact_points)
             ):
-                if np.linalg.norm(force) > self._force_magnitude_theshold:
-                    self._add_equal_opposite_force_arrow(
-                        path=f"contact_forces/outer_sim/force_{i}",
-                        force=force,
-                        contact_point=point,
-                        rgba=Rgba(0.0, 1.0, 0.0, 1.0),
-                    )
+                for j, (force, point) in enumerate(
+                    zip(forces[time_idx], points[time_idx])
+                ):
+                    if np.linalg.norm(force) > self._force_magnitude_theshold:
+                        self._add_equal_opposite_force_arrow(
+                            path=f"contact_forces/outer_sim/manip_{i}/force_{j}",
+                            force=force,
+                            contact_point=point,
+                            rgba=Rgba(0.0, 1.0, 0.0, 1.0),
+                        )
 
-            for i, (force, point) in enumerate(
-                zip(
-                    self._inner_point_contact_forces[time_idx],
-                    self._inner_point_contact_points[time_idx],
-                )
+            for i, (forces, points) in enumerate(
+                zip(self._inner_point_contact_forces, self._inner_point_contact_points)
             ):
-                if np.linalg.norm(force) > self._force_magnitude_theshold:
-                    self._add_equal_opposite_force_arrow(
-                        path=f"contact_forces/inner_sim/force_{i}",
-                        force=force,
-                        contact_point=point,
-                        rgba=Rgba(1.0, 0.0, 0.0, 1.0),
-                    )
+                for j, (force, point) in enumerate(
+                    zip(forces[time_idx], points[time_idx])
+                ):
+                    if np.linalg.norm(force) > self._force_magnitude_theshold:
+                        self._add_equal_opposite_force_arrow(
+                            path=f"contact_forces/inner_sim/manip_{i}/force_{j}",
+                            force=force,
+                            contact_point=point,
+                            rgba=Rgba(1.0, 0.0, 0.0, 1.0),
+                        )
 
     def _update_manipuland_poses(self, time_idx: int) -> None:
         for i, (name, link_name) in enumerate(
