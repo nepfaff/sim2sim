@@ -134,7 +134,7 @@ The following script can be used for ranking representations in a primitive repr
 and velocity errors at the final timestep.
 
 ```bash
-python scripts/evaluate_primitive_representation_collection.py --path representation_collection/ --experiment_description experiments/planar_pushing/box/mustard_raw_tsdf_vs_spheres_equation_error.yaml --eval_contact_model
+python scripts/evaluate_primitive_representation_collection.py --paths '["absolute_path/to/representation_collection/"]' --experiment_description experiments/planar_pushing/box/mustard_raw_tsdf_vs_spheres_equation_error.yaml --eval_contact_model
 ```
 
 where `representation_collection/` is a folder with the following structure:

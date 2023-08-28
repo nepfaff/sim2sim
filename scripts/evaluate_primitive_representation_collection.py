@@ -28,8 +28,8 @@ def make_outer_deterministic(
     experiment_specifications: List[dict],
     experiment_description: dict,
     logging_path: str,
+    num_manipulands: int,
     skip_outer_visualization: bool,
-    num_manipulands: int = 1,
 ) -> dict:
     """
     Ensure that the outer sim is deterministic by re-using the SDFormat file from the
@@ -67,10 +67,11 @@ def make_outer_deterministic(
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--path",
+        "--paths",
         required=True,
-        type=str,
-        help="The path to the primitive representation collection.",
+        type=json.loads,
+        help="The paths to the primitive representation collections. The first "
+        + "manipuland will be read from the first item in the list and so on.",
     )
     parser.add_argument(
         "--experiment_description",
@@ -114,26 +115,28 @@ def main():
         + "similar enough to '--experiment_description' to allow for fair comparison.",
     )
     parser.add_argument(
-        "--additional_collision_geometries_path",
+        "--additional_collision_geometries_paths",
         required=False,
         default=None,
-        type=str,
-        help="The path to a folder containing additional collision geometries to "
+        type=json.loads,
+        help="The paths to folders containing additional collision geometries to "
         + "include in the evaluation. These collision geometries will be added "
         + "similarly to the primitive collision geometries, by modidfying the provided "
-        + "experiment description.",
+        + "experiment description. The first manipuland will be read from the first "
+        + "item in the list and so on.",
     )
     parser.add_argument(
-        "--additional_collision_geometries_mesh_pieces_path",
+        "--additional_collision_geometries_mesh_pieces_paths",
         required=False,
         default=None,
-        type=str,
-        help="The path to a folder containing additional collision geometries to "
+        type=json.loads,
+        help="The paths to folders containing additional collision geometries to "
         + "include in the evaluation. The collision geometries are represented by a "
         + "folder, containing multiple mesh pieces. The individual pieces make up one "
         + "collision geometry. These collision geometries will be added "
         + "similarly to the primitive collision geometries, by modidfying the provided "
-        + "experiment description.",
+        + "experiment description. The first manipuland will be read from the first "
+        + "item in the list and so on.",
     )
     parser.add_argument(
         "--keep_outer_vis",
@@ -152,13 +155,13 @@ def main():
     start_time = time.time()
 
     args = parser.parse_args()
-    representation_collection_path = args.path
+    representation_collection_paths = args.paths
     experiment_description_path = args.experiment_description
     logging_path = args.logging_path
     additional_experiment_descriptions = args.additional_experiment_descriptions
-    additional_collision_geometries_path = args.additional_collision_geometries_path
-    additional_collision_geometries_mesh_pieces_path = (
-        args.additional_collision_geometries_mesh_pieces_path
+    additional_collision_geometries_paths = args.additional_collision_geometries_paths
+    additional_collision_geometries_mesh_pieces_paths = (
+        args.additional_collision_geometries_mesh_pieces_paths
     )
     skip_outer_visualization = not args.keep_outer_vis
     wandb_name = args.wandb_name
@@ -186,10 +189,13 @@ def main():
         print(f"Creating folder {logging_path}")
         os.mkdir(logging_path)
 
-    physical_properties_path = os.path.join(
-        representation_collection_path, "physical_properties.yaml"
-    )
-    pysical_properties = yaml.safe_load(open(physical_properties_path, "r"))
+    physical_properties_paths = [
+        os.path.join(path, "physical_properties.yaml")
+        for path in representation_collection_paths
+    ]
+    pysical_properties = [
+        yaml.safe_load(open(path, "r")) for path in physical_properties_paths
+    ]
 
     # Add additional experiment descriptions
     experiment_specifications: List[dict] = []
@@ -200,38 +206,46 @@ def main():
             )
             if len(experiment_specifications) > 0:
                 additional_description = make_outer_deterministic(
-                    experiment_specifications,
-                    additional_description,
-                    logging_path,
-                    skip_outer_visualization,
+                    experiment_specifications=experiment_specifications,
+                    experiment_description=additional_description,
+                    logging_path=logging_path,
+                    num_manipulands=len(representation_collection_paths),
+                    skip_outer_visualization=skip_outer_visualization,
                 )
             experiment_specifications.append(additional_description)
 
     def adjust_experiment_description(experiment_description: dict) -> List[dict]:
         """Make representation collection specific edits to the experiment description."""
 
+        masses = []
+        inertias = []
+        centers_of_mass = []
+        for properties in pysical_properties:
+            masses.append(properties["mass"])
+            inertias.append(properties["inertia"])
+            centers_of_mass.append(properties["com"])
+
         # Outer physical properties
-        # TODO: Extend `pysical_properties` dict to N manipulands
         experiment_description["outer_physical_property_estimator"]["args"][
             "masses"
-        ] = [pysical_properties["mass"]]
+        ] = masses
         experiment_description["outer_physical_property_estimator"]["args"][
             "inertias"
-        ] = [pysical_properties["inertia"]]
+        ] = inertias
         experiment_description["outer_physical_property_estimator"]["args"][
             "centers_of_mass"
-        ] = [pysical_properties["com"]]
+        ] = centers_of_mass
 
         # Inner physical properties
         experiment_description["inner_physical_property_estimator"]["args"][
             "masses"
-        ] = [pysical_properties["mass"]]
+        ] = masses
         experiment_description["inner_physical_property_estimator"]["args"][
             "inertias"
-        ] = [pysical_properties["inertia"]]
+        ] = inertias
         experiment_description["inner_physical_property_estimator"]["args"][
             "centers_of_mass"
-        ] = [pysical_properties["com"]]
+        ] = centers_of_mass
 
         adjusted_descriptions = []
         if args.eval_contact_model:
@@ -252,8 +266,8 @@ def main():
         return adjusted_descriptions
 
     # Add additional collision geometries
-    if additional_collision_geometries_path is not None:
-        with os.scandir(additional_collision_geometries_path) as paths:
+    if additional_collision_geometries_paths is not None:
+        with os.scandir(additional_collision_geometries_paths[0]) as paths:
             for path in paths:
                 if path.is_file():
                     experiment_description = copy.deepcopy(base_experiment_description)
@@ -263,16 +277,33 @@ def main():
 
                     if len(experiment_specifications) > 0:
                         experiment_description = make_outer_deterministic(
-                            experiment_specifications,
-                            experiment_description,
-                            logging_path,
-                            skip_outer_visualization,
+                            experiment_specifications=experiment_specifications,
+                            experiment_description=experiment_description,
+                            logging_path=logging_path,
+                            num_manipulands=len(representation_collection_paths),
+                            skip_outer_visualization=skip_outer_visualization,
                         )
 
-                    # Add collision geometry
+                    # Add collision geometries
+                    mesh_paths = [path.path]
+                    for (
+                        additional_collision_geometries_path
+                    ) in additional_collision_geometries_paths[1:]:
+                        mesh_path = os.path.join(
+                            additional_collision_geometries_path, path.name
+                        )
+                        assert os.path.exists(mesh_path), (
+                            f"{path.name} does not exist in "
+                            + f"{additional_collision_geometries_path}! Note that all "
+                            + "additional collision geometries paths must contain "
+                            + "directories with the same names that correspond to "
+                            + "equivalent representations for different manipulands."
+                        )
+                        mesh_paths.append(mesh_path)
+
                     experiment_description["inner_inverse_graphics"]["args"][
                         "mesh_paths"
-                    ] = [path.path]
+                    ] = mesh_paths
                     experiment_description["inner_mesh_processor"][
                         "class"
                     ] = "IdentityMeshProcessor"
@@ -285,8 +316,8 @@ def main():
                     experiment_specifications.extend(adjusted_experiment_specifications)
 
     # Add additional mesh pieces based collision geometries
-    if additional_collision_geometries_mesh_pieces_path is not None:
-        with os.scandir(additional_collision_geometries_mesh_pieces_path) as paths:
+    if additional_collision_geometries_mesh_pieces_paths is not None:
+        with os.scandir(additional_collision_geometries_mesh_pieces_paths[0]) as paths:
             for path in paths:
                 if path.is_dir():
                     experiment_description = copy.deepcopy(base_experiment_description)
@@ -296,20 +327,37 @@ def main():
 
                     if len(experiment_specifications) > 0:
                         experiment_description = make_outer_deterministic(
-                            experiment_specifications,
-                            experiment_description,
-                            logging_path,
-                            skip_outer_visualization,
+                            experiment_specifications=experiment_specifications,
+                            experiment_description=experiment_description,
+                            logging_path=logging_path,
+                            num_manipulands=len(representation_collection_paths),
+                            skip_outer_visualization=skip_outer_visualization,
                         )
 
-                    # Add collision geometry
+                    # Add collision geometries
+                    mesh_pieces_paths = [path.path]
+                    for (
+                        additional_collision_geometries_mesh_pieces_path
+                    ) in additional_collision_geometries_mesh_pieces_paths[1:]:
+                        mesh_pieces_path = os.path.join(
+                            additional_collision_geometries_mesh_pieces_path, path.name
+                        )
+                        assert os.path.exists(mesh_pieces_path), (
+                            f"{path.name} does not exist in "
+                            + f"{additional_collision_geometries_mesh_pieces_path}! "
+                            + "Note that all additional collision geometries paths must "
+                            + "contain directories with the same names that correspond "
+                            + "to equivalent representations for different manipulands."
+                        )
+                        mesh_pieces_paths.append(mesh_pieces_path)
+
                     experiment_description["inner_mesh_processor"][
                         "class"
                     ] = "IdentityMeshPiecesMeshProcessor"
                     experiment_description["inner_mesh_processor"]["args"] = {}
                     experiment_description["inner_mesh_processor"]["args"][
                         "mesh_pieces_paths"
-                    ] = [path.path]
+                    ] = mesh_pieces_paths
 
                     # Make edits based on representation collection
                     adjusted_experiment_specifications = adjust_experiment_description(
@@ -317,7 +365,7 @@ def main():
                     )
                     experiment_specifications.extend(adjusted_experiment_specifications)
 
-    with os.scandir(representation_collection_path) as paths:
+    with os.scandir(representation_collection_paths[0]) as paths:
         for path in paths:
             if path.is_dir():
                 experiment_description = copy.deepcopy(base_experiment_description)
@@ -331,16 +379,31 @@ def main():
 
                 if len(experiment_specifications) > 0:
                     experiment_description = make_outer_deterministic(
-                        experiment_specifications,
-                        experiment_description,
-                        logging_path,
-                        skip_outer_visualization,
+                        experiment_specifications=experiment_specifications,
+                        experiment_description=experiment_description,
+                        logging_path=logging_path,
+                        num_manipulands=len(representation_collection_paths),
+                        skip_outer_visualization=skip_outer_visualization,
                     )
 
-                # Add primitive info
+                # Add primitive infos
+                primitive_info_paths = [os.path.join(path.path, "primitive_info.pkl")]
+                for representation_collection_path in representation_collection_paths[
+                    1:
+                ]:
+                    primitive_info_path = os.path.join(
+                        representation_collection_path, path.name, "primitive_info.pkl"
+                    )
+                    assert os.path.exists(primitive_info_path), (
+                        f"{path.name} does not exist in {representation_collection_path}!"
+                        + " Note that all representations collection paths must contain "
+                        + "directories with the same names that correspond to "
+                        + "equivalent representations for different manipulands."
+                    )
+                    primitive_info_paths.append(primitive_info_path)
                 experiment_description["inner_mesh_processor"]["args"][
                     "primitive_info_paths"
-                ] = [os.path.join(path.path, "primitive_info.pkl")]
+                ] = primitive_info_paths
 
                 # Make edits based on representation collection
                 adjusted_experiment_specifications = adjust_experiment_description(
