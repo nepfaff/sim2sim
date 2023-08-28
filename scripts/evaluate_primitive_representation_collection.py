@@ -253,7 +253,21 @@ def main():
             hydroelastic_experiment_description["experiment_id"] += "_hydroelastic"
             hydroelastic_experiment_description["inner_env"][
                 "contact_model"
-            ] = "hydroelastic_with_fallback"
+            ] = "hydroelastic"  # "hydroelastic_with_fallback"
+            # Ensure that inner compliance matches outer if using Hydroelastic
+            outer_is_compliant = experiment_description[
+                "outer_physical_property_estimator"
+            ]["args"]["is_compliant"]
+            if True in outer_is_compliant:
+                hydroelastic_experiment_description[
+                    "inner_physical_property_estimator"
+                ]["args"]["is_compliant"] = outer_is_compliant
+                outer_hydroelastic_moduli = experiment_description[
+                    "outer_physical_property_estimator"
+                ]["args"]["hydroelastic_moduli"]
+                hydroelastic_experiment_description[
+                    "inner_physical_property_estimator"
+                ]["args"]["hydroelastic_moduli"] = outer_hydroelastic_moduli
             adjusted_descriptions.append(hydroelastic_experiment_description)
 
             point_experiment_description = copy.deepcopy(experiment_description)
@@ -301,6 +315,8 @@ def main():
                         )
                         mesh_paths.append(mesh_path)
 
+                    # TODO: Have option to convert these into VTK files for compliant
+                    # simulations
                     experiment_description["inner_inverse_graphics"]["args"][
                         "mesh_paths"
                     ] = mesh_paths
@@ -358,6 +374,14 @@ def main():
                     experiment_description["inner_mesh_processor"]["args"][
                         "mesh_pieces_paths"
                     ] = mesh_pieces_paths
+                    experiment_description["inner_mesh_processor"]["args"][
+                        "is_compliant"
+                    ] = (
+                        True
+                        in experiment_description["outer_physical_property_estimator"][
+                            "args"
+                        ]["is_compliant"]
+                    )
 
                     # Make edits based on representation collection
                     adjusted_experiment_specifications = adjust_experiment_description(
