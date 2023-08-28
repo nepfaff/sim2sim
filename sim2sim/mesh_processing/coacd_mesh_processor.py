@@ -139,12 +139,12 @@ class CoACDMeshProcessor(MeshProcessorBase):
                         vtk_paths=vtk_paths,
                     )
                 )
-
-            mesh_processor_results.append(
-                MeshProcessorResult(
-                    result_type=MeshProcessorResult.ResultType.TRIANGLE_MESH,
-                    triangle_meshes=output_meshes,
+            else:
+                mesh_processor_results.append(
+                    MeshProcessorResult(
+                        result_type=MeshProcessorResult.ResultType.TRIANGLE_MESH,
+                        triangle_meshes=output_meshes,
+                    )
                 )
-            )
 
         return mesh_processor_results
