@@ -136,7 +136,8 @@ def main():
         + "collision geometry. These collision geometries will be added "
         + "similarly to the primitive collision geometries, by modidfying the provided "
         + "experiment description. The first manipuland will be read from the first "
-        + "item in the list and so on.",
+        + "item in the list and so on. Both OBJ and VTK files are accepted but can't "
+        + "be mixed.",
     )
     parser.add_argument(
         "--keep_outer_vis",
@@ -337,9 +338,7 @@ def main():
             for path in paths:
                 if path.is_dir():
                     experiment_description = copy.deepcopy(base_experiment_description)
-                    experiment_description["experiment_id"] = os.path.splitext(
-                        path.name
-                    )[0]
+                    experiment_description["experiment_id"] = path.name
 
                     if len(experiment_specifications) > 0:
                         experiment_description = make_outer_deterministic(
@@ -367,21 +366,29 @@ def main():
                         )
                         mesh_pieces_paths.append(mesh_pieces_path)
 
-                    experiment_description["inner_mesh_processor"][
-                        "class"
-                    ] = "IdentityMeshPiecesMeshProcessor"
                     experiment_description["inner_mesh_processor"]["args"] = {}
-                    experiment_description["inner_mesh_processor"]["args"][
-                        "mesh_pieces_paths"
-                    ] = mesh_pieces_paths
-                    experiment_description["inner_mesh_processor"]["args"][
-                        "is_compliant"
-                    ] = (
-                        True
-                        in experiment_description["outer_physical_property_estimator"][
-                            "args"
-                        ]["is_compliant"]
-                    )
+                    if os.path.splitext(os.listdir(path.path)[0])[-1].lower() == ".vtk":
+                        experiment_description["inner_mesh_processor"][
+                            "class"
+                        ] = "IdentityVTKPiecesMeshProcessor"
+                        experiment_description["inner_mesh_processor"]["args"][
+                            "vtk_pieces_paths"
+                        ] = mesh_pieces_paths
+                    else:
+                        experiment_description["inner_mesh_processor"][
+                            "class"
+                        ] = "IdentityMeshPiecesMeshProcessor"
+                        experiment_description["inner_mesh_processor"]["args"][
+                            "mesh_pieces_paths"
+                        ] = mesh_pieces_paths
+                        experiment_description["inner_mesh_processor"]["args"][
+                            "is_compliant"
+                        ] = (
+                            True
+                            in experiment_description[
+                                "outer_physical_property_estimator"
+                            ]["args"]["is_compliant"]
+                        )
 
                     # Make edits based on representation collection
                     adjusted_experiment_specifications = adjust_experiment_description(

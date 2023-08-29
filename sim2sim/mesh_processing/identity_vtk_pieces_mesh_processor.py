@@ -16,7 +16,7 @@ class IdentityVTKPiecesMeshProcessor(MeshProcessorBase):
 
     def __init__(self, logger: DynamicLogger, vtk_pieces_paths: List[str]):
         """
-        :param mesh_pieces_paths: The paths to the directories containing the VTK files.
+        :param vtk_pieces_paths: The paths to the directories containing the VTK files.
         """
         super().__init__(logger)
         self._vtk_pieces_paths = vtk_pieces_paths
