@@ -146,6 +146,11 @@ def main():
         + "the first outer simulation is visualized/ recorded.",
     )
     parser.add_argument(
+        "--include_gt",
+        action="store_true",
+        help="Whether to include the outer as inner for a GT data point.",
+    )
+    parser.add_argument(
         "--wandb_name",
         required=False,
         default=None,
@@ -165,6 +170,7 @@ def main():
         args.additional_collision_geometries_mesh_pieces_paths
     )
     skip_outer_visualization = not args.keep_outer_vis
+    include_gt = args.include_gt
     wandb_name = args.wandb_name
 
     base_experiment_description = yaml.safe_load(open(experiment_description_path, "r"))
@@ -438,6 +444,60 @@ def main():
                     experiment_description
                 )
                 experiment_specifications.extend(adjusted_experiment_specifications)
+
+    if include_gt:
+        gt_experiment_specification = copy.deepcopy(base_experiment_description)
+        gt_experiment_specification["experiment_id"] = "gt"
+
+        # Make outer and inner deterministic and identical
+        first_experiment_name = experiment_specifications[0]["experiment_id"]
+        gt_experiment_specification["outer_mesh_processor"][
+            "class"
+        ] = "IdentitySDFMeshProcessor"
+        gt_experiment_specification["inner_mesh_processor"][
+            "class"
+        ] = "IdentitySDFMeshProcessor"
+
+        sdf_paths = [
+            os.path.join(
+                logging_path,
+                first_experiment_name,
+                "meshes",
+                f"outer_processed_mesh_{i}.sdf",
+            )
+            for i in range(len(representation_collection_paths))
+        ]
+        gt_experiment_specification["outer_mesh_processor"]["args"] = {
+            "sdf_paths": sdf_paths
+        }
+        gt_experiment_specification["inner_mesh_processor"]["args"] = {
+            "sdf_paths": sdf_paths
+        }
+
+        gt_experiment_specification["inner_env"] = base_experiment_description[
+            "outer_env"
+        ]
+        gt_experiment_specification[
+            "inner_physical_property_estimator"
+        ] = base_experiment_description["outer_physical_property_estimator"]
+        gt_experiment_specification[
+            "inner_image_generator"
+        ] = base_experiment_description["outer_image_generator"]
+        gt_experiment_specification[
+            "inner_inverse_graphics"
+        ] = base_experiment_description["outer_inverse_graphics"]
+
+        # No need to visualize outer sim as will be a copy of the first visualization
+        if gt_experiment_specification["simulator"]["args"] is None:
+            gt_experiment_specification["simulator"]["args"] = {
+                "skip_outer_visualization": skip_outer_visualization
+            }
+        else:
+            gt_experiment_specification["simulator"]["args"][
+                "skip_outer_visualization"
+            ] = skip_outer_visualization
+
+        experiment_specifications.append(gt_experiment_specification)
 
     # Shuffle experiment order for fairer runtime estimates
     # Need to keep the first first due to deterministic outer
