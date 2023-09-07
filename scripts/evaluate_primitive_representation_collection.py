@@ -381,14 +381,11 @@ def main():
                         experiment_description["inner_mesh_processor"]["args"][
                             "mesh_pieces_paths"
                         ] = mesh_pieces_paths
+                        # Drake automatically creates the compliant Hydroelastic
+                        # representation if the mesh is convex
                         experiment_description["inner_mesh_processor"]["args"][
                             "is_compliant"
-                        ] = (
-                            True
-                            in experiment_description[
-                                "outer_physical_property_estimator"
-                            ]["args"]["is_compliant"]
-                        )
+                        ] = False
 
                     # Make edits based on representation collection
                     adjusted_experiment_specifications = adjust_experiment_description(
