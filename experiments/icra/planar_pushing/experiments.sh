@@ -15,6 +15,7 @@ python scripts/evaluate_primitive_representation_collection.py \
     ]' \
 --num_trajectory_iou_samples 0 \
 --include_gt \
+--wandb_mode "offline" \
 --wandb_name ${PREFIX}_planar_pushing_mustard_${RUN_NUMBER}
 
 # Tomato
@@ -29,6 +30,7 @@ python scripts/evaluate_primitive_representation_collection.py \
     ]' \
 --num_trajectory_iou_samples 0 \
 --include_gt \
+--wandb_mode "offline" \
 --wandb_name ${PREFIX}_planar_pushing_tomato_${RUN_NUMBER}
 
 # Anvil
@@ -43,6 +45,7 @@ python scripts/evaluate_primitive_representation_collection.py \
     ]' \
 --num_trajectory_iou_samples 0 \
 --include_gt \
+--wandb_mode "offline" \
 --wandb_name ${PREFIX}_planar_pushing_anvil_${RUN_NUMBER}
 
 # Dumbell
@@ -57,6 +60,7 @@ python scripts/evaluate_primitive_representation_collection.py \
     ]' \
 --num_trajectory_iou_samples 0 \
 --include_gt \
+--wandb_mode "offline" \
 --wandb_name ${PREFIX}_planar_pushing_dumbell_${RUN_NUMBER}
 
 # Hammer
@@ -71,6 +75,7 @@ python scripts/evaluate_primitive_representation_collection.py \
     ]' \
 --num_trajectory_iou_samples 0 \
 --include_gt \
+--wandb_mode "offline" \
 --wandb_name ${PREFIX}_planar_pushing_hammer_${RUN_NUMBER}
 
 # Spam
@@ -85,4 +90,5 @@ python scripts/evaluate_primitive_representation_collection.py \
     ]' \
 --num_trajectory_iou_samples 0 \
 --include_gt \
+--wandb_mode "offline" \
 --wandb_name ${PREFIX}_planar_pushing_spam_${RUN_NUMBER}
