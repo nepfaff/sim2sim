@@ -17,6 +17,7 @@ python scripts/evaluate_primitive_representation_collection.py \
     ]' \
 --num_trajectory_iou_samples 0 \
 --include_gt \
+--wandb_mode "offline" \
 --wandb_name ${PREFIX}_interaction_pushing_anvil_onto_dumbell_${RUN_NUMBER}
 
 # Mustard onto tomato
@@ -33,6 +34,7 @@ python scripts/evaluate_primitive_representation_collection.py \
     ]' \
 --num_trajectory_iou_samples 0 \
 --include_gt \
+--wandb_mode "offline" \
 --wandb_name ${PREFIX}_interaction_pushing_mustard_onto_tomato_${RUN_NUMBER}
 
 # Spam onto anvil
@@ -49,6 +51,7 @@ python scripts/evaluate_primitive_representation_collection.py \
     ]' \
 --num_trajectory_iou_samples 0 \
 --include_gt \
+--wandb_mode "offline" \
 --wandb_name ${PREFIX}_interaction_pushing_spam_onto_anvil_${RUN_NUMBER}
 
 # Spam onto mustard
@@ -65,6 +68,7 @@ python scripts/evaluate_primitive_representation_collection.py \
     ]' \
 --num_trajectory_iou_samples 0 \
 --include_gt \
+--wandb_mode "offline" \
 --wandb_name ${PREFIX}_interaction_pushing_spam_onto_mustard_${RUN_NUMBER}
 
 # Tomato onto hammer
@@ -81,4 +85,5 @@ python scripts/evaluate_primitive_representation_collection.py \
     ]' \
 --num_trajectory_iou_samples 0 \
 --include_gt \
+--wandb_mode "offline" \
 --wandb_name ${PREFIX}_interaction_pushing_tomato_onto_hammer_${RUN_NUMBER}
