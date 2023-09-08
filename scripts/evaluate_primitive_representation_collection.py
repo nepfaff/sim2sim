@@ -17,7 +17,6 @@ import time
 import copy
 import json
 import random
-import re
 
 import wandb
 
@@ -157,6 +156,14 @@ def main():
         type=str,
         help="An optional custom wandb name",
     )
+    parser.add_argument(
+        "--wandb_mode",
+        required=False,
+        default="online",
+        choices=["online", "offline", "disabled"],
+        type=str,
+        help="The wandb mode.",
+    )
 
     start_time = time.time()
 
@@ -172,6 +179,7 @@ def main():
     skip_outer_visualization = not args.keep_outer_vis
     include_gt = args.include_gt
     wandb_name = args.wandb_name
+    wandb_mode = args.wandb_mode
 
     base_experiment_description = yaml.safe_load(open(experiment_description_path, "r"))
 
@@ -181,6 +189,7 @@ def main():
         name=f"{base_experiment_description['experiment_id']}_{current_time}"
         if wandb_name is None
         else wandb_name,
+        mode=wandb_mode,
         config={
             "args": vars(args),
             "base_experiment_description": base_experiment_description,
