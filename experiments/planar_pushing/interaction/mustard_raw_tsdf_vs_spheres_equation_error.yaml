@@ -107,7 +107,7 @@ outer_physical_property_estimator:
     centers_of_mass: [[-0.0032, 0.0062, -0.0124], [0.0014, 0.0016, -0.0124]]
     is_compliant: [True, True]
     mesh_resolution_hints: [0.01, 0.01]
-    hydroelastic_moduli: [1.0e5, 1.0e5]
+    hydroelastic_moduli: [1.0e8, 1.0e8]
 
 inner_physical_property_estimator:
   class: "GTPhysicalPropertyEstimator"
