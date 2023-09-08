@@ -9,4 +9,6 @@ source /etc/profile
 module load anaconda/2022b
 module load gurobi/gurobi-1000
 
+. sim2sim_env/bin/activate
+
 bash scripts/experiments.sh
