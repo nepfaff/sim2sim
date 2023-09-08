@@ -1,0 +1,110 @@
+# Unique identifier for this experiment for logging
+experiment_id: "icra_planar_pushing_dumbell_raw_tsdf_vs_spheres_equation_error"
+
+outer_env:
+  contact_model: "hydroelastic_with_fallback"
+  solver: "sap"
+
+inner_env:
+  contact_model: "point"
+  solver: "sap"
+
+script:
+  name: "planar_pushing"
+  args:
+    sim_duration: 1.5
+    timestep: 0.001
+    logging_frequency_hz: 1000
+    manipuland_directives: [
+      "../../models/manipulands/dumbell_manipuland_directive.yaml"
+    ]
+    manipuland_base_link_names: ["dumbell_base_link"]
+    manipuland_default_poses: [[1.57, 1.57, 0, 0.0, 0.0, 0.04]]
+    hydroelastic_manipuland: True
+    pusher_geometry_starting_position: [0.15, 0.0, 0.015]
+    pusher_geometry_pid_gains:
+      kp: 100.0
+      ki: 1.0
+      kd: 20.0
+    pusher_geometry_type: "box"
+    pusher_geometry_dimensions: [0.02, 0.02, 0.02]
+    is_pipeline_comparison: True
+
+# Component specifications
+# 'args' are constructor arguments that are not part of the base class constructors
+logger:
+  class: "PlanarPushingLogger"
+  args:
+    label_to_mask: -1 # NOTE: Does not correspond to anything
+    manipuland_base_link_names: ["dumbell_base_link"]
+    kProximity: True
+
+outer_image_generator:
+  class: "NoneImageGenerator"
+  args:
+
+inner_image_generator:
+  class: "NoneImageGenerator"
+  args:
+
+outer_inverse_graphics:
+  class: "IdentityInverseGraphics"
+  args:
+    mesh_paths: [./data/dumbell/dumbell.obj]
+    mesh_poses: [[1.57, 1.57, 0, 0.0, 0.0, 0.04]]
+
+inner_inverse_graphics:
+  class: "IdentityInverseGraphics"
+  args:
+    mesh_paths: [./data/dumbell/dumbell.obj]
+    mesh_poses: [[1.57, 1.57, 0, 0.0, 0.0, 0.04]]
+
+outer_mesh_processor:
+  class: "IdentityMeshProcessor"
+  args:
+
+inner_mesh_processor:
+  class: "IdentityPrimitiveMeshProcessor"
+  args:
+    # NOTE: Incorrect object
+    primitive_info_paths: [
+      ./data/ycb_mustard_bottle/mustard_ring_tsdf_dualsdf_spheres.pkl
+    ]
+
+outer_physical_property_estimator:
+  class: "GTPhysicalPropertyEstimator"
+  args:
+    masses: [1.320]
+    inertias: [[
+      [4.0525e-03, -1.3746e-05, -3.6801e-05],
+      [-1.3746e-05,  4.0655e-03, -1.2361e-04],
+      [-3.6801e-05, -1.2361e-04,  5.0431e-04]
+    ]]
+    centers_of_mass: [[0.0013, -0.0012, -0.0030]]
+    is_compliant: [False]
+    mesh_resolution_hints: [0.01]
+
+inner_physical_property_estimator:
+  class: "GTPhysicalPropertyEstimator"
+  args:
+    masses: [1.320]
+    inertias: [[
+      [4.0525e-03, -1.3746e-05, -3.6801e-05],
+      [-1.3746e-05,  4.0655e-03, -1.2361e-04],
+      [-3.6801e-05, -1.2361e-04,  5.0431e-04]
+    ]]
+    centers_of_mass: [[0.0013, -0.0012, -0.0030]]
+    is_compliant: [False]
+    mesh_resolution_hints: [0.01]
+
+simulator:
+  class: "EquationErrorPlanarPushingSimulator"
+  args:
+    settling_time: 0.2
+    manipuland_names: [dumbell]
+    target_manipuland_name: dumbell
+    controll_period: 0.01
+    closed_loop_control: false
+    num_meters_to_move_in_manpuland_direction: 0.6
+    reset_seconds: 0.1
+ 
