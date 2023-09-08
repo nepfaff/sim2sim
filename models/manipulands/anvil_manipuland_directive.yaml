@@ -1,0 +1,6 @@
+directives:
+
+# Manipuland
+- add_model:
+    name: anvil
+    file: package://sim2sim/models/manipulands/anvil.sdf

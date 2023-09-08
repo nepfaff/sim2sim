@@ -1,0 +1,100 @@
+# Unique identifier for this experiment for logging
+experiment_id: "icra_table_pid_anvil_raw_tsdf_vs_spheres_equation_error"
+
+outer_env:
+  contact_model: "hydroelastic_with_fallback"
+  solver: "sap"
+
+inner_env:
+  contact_model: "point"
+  solver: "sap"
+
+script:
+  name: "table_pid"
+  args:
+    sim_duration: 2.5
+    no_command_time: 0.35
+    timestep: 0.001
+    final_table_angle: 0.7854
+    logging_frequency_hz: 1000
+    manipuland_directives: [
+      "../../models/manipulands/anvil_manipuland_directive.yaml"
+    ]
+    manipuland_base_link_names: ["anvil_base_link"]
+    manipuland_default_poses: [[1.57, 1.57, 0, 0.0, 0.0, 0.58]]
+    hydroelastic_manipuland: true # No effect if 'contact_model' is 'point'
+    is_pipeline_comparison: True
+
+# Component specifications
+# 'args' are constructor arguments that are not part of the base class constructors
+logger:
+  class: "DynamicLogger"
+  args:
+    label_to_mask: -1 # NOTE: Does not correspond to anything
+    manipuland_base_link_names: ["anvil_base_link"]
+    kProximity: True
+
+outer_image_generator:
+  class: "NoneImageGenerator"
+  args:
+
+inner_image_generator:
+  class: "NoneImageGenerator"
+  args:
+
+outer_inverse_graphics:
+  class: "IdentityInverseGraphics"
+  args:
+    mesh_paths: [./data/anvil/anvil.obj]
+    mesh_poses: [[1.57, 1.57, 0, 0.0, 0.0, 0.58]]
+
+inner_inverse_graphics:
+  class: "IdentityInverseGraphics"
+  args:
+    mesh_paths: [./data/anvil/anvil.obj]
+    mesh_poses: [[1.57, 1.57, 0, 0.0, 0.0, 0.58]]
+
+outer_mesh_processor:
+  class: "IdentityMeshProcessor"
+  args:
+
+inner_mesh_processor:
+  class: "IdentityPrimitiveMeshProcessor"
+  args:
+    # NOTE: Incorrect object
+    primitive_info_paths: [
+      ./data/ycb_mustard_bottle/mustard_ring_tsdf_dualsdf_spheres.pkl
+    ]
+
+outer_physical_property_estimator:
+  class: "GTPhysicalPropertyEstimator"
+  args:
+    masses: [1.197]
+    inertias: [[
+      [2.6947e-03,  5.4918e-05, -7.4736e-05],
+      [5.4918e-05,  2.5265e-03, -1.5499e-05],
+      [-7.4736e-05, -1.5499e-05,  8.0791e-04]
+    ]]
+    centers_of_mass: [[-0.0031,  0.0028, -0.0125]]
+    is_compliant: [False]
+    mesh_resolution_hints: [0.01]
+
+inner_physical_property_estimator:
+  class: "GTPhysicalPropertyEstimator"
+  args:
+    masses: [1.197]
+    inertias: [[
+      [2.6947e-03,  5.4918e-05, -7.4736e-05],
+      [5.4918e-05,  2.5265e-03, -1.5499e-05],
+      [-7.4736e-05, -1.5499e-05,  8.0791e-04]
+    ]]
+    centers_of_mass: [[-0.0031,  0.0028, -0.0125]]
+    is_compliant: [False]
+    mesh_resolution_hints: [0.01]
+
+simulator:
+  class: "EquationErrorBasicSimulator"
+  args:
+    manipuland_names: ["anvil"]
+    reset_seconds: 0.1
+ 

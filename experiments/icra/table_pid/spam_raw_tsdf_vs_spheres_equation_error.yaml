@@ -1,0 +1,100 @@
+# Unique identifier for this experiment for logging
+experiment_id: "icra_table_pid_spam_raw_tsdf_vs_spheres_equation_error"
+
+outer_env:
+  contact_model: "hydroelastic_with_fallback"
+  solver: "sap"
+
+inner_env:
+  contact_model: "point"
+  solver: "sap"
+
+script:
+  name: "table_pid"
+  args:
+    sim_duration: 2.5
+    no_command_time: 0.35
+    timestep: 0.001
+    final_table_angle: 0.7854
+    logging_frequency_hz: 1000
+    manipuland_directives: [
+      "../../models/manipulands/spam_manipuland_directive.yaml"
+    ]
+    manipuland_base_link_names: ["spam_base_link"]
+    manipuland_default_poses: [[1.57, 3.14, 0, 0.0, 0.0, 0.59]]
+    hydroelastic_manipuland: true # No effect if 'contact_model' is 'point'
+    is_pipeline_comparison: True
+
+# Component specifications
+# 'args' are constructor arguments that are not part of the base class constructors
+logger:
+  class: "DynamicLogger"
+  args:
+    label_to_mask: -1 # NOTE: Does not correspond to anything
+    manipuland_base_link_names: ["spam_base_link"]
+    kProximity: True
+
+outer_image_generator:
+  class: "NoneImageGenerator"
+  args:
+
+inner_image_generator:
+  class: "NoneImageGenerator"
+  args:
+
+outer_inverse_graphics:
+  class: "IdentityInverseGraphics"
+  args:
+    mesh_paths: [./data/spam/spam.obj]
+    mesh_poses: [[1.57, 3.14, 0, 0.0, 0.0, 0.59]]
+
+inner_inverse_graphics:
+  class: "IdentityInverseGraphics"
+  args:
+    mesh_paths: [./data/spam/spam.obj]
+    mesh_poses: [[1.57, 3.14, 0, 0.0, 0.0, 0.59]]
+
+outer_mesh_processor:
+  class: "IdentityMeshProcessor"
+  args:
+
+inner_mesh_processor:
+  class: "IdentityPrimitiveMeshProcessor"
+  args:
+    # NOTE: Incorrect object
+    primitive_info_paths: [
+      ./data/ycb_mustard_bottle/mustard_ring_tsdf_dualsdf_spheres.pkl
+    ]
+
+outer_physical_property_estimator:
+  class: "GTPhysicalPropertyEstimator"
+  args:
+    masses: [0.367]
+    inertias: [[
+      [4.7810e-04, 3.0333e-06, 3.9869e-06],
+      [3.0333e-06, 2.9970e-04, 4.6130e-06],
+      [3.9869e-06, 4.6130e-06, 3.3803e-04]
+    ]]
+    centers_of_mass: [[0.0013,  0.0041, -0.0030]]
+    is_compliant: [False]
+    mesh_resolution_hints: [0.01]
+
+inner_physical_property_estimator:
+  class: "GTPhysicalPropertyEstimator"
+  args:
+    masses: [0.367]
+    inertias: [[
+      [4.7810e-04, 3.0333e-06, 3.9869e-06],
+      [3.0333e-06, 2.9970e-04, 4.6130e-06],
+      [3.9869e-06, 4.6130e-06, 3.3803e-04]
+    ]]
+    centers_of_mass: [[0.0013,  0.0041, -0.0030]]
+    is_compliant: [False]
+    mesh_resolution_hints: [0.01]
+
+simulator:
+  class: "EquationErrorBasicSimulator"
+  args:
+    manipuland_names: ["spam"]
+    reset_seconds: 0.1
+ 
