@@ -17,4 +17,4 @@ python ./scripts/run_experiment.py \
 --experiment_description experiments/planar_pushing/box/mustard_raw_tsdf_vs_spheres_equation_error.yaml
 
 # Actual experiments
-bash ./scripts/experiments.sh 9
+bash ./scripts/experiments.sh 0
