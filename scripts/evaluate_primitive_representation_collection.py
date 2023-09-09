@@ -198,7 +198,7 @@ def main():
 
     logging_path_is_tmp = False
     if not logging_path:
-        logging_path = "logs/tmp_evaluate_primitive_representation_collection_folder"
+        logging_path = f"logs/tmp_evaluate_primitive_representation_collection_folder_{time.time()}"
         logging_path_is_tmp = True
 
     if not os.path.exists(logging_path):
