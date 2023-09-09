@@ -16,7 +16,7 @@ python scripts/evaluate_primitive_representation_collection.py \
 --num_trajectory_iou_samples 0 \
 --include_gt \
 --wandb_mode "offline" \
---logging_path "/home/gridsan/npfaff/sim2sim/logs/table_pid_mustard_${RUN_NUMBER}" \
+--logging_path "./logs/table_pid_mustard_${RUN_NUMBER}" \
 --wandb_name ${PREFIX}_table_pid_mustard_${RUN_NUMBER}
 
 # Tomato
@@ -32,7 +32,7 @@ python scripts/evaluate_primitive_representation_collection.py \
 --num_trajectory_iou_samples 0 \
 --include_gt \
 --wandb_mode "offline" \
---logging_path "/home/gridsan/npfaff/sim2sim/logs/table_pid_tomato_${RUN_NUMBER}" \
+--logging_path "./logs/table_pid_tomato_${RUN_NUMBER}" \
 --wandb_name ${PREFIX}_table_pid_tomato_${RUN_NUMBER}
 
 # Anvil
@@ -48,7 +48,7 @@ python scripts/evaluate_primitive_representation_collection.py \
 --num_trajectory_iou_samples 0 \
 --include_gt \
 --wandb_mode "offline" \
---logging_path "/home/gridsan/npfaff/sim2sim/logs/table_pid_anvil_${RUN_NUMBER}" \
+--logging_path "./logs/table_pid_anvil_${RUN_NUMBER}" \
 --wandb_name ${PREFIX}_table_pid_anvil_${RUN_NUMBER}
 
 # Dumbell
@@ -64,7 +64,7 @@ python scripts/evaluate_primitive_representation_collection.py \
 --num_trajectory_iou_samples 0 \
 --include_gt \
 --wandb_mode "offline" \
---logging_path "/home/gridsan/npfaff/sim2sim/logs/table_pid_dumbell_${RUN_NUMBER}" \
+--logging_path "./logs/table_pid_dumbell_${RUN_NUMBER}" \
 --wandb_name ${PREFIX}_table_pid_dumbell_${RUN_NUMBER}
 
 # Hammer
@@ -80,7 +80,7 @@ python scripts/evaluate_primitive_representation_collection.py \
 --num_trajectory_iou_samples 0 \
 --include_gt \
 --wandb_mode "offline" \
---logging_path "/home/gridsan/npfaff/sim2sim/logs/table_pid_hammer_${RUN_NUMBER}" \
+--logging_path "./logs/table_pid_hammer_${RUN_NUMBER}" \
 --wandb_name ${PREFIX}_table_pid_hammer_${RUN_NUMBER}
 
 # Spam
@@ -96,5 +96,5 @@ python scripts/evaluate_primitive_representation_collection.py \
 --num_trajectory_iou_samples 0 \
 --include_gt \
 --wandb_mode "offline" \
---logging_path "/home/gridsan/npfaff/sim2sim/logs/table_pid_spam_${RUN_NUMBER}" \
+--logging_path "./logs/table_pid_spam_${RUN_NUMBER}" \
 --wandb_name ${PREFIX}_table_pid_spam_${RUN_NUMBER}
