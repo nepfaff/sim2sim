@@ -194,7 +194,9 @@ def orientation_considered_final_displacement_error(
 
 
 def orientation_considered_average_displacement_error(
-    outer_state_trajectory: np.ndarray, inner_state_trajectory: np.ndarray
+    outer_state_trajectory: np.ndarray,
+    inner_state_trajectory: np.ndarray,
+    num_points_per_axis: int = 1,
 ) -> float:
     """
     Average Displacement Error (ADE) metric that consideres orientation by sampling points
@@ -207,12 +209,26 @@ def orientation_considered_average_displacement_error(
         t are translations, w are angular velocities, and v are translational velocities.
     :param inner_state_trajectory: The trajectory of the inner manipuland states of same
         shape as `outer_state_trajectory`.
+    :param num_points_per_axis: The number of points to sample per orthogonal axis. Note
+        that one point per axis is sufficient to fully specify the pose. However, more
+        points make the metric more robust as sampling points closer to the object
+        favor translation over orientation accuracy, while sampling points farther from
+        the object center does the opposite.
     """
     poses_outer = _states_to_poses(outer_state_trajectory)  # Shape (N,4,4)
     poses_inner = _states_to_poses(inner_state_trajectory)  # Shape (N,4,4)
 
-    # Sample 3 points in object frame to completely define the orientation
-    points_object_frame = np.eye(3)
+    # Sample points in tjeobject frame
+    if num_points_per_axis == 1:
+        points_object_frame = np.eye(3)
+    else:
+        points_object_frame = np.zeros((num_points_per_axis * 3, 3))
+        line = np.linspace(0, 1, num_points_per_axis)
+        points_object_frame[:num_points_per_axis, 0] = line
+        points_object_frame[num_points_per_axis : 2 * num_points_per_axis, 1] = line
+        points_object_frame[2 * num_points_per_axis : 3 * num_points_per_axis, 2] = line
+
+    # Transform to world frame
     points_outer_world_frame = (
         points_object_frame @ poses_outer[:, :3, :3].transpose((0, 2, 1))
         + poses_outer[:, :3, 3][:, np.newaxis, :]
