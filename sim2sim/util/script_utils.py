@@ -209,12 +209,14 @@ def rank_based_on_metrics(
         trajectory_IoU_margin_1: float,
         orientation_considered_final_error: float,
         orientation_considered_average_error: float,
+        orientation_considered_average_error_10points: float,
         final_translation_error: float,
         average_translation_error: float,
         average_mean_contact_point_gradient_magnitude: float,
         average_generalized_contact_force_gradient_magnitude: float,
         simulation_time: float,
         simulation_time_ratio: float,  # inner_time / outer_time
+        real_time_ratio: float,  # inner_time / sim_duration
     ) -> Dict[str, Union[str, float]]:
         return {
             "name": name,
@@ -222,12 +224,14 @@ def rank_based_on_metrics(
             "trajectory_IoU_margin_1": trajectory_IoU_margin_1,
             "orientation_considered_final_error": orientation_considered_final_error,
             "orientation_considered_average_error": orientation_considered_average_error,
+            "orientation_considered_average_error_10points": orientation_considered_average_error_10points,
             "final_translation_error": final_translation_error,
             "average_translation_error": average_translation_error,
             "average_mean_contact_point_gradient_magnitude": average_mean_contact_point_gradient_magnitude,
             "average_generalized_contact_force_gradient_magnitude": average_generalized_contact_force_gradient_magnitude,
             "simulation_time": simulation_time,
             "simulation_time_ratio": simulation_time_ratio,
+            "real_time_ratio": real_time_ratio,
         }
 
     # TODO: Add options to parallelize this
@@ -313,6 +317,10 @@ def rank_based_on_metrics(
             orientation_considered_average_displacement_error(outer, inner)
             for outer, inner in zip(outer_states, inner_states)
         ]  # Shape (M,)
+        orientation_considered_average_errors_10points = [
+            orientation_considered_average_displacement_error(outer, inner, 10)
+            for outer, inner in zip(outer_states, inner_states)
+        ]  # Shape (M,)
         final_displacement_errors_translation_only = [
             final_displacement_error_translation_only(outer, inner)
             for outer, inner in zip(outer_states, inner_states)
@@ -340,6 +348,9 @@ def rank_based_on_metrics(
             orientation_considered_average_error=np.mean(
                 orientation_considered_average_errors
             ),
+            orientation_considered_average_error_10points=np.mean(
+                orientation_considered_average_errors_10points
+            ),
             final_translation_error=np.mean(final_displacement_errors_translation_only),
             average_translation_error=np.mean(
                 average_displacement_errors_translation_only
@@ -353,6 +364,8 @@ def rank_based_on_metrics(
             simulation_time=meta_data["time_taken_to_simulate_inner_s"],
             simulation_time_ratio=meta_data["time_taken_to_simulate_inner_s"]
             / meta_data["time_taken_to_simulate_outer_s"],
+            real_time_ratio=meta_data["time_taken_to_simulate_inner_s"]
+            / experiment_specification["script"]["args"]["sim_duration"],
         )
         for additional_metric in additional_metric_keys:
             errors[additional_metric] = (
