@@ -6,23 +6,32 @@ A high-level system diagram is shown below:
 
 ## Installation
 
-Clone the repo and execute the following commands from the repository's root.
+This repo uses Poetry for dependency management. To setup this project, first install
+[Poetry](https://python-poetry.org/docs/#installation) and, make sure to have Python3.10
+installed on your system.
 
-Create a virtual environment:
+Then, configure poetry to setup a virtual environment that uses Python 3.10:
 ```
-python -m venv sim2sim_env
+poetry env use python3.10
 ```
+
+Next, install all the required dependencies to the virtual environment with the
+following command:
+```
+poetry install -vvv
+```
+(the `-vvv` flag adds verbose output).
 
 For local Drake and manipulation installations, insert the following at the end of the
-`sim2sim_env/bin/activate` file, modifying the paths and python version as required:
+`.venv/bin/activate` and `.venv/bin/activate.nu` files, modifying the paths and python version as required:
 ```bash
-export PYTHONPATH=~/drake-build/install/lib/python3.8/site-packages:${PYTHONPATH}
+export PYTHONPATH=~/drake-build/install/lib/python3.10/site-packages:${PYTHONPATH}
 export PYTHONPATH=~/manipulation:${PYTHONPATH}
 ```
 
 Activate the environment:
 ```
-source sim2sim_env/bin/activate
+poetry shell
 ```
 
 Install `git lfs`:
@@ -43,7 +52,7 @@ Install `pre-commit` for automatic black formatting:
 pre-commit install
 ```
 
-Install the [learning_real2sim](https://github.com/liruiw/learning_real2sim) repo in development mode based on the
+Optionally install the [learning_real2sim](https://github.com/liruiw/learning_real2sim) repo in development mode based on the
 instructions in its `README`. Note that this repo is only needed for a small subset of experiments.
 
 ### Requirements for using mesh decomposition
