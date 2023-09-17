@@ -2,9 +2,7 @@
 *.egg-info
 build/
 *.pyc
-sim2simenv/
 .vscode/
-data/sample_data/
 tmp/
 wandb/
-sim2sim_env/
+.venv

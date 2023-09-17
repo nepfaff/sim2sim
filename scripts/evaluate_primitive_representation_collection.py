@@ -184,11 +184,14 @@ def main():
     base_experiment_description = yaml.safe_load(open(experiment_description_path, "r"))
 
     current_time = time.strftime("%Y-%b-%d-%H-%M-%S")
+    wandb_name = (
+        f"{base_experiment_description['experiment_id']}_{current_time}"
+        if wandb_name is None
+        else wandb_name
+    )
     wandb.init(
         project="sim2sim_evaluate_representation_collection",
-        name=f"{base_experiment_description['experiment_id']}_{current_time}"
-        if wandb_name is None
-        else wandb_name,
+        name=wandb_name,
         mode=wandb_mode,
         config={
             "args": vars(args),
@@ -522,6 +525,8 @@ def main():
         logging_path,
         num_trajectory_iou_samples=args.num_trajectory_iou_samples,
         log_wandb=True,
+        log_csv_continuously=True,
+        log_csv_path=os.path.join(logging_path, wandb_name) + ".csv",
         additional_metric_keys=["sdf_loss"],
     )
 

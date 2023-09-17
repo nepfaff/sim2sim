@@ -1,9 +1,10 @@
 """Utility functions used by the scripts."""
 
 import os
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Optional
 import time
 import yaml
+import csv
 
 import numpy as np
 from prettytable import PrettyTable
@@ -201,6 +202,8 @@ def rank_based_on_metrics(
     num_trajectory_iou_samples: int,
     log_wandb: bool = False,
     log_all_outer_htmls: bool = False,
+    log_csv_continuously: bool = False,
+    log_csv_path: Optional[str] = None,
     additional_metric_keys: List[str] = [],
 ) -> None:
     def create_table_dict(
@@ -233,6 +236,12 @@ def rank_based_on_metrics(
             "simulation_time_ratio": simulation_time_ratio,
             "real_time_ratio": real_time_ratio,
         }
+
+    csv_path = (
+        log_csv_path
+        if log_csv_path is not None
+        else os.path.join(logging_dir_path, "eval_results.csv")
+    )
 
     # TODO: Add options to parallelize this
     eval_data: List[Dict[str, float]] = []
@@ -377,6 +386,14 @@ def rank_based_on_metrics(
 
         print(f"Computing errors took {time.time()-start_time} seconds.")
         print(f"Mesh: {name}, Errors:\n{errors}")
+
+        if log_csv_continuously:
+            with open(csv_path, "a", newline="") as f:
+                writer = csv.writer(f)
+                column_names = errors.keys()
+                if i == 0:
+                    writer.writerow(column_names)
+                writer.writerow([errors[name] for name in column_names])
 
         if log_wandb:
             # Log simulation HTMLs to wandb
