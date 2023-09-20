@@ -1,11 +1,12 @@
 from typing import List
 
-import trimesh
 import open3d as o3d
+import trimesh
+
+from sim2sim.logging import DynamicLogger
+from sim2sim.util import MeshProcessorResult, open3d_to_trimesh
 
 from .mesh_processor_base import MeshProcessorBase
-from sim2sim.util import open3d_to_trimesh, MeshProcessorResult
-from sim2sim.logging import DynamicLogger
 
 
 class ConvexDecompMeshProcessor(MeshProcessorBase):

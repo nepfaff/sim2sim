@@ -1,11 +1,7 @@
 import os
 import time
 
-from pydrake.all import (
-    DiagramBuilder,
-    SceneGraph,
-    Simulator,
-)
+from pydrake.all import DiagramBuilder, SceneGraph, Simulator
 
 from sim2sim.logging import DynamicLogger
 from sim2sim.simulation import SimulatorBase

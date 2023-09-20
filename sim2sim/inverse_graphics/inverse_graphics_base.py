@@ -1,5 +1,5 @@
-from typing import Optional, Tuple, List
 from abc import ABC, abstractmethod
+from typing import List, Optional, Tuple
 
 import numpy as np
 import open3d as o3d

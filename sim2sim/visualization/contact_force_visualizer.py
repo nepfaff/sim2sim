@@ -1,33 +1,35 @@
 """Script for visualizing a collision representation and its contact forces."""
 
 import os
-import yaml
 import time
-from typing import Tuple, List
+
+from typing import List, Tuple
 
 import numpy as np
 import open3d as o3d
+import yaml
+
 from pydrake.all import (
-    StartMeshcat,
-    MeshcatVisualizerParams,
-    Role,
-    MeshcatVisualizer,
-    DiagramBuilder,
     AddMultibodyPlantSceneGraph,
-    Simulator,
+    Cylinder,
+    DiagramBuilder,
     LoadModelDirectives,
+    MeshcatCone,
+    MeshcatVisualizer,
+    MeshcatVisualizerParams,
     ProcessModelDirectives,
     Rgba,
-    Cylinder,
-    MeshcatCone,
     RigidTransform,
+    Role,
     RotationMatrix,
+    Simulator,
+    StartMeshcat,
 )
 
 from sim2sim.util import (
     get_parser,
-    vector_pose_to_rigidtransform,
     get_principal_component,
+    vector_pose_to_rigidtransform,
 )
 
 # Meshcat item names

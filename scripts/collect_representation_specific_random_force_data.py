@@ -3,10 +3,12 @@ Script for collecting multiple random force data runs for a representation.
 NOTE: Using textured meshes in inverse graphics/ mesh processing might cause issues with multicore execution.
 """
 
-import os
-import yaml
 import argparse
+import os
+
 from multiprocessing import Process
+
+import yaml
 
 from sim2sim.experiments import run_random_force
 

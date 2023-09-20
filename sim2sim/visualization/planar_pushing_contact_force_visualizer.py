@@ -1,8 +1,9 @@
 import os
 
 import numpy as np
-from pydrake.all import Sphere, Box, RigidTransform
+
 from manipulation.scenarios import AddShape
+from pydrake.all import Box, RigidTransform, Sphere
 
 from sim2sim.visualization import ContactForceVisualizer
 

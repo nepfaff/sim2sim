@@ -1,18 +1,19 @@
 from typing import List, Tuple
 
 from pydrake.all import (
+    AddMultibodyPlant,
+    DiagramBuilder,
     LoadModelDirectives,
     LoadModelDirectivesFromString,
-    ProcessModelDirectives,
-    RigidTransform,
-    DiagramBuilder,
-    SceneGraph,
     MultibodyPlant,
     MultibodyPlantConfig,
-    AddMultibodyPlant,
+    ProcessModelDirectives,
+    RigidTransform,
+    SceneGraph,
 )
 
 from sim2sim.util import get_parser
+
 from .base import run_experiment
 
 SCENE_DIRECTIVE = "../../models/floor_drop/floor_drop_directive.yaml"

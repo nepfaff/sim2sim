@@ -1,4 +1,4 @@
-from .sphere_image_generator import SphereImageGenerator
+from .cameras import generate_camera_locations_circle, generate_camera_locations_sphere
 from .iiwa_wrist_sphere_image_generator import IIWAWristSphereImageGenerator
 from .none_image_generator import NoneImageGenerator
-from .cameras import generate_camera_locations_sphere, generate_camera_locations_circle
+from .sphere_image_generator import SphereImageGenerator

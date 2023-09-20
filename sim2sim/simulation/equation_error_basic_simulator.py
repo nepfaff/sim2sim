@@ -1,14 +1,16 @@
 import os
 import time
-from typing import List, Dict
+
+from typing import Dict, List
 
 import numpy as np
+
 from pydrake.all import (
     DiagramBuilder,
+    ModelInstanceIndex,
+    MultibodyPlant,
     SceneGraph,
     Simulator,
-    MultibodyPlant,
-    ModelInstanceIndex,
 )
 
 from sim2sim.logging import DynamicLogger

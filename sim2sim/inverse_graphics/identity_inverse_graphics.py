@@ -1,7 +1,7 @@
-from typing import Tuple, List, Optional
+from typing import List, Optional, Tuple
 
-import open3d as o3d
 import numpy as np
+import open3d as o3d
 
 from .inverse_graphics_base import InverseGraphicsBase
 

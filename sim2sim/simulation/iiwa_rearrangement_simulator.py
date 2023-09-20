@@ -1,12 +1,8 @@
 from typing import List
 
 import numpy as np
-from pydrake.all import (
-    DiagramBuilder,
-    SceneGraph,
-    RigidTransform,
-    RollPitchYaw,
-)
+
+from pydrake.all import DiagramBuilder, RigidTransform, RollPitchYaw, SceneGraph
 
 from sim2sim.logging import DynamicLogger
 from sim2sim.simulation import IIWAJointTrajectorySimulatorBase

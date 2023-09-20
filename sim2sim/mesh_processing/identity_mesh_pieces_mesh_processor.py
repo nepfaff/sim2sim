@@ -1,10 +1,12 @@
 import os
+
 from typing import List
 
 import open3d as o3d
 
 from sim2sim.logging import DynamicLogger
 from sim2sim.util import MeshProcessorResult, convert_obj_to_vtk
+
 from .mesh_processor_base import MeshProcessorBase
 
 

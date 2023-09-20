@@ -1,7 +1,7 @@
 from typing import List
 
-import open3d as o3d
 import numpy as np
+import open3d as o3d
 
 try:
     from learning_real2sim.src.meta_ball import MetaBall
@@ -10,9 +10,10 @@ except:
         "Failed to import learning_real2sim. FuzzyMetaballMeshProcessor won't be working!"
     )
 
-from .mesh_processor_base import MeshProcessorBase
 from sim2sim.logging import DynamicLogger
-from sim2sim.util import open3d_to_trimesh, MeshProcessorResult
+from sim2sim.util import MeshProcessorResult, open3d_to_trimesh
+
+from .mesh_processor_base import MeshProcessorBase
 
 DIV_EPSILON = 1e-9
 

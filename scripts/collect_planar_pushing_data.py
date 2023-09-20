@@ -4,16 +4,18 @@ NOTE: Using textured meshes in inverse graphics/ mesh processing might cause iss
 multicore execution.
 """
 
-import os
-import yaml
 import argparse
 import glob
+import os
 import re
+
 from multiprocessing import Process
 
 import numpy as np
-from tqdm import tqdm
 import open3d as o3d
+import yaml
+
+from tqdm import tqdm
 
 from sim2sim.experiments import run_planar_pushing
 from sim2sim.images import generate_camera_locations_circle

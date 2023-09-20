@@ -1,32 +1,33 @@
-from typing import List, Tuple, Dict, Union
+from typing import Dict, List, Tuple, Union
 
 from pydrake.all import (
+    AddCompliantHydroelasticProperties,
+    AddMultibodyPlant,
+    Box,
+    DiagramBuilder,
+    InverseDynamicsController,
     LoadModelDirectives,
     LoadModelDirectivesFromString,
-    ProcessModelDirectives,
-    RigidTransform,
-    DiagramBuilder,
-    SceneGraph,
     MultibodyPlant,
     MultibodyPlantConfig,
-    AddMultibodyPlant,
-    Sphere,
-    Box,
-    SpatialInertia,
-    UnitInertia,
     PrismaticJoint,
-    InverseDynamicsController,
-    AddCompliantHydroelasticProperties,
+    ProcessModelDirectives,
     ProximityProperties,
+    RigidTransform,
     RoleAssign,
+    SceneGraph,
+    SpatialInertia,
+    Sphere,
+    UnitInertia,
 )
 
 from sim2sim.util import (
-    get_parser,
     StateSource,
-    copy_object_proximity_properties,
     add_shape,
+    copy_object_proximity_properties,
+    get_parser,
 )
+
 from .base import run_experiment
 
 SCENE_DIRECTIVE = "../../models/random_force/random_force_directive.yaml"

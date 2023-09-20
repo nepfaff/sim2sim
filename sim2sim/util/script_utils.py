@@ -1,31 +1,34 @@
 """Utility functions used by the scripts."""
 
-import os
-from typing import List, Dict, Union, Optional
-import time
-import yaml
 import csv
+import os
+import time
 
-import numpy as np
-from prettytable import PrettyTable
-import wandb
+from typing import Dict, List, Optional, Union
+
 import matplotlib.pyplot as plt
+import numpy as np
+import yaml
+
+from prettytable import PrettyTable
+
+import wandb
 
 from sim2sim.experiments import (
-    run_table_pid,
-    run_iiwa_manip,
     run_floor_drop,
-    run_random_force,
+    run_iiwa_manip,
     run_planar_pushing,
+    run_random_force,
+    run_table_pid,
 )
 from sim2sim.util import (
-    trajectory_IoU,
-    orientation_considered_final_displacement_error,
-    orientation_considered_average_displacement_error,
-    final_displacement_error_translation_only,
     average_displacement_error_translation_only,
-    average_mean_contact_point_gradient_magnitude,
     average_generalized_contact_force_gradient_magnitude,
+    average_mean_contact_point_gradient_magnitude,
+    final_displacement_error_translation_only,
+    orientation_considered_average_displacement_error,
+    orientation_considered_final_displacement_error,
+    trajectory_IoU,
 )
 
 ENTRYPOINTS = {

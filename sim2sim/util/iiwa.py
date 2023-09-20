@@ -1,47 +1,46 @@
-from typing import List, Union, Optional
 from enum import Enum
+from typing import List, Optional, Union
 
 import numpy as np
+
 from manipulation.meshcat_utils import AddMeshcatTriad
+from manipulation.scenarios import AddIiwa, AddPlanarIiwa, AddRgbdSensors, AddWsg
 from pydrake.all import (
-    MultibodyPlant,
-    PiecewisePolynomial,
-    RigidTransform,
-    Solve,
-    Meshcat,
-    DiagramBuilder,
-    MultibodyPlant,
-    ModelInstanceIndex,
-    PassThrough,
-    Demultiplexer,
-    InverseDynamicsController,
+    AbstractValue,
     Adder,
-    StateInterpolatorWithDiscreteDerivative,
-    SchunkWsgPositionController,
-    MakeMultibodyStateToWsgStateSystem,
-    RigidTransform,
     BasicVector,
-    LeafSystem,
-    RotationMatrix,
-    SceneGraph,
-    MakeRenderEngineVtk,
-    RenderEngineVtkParams,
-    DepthRenderCamera,
-    RenderCameraCore,
+    BsplineTrajectory,
     CameraInfo,
     ClippingRange,
+    Demultiplexer,
     DepthRange,
-    BsplineTrajectory,
-    PositionConstraint,
-    KinematicTrajectoryOptimization,
-    OrientationConstraint,
-    JointStiffnessController,
-    PortSwitch,
-    AbstractValue,
+    DepthRenderCamera,
+    DiagramBuilder,
     InputPortIndex,
+    InverseDynamicsController,
+    JointStiffnessController,
+    KinematicTrajectoryOptimization,
+    LeafSystem,
+    MakeMultibodyStateToWsgStateSystem,
+    MakeRenderEngineVtk,
+    Meshcat,
+    ModelInstanceIndex,
+    MultibodyPlant,
+    OrientationConstraint,
+    PassThrough,
+    PiecewisePolynomial,
+    PortSwitch,
+    PositionConstraint,
+    RenderCameraCore,
+    RenderEngineVtkParams,
+    RigidTransform,
+    RotationMatrix,
+    SceneGraph,
+    SchunkWsgPositionController,
+    Solve,
+    StateInterpolatorWithDiscreteDerivative,
 )
 from pydrake.multibody import inverse_kinematics
-from manipulation.scenarios import AddIiwa, AddWsg, AddRgbdSensors, AddPlanarIiwa
 
 
 def add_iiwa_system(

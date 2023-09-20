@@ -4,6 +4,7 @@ import open3d as o3d
 
 from sim2sim.logging import DynamicLogger
 from sim2sim.util import MeshProcessorResult
+
 from .mesh_processor_base import MeshProcessorBase
 
 

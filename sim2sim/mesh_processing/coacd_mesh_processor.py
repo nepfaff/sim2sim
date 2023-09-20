@@ -1,16 +1,18 @@
 import logging
-import time
 import os
+import time
+
 from typing import List
 
+import coacd
 import numpy as np
 import open3d as o3d
 import trimesh
-import coacd
+
+from sim2sim.logging import DynamicLogger
+from sim2sim.util import MeshProcessorResult, convert_obj_to_vtk, open3d_to_trimesh
 
 from .mesh_processor_base import MeshProcessorBase
-from sim2sim.util import open3d_to_trimesh, MeshProcessorResult, convert_obj_to_vtk
-from sim2sim.logging import DynamicLogger
 
 
 class CoACDMeshProcessor(MeshProcessorBase):

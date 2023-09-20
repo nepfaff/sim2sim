@@ -4,13 +4,13 @@ import argparse
 import time
 
 from pydrake.all import (
-    StartMeshcat,
+    AddMultibodyPlantSceneGraph,
+    DiagramBuilder,
+    MeshcatVisualizer,
     MeshcatVisualizerParams,
     Role,
-    MeshcatVisualizer,
-    DiagramBuilder,
-    AddMultibodyPlantSceneGraph,
     Simulator,
+    StartMeshcat,
 )
 
 from sim2sim.util import get_parser

@@ -1,12 +1,11 @@
-from typing import Tuple, List
+from typing import List, Tuple
 
 import numpy as np
-from pydrake.all import (
-    DiagramBuilder,
-    SceneGraph,
-)
+
+from pydrake.all import DiagramBuilder, SceneGraph
 
 from sim2sim.logging import DynamicLogger
+
 from .image_generator_base import ImageGeneratorBase
 
 

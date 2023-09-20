@@ -3,14 +3,16 @@ Script for collecting random force data for metric learning.
 NOTE: Using textured meshes in inverse graphics/ mesh processing might cause issues with multicore execution.
 """
 
-import os
-import yaml
 import argparse
 import glob
+import os
 import re
+
 from multiprocessing import Process
 
 import numpy as np
+import yaml
+
 from tqdm import tqdm
 
 from sim2sim.experiments import run_random_force

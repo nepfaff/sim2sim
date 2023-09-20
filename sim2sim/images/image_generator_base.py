@@ -1,13 +1,15 @@
-from typing import Tuple, Union, List
-from abc import ABC, abstractmethod
 import os
 
+from abc import ABC, abstractmethod
+from typing import List, Tuple, Union
+
 import numpy as np
+
 from pydrake.all import (
     DiagramBuilder,
-    SceneGraph,
     MakeRenderEngineGl,
     RenderEngineGlParams,
+    SceneGraph,
 )
 
 from sim2sim.logging import DynamicLogger

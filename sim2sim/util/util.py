@@ -1,34 +1,36 @@
-import os
-from typing import List, Dict, Any, Optional
 import copy
+import os
 import shutil
-from pathlib import Path
 import subprocess
 
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import meshio
+import numpy as np
 import open3d as o3d
 import trimesh
-import numpy as np
-import meshio
-from tqdm import tqdm
-from scipy.spatial.transform import Rotation as R
+
+from manipulation.meshcat_utils import AddMeshcatTriad
+from manipulation.utils import AddPackagePaths
 from pydrake.all import (
+    Box,
+    Capsule,
+    ContactVisualizerParams,
+    CoulombFriction,
+    Cylinder,
     MultibodyPlant,
     Parser,
-    RigidTransform,
-    ContactVisualizerParams,
     ProximityProperties,
     Quaternion,
+    RigidTransform,
     Shape,
-    Box,
-    Cylinder,
-    Sphere,
-    Capsule,
-    CoulombFriction,
     SpatialInertia,
+    Sphere,
     UnitInertia,
 )
-from manipulation.utils import AddPackagePaths
-from manipulation.meshcat_utils import AddMeshcatTriad
+from scipy.spatial.transform import Rotation as R
+from tqdm import tqdm
 
 from .dataclasses import PhysicalProperties
 

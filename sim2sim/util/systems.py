@@ -1,7 +1,8 @@
 from typing import List
 
 import numpy as np
-from pydrake.all import LeafSystem, Value, ExternallyAppliedSpatialForce, SpatialForce
+
+from pydrake.all import ExternallyAppliedSpatialForce, LeafSystem, SpatialForce, Value
 
 
 class ExternalForceSystem(LeafSystem):

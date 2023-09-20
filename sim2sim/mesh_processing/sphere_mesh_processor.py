@@ -1,7 +1,7 @@
 from typing import List
 
-import open3d as o3d
 import numpy as np
+import open3d as o3d
 import torch
 import trimesh
 
@@ -10,8 +10,9 @@ try:
 except:
     print("Failed to import pointnet2_ops. SphereMeshProcessor won't be working!")
 
-from sim2sim.util import open3d_to_trimesh, MeshProcessorResult
 from sim2sim.logging import DynamicLogger
+from sim2sim.util import MeshProcessorResult, open3d_to_trimesh
+
 from .mesh_processor_base import MeshProcessorBase
 
 

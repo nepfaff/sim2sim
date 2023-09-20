@@ -1,24 +1,25 @@
 from typing import List, Tuple
 
+from manipulation.scenarios import AddShape
 from pydrake.all import (
+    AddMultibodyPlant,
+    DiagramBuilder,
+    LeafSystem,
     LoadModelDirectives,
     LoadModelDirectivesFromString,
-    ProcessModelDirectives,
-    RigidTransform,
-    DiagramBuilder,
-    SceneGraph,
     MultibodyPlant,
     MultibodyPlantConfig,
-    AddMultibodyPlant,
-    Sphere,
-    SpatialInertia,
-    UnitInertia,
     PrismaticJoint,
-    LeafSystem,
+    ProcessModelDirectives,
+    RigidTransform,
+    SceneGraph,
+    SpatialInertia,
+    Sphere,
+    UnitInertia,
 )
-from manipulation.scenarios import AddShape
 
-from sim2sim.util import get_parser, ExternalForceSystem
+from sim2sim.util import ExternalForceSystem, get_parser
+
 from .base import run_experiment
 
 SCENE_DIRECTIVE = "../../models/random_force/random_force_directive.yaml"

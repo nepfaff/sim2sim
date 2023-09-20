@@ -1,12 +1,14 @@
 """Script for producing floor drop experiment data for multiple meshes."""
 
-import os
-import yaml
 import argparse
 import glob
-from typing import List, Dict
+import os
+
+from typing import Dict, List
 
 import numpy as np
+import yaml
+
 from prettytable import PrettyTable
 
 from sim2sim.experiments import run_floor_drop

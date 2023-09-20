@@ -2,7 +2,8 @@ from typing import List
 
 import open3d as o3d
 
-from sim2sim.util import calc_mesh_inertia, PhysicalProperties
+from sim2sim.util import PhysicalProperties, calc_mesh_inertia
+
 from .physical_property_estimator_base import PhysicalPropertyEstimatorBase
 
 

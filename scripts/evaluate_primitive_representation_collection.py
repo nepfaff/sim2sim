@@ -8,15 +8,17 @@ should be the same between files with some of the real2sim pipeline components b
 different.
 """
 
-import os
-import yaml
 import argparse
-import shutil
-from typing import List
-import time
 import copy
 import json
+import os
 import random
+import shutil
+import time
+
+from typing import List
+
+import yaml
 
 import wandb
 

@@ -1,28 +1,30 @@
 from typing import List, Tuple
 
 import numpy as np
+
 from pydrake.all import (
+    AddMultibodyPlant,
+    Demultiplexer,
+    DiagramBuilder,
     LoadModelDirectives,
     LoadModelDirectivesFromString,
-    ProcessModelDirectives,
-    AddMultibodyPlant,
-    RigidTransform,
-    DiagramBuilder,
-    SceneGraph,
     MultibodyPlant,
-    Demultiplexer,
     MultibodyPlantConfig,
+    ProcessModelDirectives,
+    RigidTransform,
+    SceneGraph,
 )
 
 from sim2sim.util import (
-    get_parser,
-    add_iiwa_system,
-    add_cameras,
-    add_wsg_system,
+    IIWAControlModeSource,
     IIWAJointTrajectorySource,
     WSGCommandSource,
-    IIWAControlModeSource,
+    add_cameras,
+    add_iiwa_system,
+    add_wsg_system,
+    get_parser,
 )
+
 from .base import run_experiment
 
 SCENE_DIRECTIVE = "../../models/iiwa_manip/iiwa_manip_scene_directive.yaml"

@@ -1,23 +1,25 @@
-from typing import Tuple, List, Union
 import os
 
+from typing import List, Tuple, Union
+
 import numpy as np
+
+from manipulation.meshcat_utils import AddMeshcatTriad
 from pydrake.all import (
-    RigidTransform,
     CameraInfo,
     DiagramBuilder,
+    RigidTransform,
     SceneGraph,
     Simulator,
 )
-from manipulation.meshcat_utils import AddMeshcatTriad
 
+from sim2sim.images import SphereImageGenerator
 from sim2sim.logging import DynamicLogger
 from sim2sim.util import (
+    IIWAJointTrajectorySource,
     convert_camera_poses_to_iiwa_eef_poses,
     prune_infeasible_eef_poses,
-    IIWAJointTrajectorySource,
 )
-from sim2sim.images import SphereImageGenerator
 
 
 class IIWAWristSphereImageGenerator(SphereImageGenerator):

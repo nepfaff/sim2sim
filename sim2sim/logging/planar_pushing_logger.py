@@ -1,8 +1,10 @@
 import os
+
 from typing import List
 
 import numpy as np
-from pydrake.all import DiagramBuilder, LogVectorOutput, Context, VectorLogSink
+
+from pydrake.all import Context, DiagramBuilder, LogVectorOutput, VectorLogSink
 
 from sim2sim.logging import DynamicLogger
 

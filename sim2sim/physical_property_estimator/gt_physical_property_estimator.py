@@ -1,10 +1,11 @@
 from typing import List, Optional
 
-import open3d as o3d
 import numpy as np
+import open3d as o3d
+
+from sim2sim.util import PhysicalProperties
 
 from .physical_property_estimator_base import PhysicalPropertyEstimatorBase
-from sim2sim.util import PhysicalProperties
 
 
 class GTPhysicalPropertyEstimator(PhysicalPropertyEstimatorBase):

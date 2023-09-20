@@ -1,36 +1,39 @@
-import os
-from typing import Tuple, List, Optional, Dict, Any, Union
-import yaml
 import datetime
-import shutil
+import os
 import pickle
+import shutil
+
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import open3d as o3d
+import yaml
+
+from matplotlib import pyplot as plt
+from PIL import Image
 from pydrake.all import (
-    DiagramBuilder,
-    SceneGraph,
-    Meshcat,
-    StartMeshcat,
-    MeshcatVisualizerParams,
-    Role,
-    MeshcatVisualizer,
-    ContactVisualizer,
-    MultibodyPlant,
-    LogVectorOutput,
-    Context,
     ContactResults,
+    ContactVisualizer,
+    Context,
+    DiagramBuilder,
+    LogVectorOutput,
+    Meshcat,
+    MeshcatVisualizer,
+    MeshcatVisualizerParams,
+    MultibodyPlant,
+    Role,
+    SceneGraph,
+    StartMeshcat,
     VectorLogSink,
 )
-from PIL import Image
-from matplotlib import pyplot as plt
 
+from sim2sim.physical_property_estimator import PhysicalProperties
 from sim2sim.util import (
+    MeshProcessorResult,
     get_hydroelastic_contact_viz_params,
     get_point_contact_contact_viz_params,
-    MeshProcessorResult,
 )
-from sim2sim.physical_property_estimator import PhysicalProperties
+
 from .abstract_value_logger import AbstractValueLogger
 
 

@@ -1,6 +1,7 @@
-from typing import Optional, List
+from typing import List, Optional
 
 import numpy as np
+
 from pydrake.all import DiagramBuilder, SceneGraph
 
 from sim2sim.logging import PlanarPushingLogger

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
-from typing import Union, List, Dict, Any
 from enum import Enum
+from typing import Any, Dict, List, Union
 
 import numpy as np
 import open3d as o3d

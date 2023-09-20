@@ -1,8 +1,8 @@
 from typing import Tuple
 
-import trimesh
 import numpy as np
 import open3d as o3d
+import trimesh
 
 WATER_DENSITY = 997  # Density of water in kg/m^3
 

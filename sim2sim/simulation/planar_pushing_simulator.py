@@ -1,15 +1,17 @@
 import os
 import time
-from typing import Optional, List, Tuple, Dict
+
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
+
 from pydrake.all import (
+    Context,
     DiagramBuilder,
+    ModelInstanceIndex,
+    MultibodyPlant,
     SceneGraph,
     Simulator,
-    MultibodyPlant,
-    ModelInstanceIndex,
-    Context,
 )
 
 from sim2sim.logging import PlanarPushingLogger

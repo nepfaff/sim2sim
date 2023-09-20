@@ -1,3 +1,3 @@
-from .dynamic_logger import DynamicLogger
 from .abstract_value_logger import AbstractValueLogger
+from .dynamic_logger import DynamicLogger
 from .planar_pushing_logger import PlanarPushingLogger

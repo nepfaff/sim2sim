@@ -7,13 +7,15 @@ fair comparison, the experiment should be the same between files with some of th
 real2sim pipeline components being different.
 """
 
-import os
-import yaml
 import argparse
+import os
 import shutil
-from typing import List
 import time
+
 from pathlib import Path
+from typing import List
+
+import yaml
 
 import wandb
 

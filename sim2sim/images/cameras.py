@@ -1,7 +1,8 @@
 from typing import Tuple
 
-import open3d as o3d
 import numpy as np
+import open3d as o3d
+
 from pytorch3d.renderer import look_at_view_transform
 from scipy.spatial.transform import Rotation as R
 

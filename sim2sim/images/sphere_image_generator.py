@@ -1,24 +1,27 @@
-from typing import Tuple, List, Union
 import copy
 
+from typing import List, Tuple, Union
+
 import numpy as np
+
 from pydrake.all import (
-    RigidTransform,
-    DepthRenderCamera,
-    ClippingRange,
-    DepthRange,
-    RenderCameraCore,
     CameraInfo,
-    RgbdSensor,
+    ClippingRange,
+    Context,
+    DepthRange,
+    DepthRenderCamera,
     DiagramBuilder,
+    RenderCameraCore,
+    RgbdSensor,
+    RigidTransform,
     SceneGraph,
     Simulator,
-    Context,
 )
 
 from sim2sim.logging import DynamicLogger
-from .image_generator_base import ImageGeneratorBase
+
 from .cameras import generate_camera_pose_circle
+from .image_generator_base import ImageGeneratorBase
 
 
 class SphereImageGenerator(ImageGeneratorBase):

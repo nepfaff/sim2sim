@@ -1,7 +1,8 @@
 import copy
-from typing import Any, Tuple, List
 
-from pydrake.all import LeafSystem, AbstractValue
+from typing import Any, List, Tuple
+
+from pydrake.all import AbstractValue, LeafSystem
 
 
 class AbstractValueLogger(LeafSystem):

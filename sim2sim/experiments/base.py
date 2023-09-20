@@ -1,51 +1,51 @@
 import os
 import pathlib
+
 from typing import Callable, List
 
 from pydrake.all import RigidTransform, RollPitchYaw
 
-from sim2sim.simulation import (
-    BasicSimulator,
-    BasicInnerOnlySimulator,
-    EquationErrorBasicSimulator,
-    PlanarPushingSimulator,
-    EquationErrorPlanarPushingSimulator,
-    RandomForceSimulator,
-    IIWARearrangementSimulator,
-    IIWAPushInHoleSimulator,
-)
-from sim2sim.logging import DynamicLogger, PlanarPushingLogger
-from sim2sim.util import (
-    create_processed_mesh_directive_str,
-    create_processed_mesh_primitive_directive_str,
-    create_directive_str_for_sdf_path,
-    MeshProcessorResult,
-)
 from sim2sim.images import (
-    SphereImageGenerator,
-    NoneImageGenerator,
     IIWAWristSphereImageGenerator,
+    NoneImageGenerator,
+    SphereImageGenerator,
 )
 from sim2sim.inverse_graphics import IdentityInverseGraphics
+from sim2sim.logging import DynamicLogger, PlanarPushingLogger
 from sim2sim.mesh_processing import (
-    IdentityMeshProcessor,
-    QuadricDecimationMeshProcessor,
-    SphereMeshProcessor,
-    GMMMeshProcessor,
-    ConvexDecompMeshProcessor,
     CoACDMeshProcessor,
+    ConvexDecompMeshProcessor,
     FuzzyMetaballMeshProcessor,
+    GMMMeshProcessor,
+    IdentityMeshPiecesMeshProcessor,
+    IdentityMeshProcessor,
     IdentityPrimitiveMeshProcessor,
     IdentitySDFMeshProcessor,
-    IdentityMeshPiecesMeshProcessor,
     IdentityVTKMeshProcessor,
     IdentityVTKPiecesMeshProcessor,
+    QuadricDecimationMeshProcessor,
+    SphereMeshProcessor,
 )
 from sim2sim.physical_property_estimator import (
-    WaterDensityPhysicalPropertyEstimator,
     GTPhysicalPropertyEstimator,
+    WaterDensityPhysicalPropertyEstimator,
 )
-
+from sim2sim.simulation import (
+    BasicInnerOnlySimulator,
+    BasicSimulator,
+    EquationErrorBasicSimulator,
+    EquationErrorPlanarPushingSimulator,
+    IIWAPushInHoleSimulator,
+    IIWARearrangementSimulator,
+    PlanarPushingSimulator,
+    RandomForceSimulator,
+)
+from sim2sim.util import (
+    MeshProcessorResult,
+    create_directive_str_for_sdf_path,
+    create_processed_mesh_directive_str,
+    create_processed_mesh_primitive_directive_str,
+)
 
 # TODO: Add type info using base classes
 LOGGERS = {

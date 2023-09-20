@@ -5,9 +5,10 @@ NOTE: Drake meshcat dies if more than 100 instances are spawned. Either commment
 this number of total runs.
 """
 
-import os
-import yaml
 import argparse
+import os
+
+import yaml
 
 from tqdm import tqdm
 

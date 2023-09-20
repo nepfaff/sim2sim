@@ -1,22 +1,24 @@
 from typing import List, Tuple
 
 import numpy as np
+
 from pydrake.all import (
+    AddMultibodyPlant,
+    BasicVector,
+    DiagramBuilder,
+    LeafSystem,
     LoadModelDirectives,
     LoadModelDirectivesFromString,
-    ProcessModelDirectives,
-    AddMultibodyPlant,
-    MultibodyPlantConfig,
-    LeafSystem,
-    BasicVector,
-    RigidTransform,
-    DiagramBuilder,
-    PidController,
-    SceneGraph,
     MultibodyPlant,
+    MultibodyPlantConfig,
+    PidController,
+    ProcessModelDirectives,
+    RigidTransform,
+    SceneGraph,
 )
 
 from sim2sim.util import get_parser
+
 from .base import run_experiment
 
 SCENE_DIRECTIVE = "../../models/table_pid/table_pid_scene_directive.yaml"

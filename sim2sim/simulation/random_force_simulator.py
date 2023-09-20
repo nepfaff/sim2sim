@@ -1,15 +1,17 @@
 import os
 import time
+
 from typing import Optional
 
 import numpy as np
-from pydrake.all import DiagramBuilder, SceneGraph, Simulator, RigidTransform
 import open3d as o3d
+
+from pydrake.all import DiagramBuilder, RigidTransform, SceneGraph, Simulator
 from scipy.spatial.transform import Rotation as R
 
+from sim2sim.images import generate_camera_locations_sphere
 from sim2sim.logging import DynamicLogger
 from sim2sim.simulation import SimulatorBase
-from sim2sim.images import generate_camera_locations_sphere
 from sim2sim.util import ExternalForceSystem
 
 
