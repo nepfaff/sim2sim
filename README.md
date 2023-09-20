@@ -47,11 +47,6 @@ Install the `sim2sim` package in development mode:
 pip install -e .
 ```
 
-Install `pre-commit` for automatic black formatting:
-```bash
-pre-commit install
-```
-
 Optionally install the [learning_real2sim](https://github.com/liruiw/learning_real2sim) repo in development mode based on the
 instructions in its `README`. Note that this repo is only needed for a small subset of experiments.
 
