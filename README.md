@@ -41,12 +41,6 @@ git lfs install
 git lfs pull
 ```
 
-Install the `sim2sim` package in development mode:
-
-```bash
-pip install -e .
-```
-
 Optionally install the [learning_real2sim](https://github.com/liruiw/learning_real2sim) repo in development mode based on the
 instructions in its `README`. Note that this repo is only needed for a small subset of experiments.
 
