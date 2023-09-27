@@ -5,7 +5,8 @@ import numpy as np
 from pydrake.all import DiagramBuilder, SceneGraph
 
 from sim2sim.logging import PlanarPushingLogger
-from sim2sim.simulation import PlanarPushingSimulator
+
+from .planar_pushing_simulator import PlanarPushingSimulator
 
 
 class EquationErrorPlanarPushingSimulator(PlanarPushingSimulator):

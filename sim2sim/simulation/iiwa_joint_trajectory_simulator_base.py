@@ -8,8 +8,9 @@ import numpy as np
 from pydrake.all import DiagramBuilder, SceneGraph, Simulator
 
 from sim2sim.logging import DynamicLogger
-from sim2sim.simulation import SimulatorBase
 from sim2sim.util import IIWAControlModeSource, IIWAJointTrajectorySource
+
+from .simulator_base import SimulatorBase
 
 
 class IIWAJointTrajectorySimulatorBase(SimulatorBase):

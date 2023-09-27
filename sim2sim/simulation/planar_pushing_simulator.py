@@ -15,8 +15,9 @@ from pydrake.all import (
 )
 
 from sim2sim.logging import PlanarPushingLogger
-from sim2sim.simulation import SimulatorBase
 from sim2sim.util import StateSource
+
+from .simulator_base import SimulatorBase
 
 
 class PlanarPushingSimulator(SimulatorBase):

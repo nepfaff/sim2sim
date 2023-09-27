@@ -5,8 +5,9 @@ import numpy as np
 from pydrake.all import DiagramBuilder, RigidTransform, RollPitchYaw, SceneGraph
 
 from sim2sim.logging import DynamicLogger
-from sim2sim.simulation import IIWAJointTrajectorySimulatorBase
 from sim2sim.util import IIWAControlModeSource
+
+from .iiwa_joint_trajectory_simulator_base import IIWAJointTrajectorySimulatorBase
 
 
 class IIWAPushInHoleSimulator(IIWAJointTrajectorySimulatorBase):

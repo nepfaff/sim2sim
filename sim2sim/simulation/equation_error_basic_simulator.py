@@ -14,7 +14,8 @@ from pydrake.all import (
 )
 
 from sim2sim.logging import DynamicLogger
-from sim2sim.simulation import BasicSimulator
+
+from .basic_simulator import BasicSimulator
 
 
 class EquationErrorBasicSimulator(BasicSimulator):

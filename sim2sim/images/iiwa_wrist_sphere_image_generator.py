@@ -13,13 +13,14 @@ from pydrake.all import (
     Simulator,
 )
 
-from sim2sim.images import SphereImageGenerator
 from sim2sim.logging import DynamicLogger
 from sim2sim.util import (
     IIWAJointTrajectorySource,
     convert_camera_poses_to_iiwa_eef_poses,
     prune_infeasible_eef_poses,
 )
+
+from .sphere_image_generator import SphereImageGenerator
 
 
 class IIWAWristSphereImageGenerator(SphereImageGenerator):

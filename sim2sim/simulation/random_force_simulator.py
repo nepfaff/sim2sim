@@ -11,8 +11,9 @@ from scipy.spatial.transform import Rotation as R
 
 from sim2sim.images import generate_camera_locations_sphere
 from sim2sim.logging import DynamicLogger
-from sim2sim.simulation import SimulatorBase
 from sim2sim.util import ExternalForceSystem
+
+from .simulator_base import SimulatorBase
 
 
 class RandomForceSimulator(SimulatorBase):
