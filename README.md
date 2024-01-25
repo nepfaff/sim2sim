@@ -34,11 +34,11 @@ Activate the environment:
 poetry shell
 ```
 
-Install `git lfs`:
+Install `git-lfs`:
 
 ```bash
-git lfs install
-git lfs pull
+git-lfs install
+git-lfs pull
 ```
 
 Optionally install the [learning_real2sim](https://github.com/liruiw/learning_real2sim) repo in development mode based on the
