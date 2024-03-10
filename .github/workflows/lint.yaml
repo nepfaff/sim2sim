@@ -16,7 +16,19 @@ jobs:
           AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
       - name: black
         uses: psf/black@stable
+        with:
+          version: 23.9.1
+          jupyter: true
       - name: isort
         uses: isort/isort-action@master
         with:
             configuration: "--profile black"
+            isort-version: 5.12.0
+      - name: Install and configure Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.8.2
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - name: Test full poetry install
+        run: poetry install
