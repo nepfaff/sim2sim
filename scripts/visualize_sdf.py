@@ -35,7 +35,7 @@ def main():
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1e-3)
     parser = get_parser(plant)
 
-    parser.AddModelFromFile(args.sdf_path)
+    parser.AddModels(args.sdf_path)
 
     meshcat = StartMeshcat()
     meshcat_params = MeshcatVisualizerParams()
